@@ -331,6 +331,48 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
         except HTTPException as e:
             raise HTTPException(status_code=400, detail=str(e))
 
+    async def _save_partial_response(self, thread_id: str, collection_name: str, partial_response: str):
+        """
+        Save partial response to database when streaming is cancelled.
+        
+        Parameters
+        ----------
+        thread_id : str
+            The thread ID for the conversation.
+        collection_name : str
+            The collection name for storing conversation history.
+        partial_response : str
+            The partial response received before cancellation.
+        """
+        try:
+            from langchain_core.messages import AIMessage
+            
+            # Add cancellation notice to the partial response
+            cancelled_response = partial_response + "\n\n*[Generation stopped by user]*"
+            
+            # Create AI message with partial response
+            ai_message = AIMessage(content=cancelled_response)
+            
+            # Save to chat history using the repository
+            if hasattr(self, 'chat_repository_history') and self.chat_repository_history:
+                # Pass the required parameters: message, thread_id, and message_type
+                self.chat_repository_history.add_message(ai_message, thread_id, "ai")
+                logger.info(
+                    f"Saved partial response to database for thread {thread_id}", 
+                    extra={"tags": {"method": "OpenAIToolServiceOpenai._save_partial_response"}}
+                )
+            else:
+                logger.warning(
+                    "Chat repository not available for saving partial response",
+                    extra={"tags": {"method": "OpenAIToolServiceOpenai._save_partial_response"}}
+                )
+                
+        except Exception as e:
+            logger.error(
+                f"Failed to save partial response: {e}",
+                extra={"tags": {"method": "OpenAIToolServiceOpenai._save_partial_response"}}
+            )
+
     def create_conversation(self, input_text: str = None, **kwargs):
         """
         Creates a conversation chain with a custom tag.
@@ -382,7 +424,7 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail=f"Failed to create conversation: {e}")
 
-    async def tool_calls_run(self, thread_id: str, collection_name: str, **kwargs) -> AsyncGenerator[str, None]:
+    async def tool_calls_run(self, thread_id: str, collection_name: str, async_handler_ref=None, **kwargs) -> AsyncGenerator[str, None]:
         """
         Executes a conversation and updates the token usage and conversation history.
 
@@ -392,6 +434,8 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
             The thread ID for the conversation.
         collection_name : str
             The collection name for storing conversation history.
+        async_handler_ref : list, optional
+            Reference list to store the async handler for external cancellation.
 
         Returns
         -------
@@ -404,39 +448,79 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
         """
         try:
             delay_chunk = kwargs.get("delay_chunk", 0.0)
+            partial_response = ""
 
                 # self.history_messages = self.chat_repository_history.messages
             annotations=[]
-            async with  \
-                get_custom_openai_callback(self.model_name, cost=cost_callback, thread_id=thread_id, collection_name=collection_name,encrypted_key=self.encrypted_api_key,companyRedis_id=self.companyRedis_id,**kwargs) as cb, \
-                get_mongodb_callback_handler(thread_id=thread_id, chat_history=self.chat_repository_history, memory=self.memory,collection_name=collection_name,regenerated_flag=self.regenerated_flag,msgCredit=self.msgCredit,is_paid_user=self.is_paid_user,encrypted_key=self.encrypted_api_key,companyRedis_id=self.companyRedis_id) as mongo_handler:
-                async for event in self.graph.astream_events(self.query,{'callbacks':[cb,mongo_handler],"configurable":{'thread_id':'1'}},stream_mode='messages',version='v2'):
-                    if event["event"] == "on_chat_model_stream":
-                        if len(event["data"]["chunk"].content) > 0:
-                            if 'text' in event['data']['chunk'].content[0]:
-                                token = event['data']['chunk'].content[0]['text'].encode("utf-8")
-                                yield f"data: {token}\n\n",200
-                            elif 'annotations' in event['data']['chunk'].content[0]:
-                                for ann in content['annotations']:
-                                    annotations.append(ann['url'])
-                            # yield f"event:{event['event']}\ndata: {event['data']}\n\n",200
-                            await asyncio.sleep(delay_chunk)
-                    elif event['event'] == "on_chat_model_end":
-                        if annotations:
-                            try:
-                                fetcher = LogoFetcherService()
-                                citations_results = await fetcher.get_logos_async(annotations)
-                                citations_section = {"web_resources_data": citations_results}
-                                compact_json = json.dumps(citations_section, separators=(',', ':'))
-                                data_string = f"data: {compact_json.encode('utf-8')}\n\n"
-                            except Exception as e:
-                                error_response = {"web_resources_data": []}
-                                compact_json = json.dumps(error_response, separators=(',', ':'))
-                                data_string = f"data: {compact_json.encode('utf-8')}\n\n"
-                            yield data_string, 200
-                if self.image_gen_prompt:
-                    thread_repo.initialization(thread_id=thread_id, collection_name=collection_name)
-                    thread_repo.update_img_gen_prompt(gen_prompt=self.image_gen_prompt)
+            
+            # Create a task to handle graph execution
+            graph_task = None
+            
+            try:
+                async with  \
+                    get_custom_openai_callback(self.model_name, cost=cost_callback, thread_id=thread_id, collection_name=collection_name,encrypted_key=self.encrypted_api_key,companyRedis_id=self.companyRedis_id,**kwargs) as cb, \
+                    get_mongodb_callback_handler(thread_id=thread_id, chat_history=self.chat_repository_history, memory=self.memory,collection_name=collection_name,regenerated_flag=self.regenerated_flag,msgCredit=self.msgCredit,is_paid_user=self.is_paid_user,encrypted_key=self.encrypted_api_key,companyRedis_id=self.companyRedis_id) as mongo_handler:
+                    
+                    # Store reference for external cancellation tracking
+                    cancellation_event = asyncio.Event()
+                    if async_handler_ref is not None:
+                        async_handler_ref.append(cancellation_event)
+                    
+                    # Create the graph streaming task
+                    graph_stream = self.graph.astream_events(self.query,{'callbacks':[cb,mongo_handler],"configurable":{'thread_id':'1'}},stream_mode='messages',version='v2')
+                    
+                    async for event in graph_stream:
+                        # Check for cancellation
+                        if cancellation_event.is_set():
+                            logger.info("Client disconnected, stopping stream", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                            break
+                            
+                        if event["event"] == "on_chat_model_stream":
+                            if len(event["data"]["chunk"].content) > 0:
+                                if 'text' in event['data']['chunk'].content[0]:
+                                    token_text = event['data']['chunk'].content[0]['text']
+                                    partial_response += token_text
+                                    token = token_text.encode("utf-8")
+                                    yield f"data: {token}\n\n",200
+                                elif 'annotations' in event['data']['chunk'].content[0]:
+                                    for ann in event['data']['chunk'].content[0]['annotations']:
+                                        annotations.append(ann['url'])
+                                # yield f"event:{event['event']}\ndata: {event['data']}\n\n",200
+                                await asyncio.sleep(delay_chunk)
+                        elif event['event'] == "on_chat_model_end":
+                            if annotations:
+                                try:
+                                    fetcher = LogoFetcherService()
+                                    citations_results = await fetcher.get_logos_async(annotations)
+                                    citations_section = {"web_resources_data": citations_results}
+                                    compact_json = json.dumps(citations_section, separators=(',', ':'))
+                                    data_string = f"data: {compact_json.encode('utf-8')}\n\n"
+                                except Exception as e:
+                                    error_response = {"web_resources_data": []}
+                                    compact_json = json.dumps(error_response, separators=(',', ':'))
+                                    data_string = f"data: {compact_json.encode('utf-8')}\n\n"
+                                yield data_string, 200
+                        
+                        # Check for cancellation again after processing
+                        if cancellation_event.is_set():
+                            logger.info("Stream cancelled after event processing", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                            break
+                            
+            except asyncio.CancelledError:
+                logger.info("Stream cancelled by client", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                # Save partial response to database
+                if partial_response.strip():
+                    await self._save_partial_response(thread_id, collection_name, partial_response)
+                raise
+            except Exception as e:
+                logger.error(f"Error during streaming: {e}", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                if partial_response.strip():
+                    await self._save_partial_response(thread_id, collection_name, partial_response)
+                raise
+                    
+            if self.image_gen_prompt:
+                thread_repo.initialization(thread_id=thread_id, collection_name=collection_name)
+                thread_repo.update_img_gen_prompt(gen_prompt=self.image_gen_prompt)
         except NotFoundError as e:
             error_content,error_code = extract_error_message(str(e))
             if error_code not in OPENAI_MESSAGES_CONFIG:

@@ -83,6 +83,9 @@ const defaultContext = {
 type TextAreaSubmitButtonProps = {
     disabled: boolean;
     handleSubmit: () => void;
+    loading?: boolean;
+    onStopStreaming?: () => void;
+    isActivelyStreaming?: boolean;
 };
 
 type TextAreaFileInputProps = {
@@ -94,7 +97,44 @@ type TextAreaFileInputProps = {
 export const TextAreaSubmitButton = ({
     disabled,
     handleSubmit,
+    loading = false,
+    onStopStreaming,
+    isActivelyStreaming = false,
 }: TextAreaSubmitButtonProps) => {
+    // Show stop button when actively streaming - use isActivelyStreaming as primary indicator
+    if (isActivelyStreaming && onStopStreaming) {
+        return (
+            <div className="flex items-center ml-2">
+                <span className="text-xs text-red-500 mr-2 animate-pulse font-medium">
+                    Generating...
+                </span>
+                                            <button
+                                className="chat-submit group bg-gray-800 hover:bg-gray-900 active:bg-black w-[32px] z-20 h-[32px] flex items-center justify-center rounded-full transition-all duration-200 shadow-lg border-2 border-gray-600 hover:border-gray-500"
+                                onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                                    event.preventDefault();
+                                    onStopStreaming();
+                                }}
+                                title="Stop generating"
+                                style={{
+                                    boxShadow: '0 0 10px rgba(31, 41, 55, 0.6)',
+                                    animation: 'pulse 2s infinite'
+                                }}
+                            >
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 14 14"
+                                    className="fill-white drop-shadow-sm"
+                                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5))' }}
+                                >
+                                    <rect x="2" y="2" width="10" height="10" rx="1" />
+                                </svg>
+                            </button>
+            </div>
+        );
+    }
+
+    // Show regular submit button
     return (
         <button
             className={`chat-submit ml-2 group bg-b2 w-[32px] z-10 h-[32px] flex items-center justify-center rounded-full transition-colors ${

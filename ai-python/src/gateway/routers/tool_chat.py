@@ -56,12 +56,20 @@ async def too_chat_with_ai(
         if 'mcpdata' in current_user:
             chat_input.mcp = str(current_user['_id'])
         tool_chat_service.initialization_service_code(code=chat_input.code)
-        response_generator = await tool_chat_service.service_hub_handler(chat_input=chat_input)
+        async_handler_ref = []
+        response_generator = await tool_chat_service.service_hub_handler(chat_input=chat_input, async_handler_ref=async_handler_ref)
         logger.info(
             "Successfully executed Tool chat with Model API",
             extra={"tags": {"endpoint": "/stream-tool-chat-with-openai", "chat_session_id": chat_input.chat_session_id}}
         )
-        return StreamingResponseWithStatusCode(response_generator, media_type="text/event-stream")
+        
+        streaming_response = StreamingResponseWithStatusCode(response_generator, media_type="text/event-stream")
+        
+        # Set the async handler for cancellation support
+        if async_handler_ref:
+            streaming_response.set_async_handler(async_handler_ref[0])
+            
+        return streaming_response
 
     except HTTPException as he:
         logger.error(

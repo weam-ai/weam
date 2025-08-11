@@ -9,6 +9,7 @@ class CustomAsyncIteratorCallbackHandler(AsyncCallbackHandler):
 
     queue: asyncio.Queue[str]
     done: asyncio.Event
+    cancelled: asyncio.Event
 
     @property
     def always_verbose(self) -> bool:
@@ -17,6 +18,7 @@ class CustomAsyncIteratorCallbackHandler(AsyncCallbackHandler):
     def __init__(self) -> None:
         self.queue = asyncio.Queue()
         self.done = asyncio.Event()
+        self.cancelled = asyncio.Event()
 
     async def on_llm_start(
         self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
@@ -24,6 +26,7 @@ class CustomAsyncIteratorCallbackHandler(AsyncCallbackHandler):
         # Reset the state for a new conversation
         self.queue = asyncio.Queue()
         self.done.clear()
+        self.cancelled.clear()
         logger.info("LLM Start", extra={"tags": {"method": "CustomAsyncIteratorCallbackHandler.on_llm_start"}})
 
 
@@ -42,6 +45,12 @@ class CustomAsyncIteratorCallbackHandler(AsyncCallbackHandler):
     async def on_chat_model_start(self, *args: Any, **kwargs: Any) -> None:
         pass
 
+    def cancel(self) -> None:
+        """Cancel the streaming process."""
+        logger.info("Streaming cancelled by client", extra={"tags": {"method": "CustomAsyncIteratorCallbackHandler.cancel"}})
+        self.cancelled.set()
+        self.done.set()
+
     # TODO implement the other methods if necessary
 
     async def aiter(self):
@@ -49,10 +58,19 @@ class CustomAsyncIteratorCallbackHandler(AsyncCallbackHandler):
             retries = 0  # To avoid infinite loop
             max_retries = 800  # Max retries or introduce a timeout
             while True:
+                # Check if cancelled
+                if self.cancelled.is_set():
+                    logger.info("Streaming cancelled, stopping iteration", extra={"tags": {"method": "CustomAsyncIteratorCallbackHandler.aiter"}})
+                    break
+                    
                 if self.done.is_set() and self.queue.empty():
                     break
                 try:
                     token = self.queue.get_nowait()
+                    # Double check for cancellation before yielding
+                    if self.cancelled.is_set():
+                        logger.info("Streaming cancelled before yielding token", extra={"tags": {"method": "CustomAsyncIteratorCallbackHandler.aiter"}})
+                        break
                     yield token
                     retries = 0  # Reset retries on success
                 except asyncio.QueueEmpty:

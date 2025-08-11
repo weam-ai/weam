@@ -56,6 +56,7 @@ async def stream_chat_with_doc(
             "Successfully executed Chat With Document Model API",
             extra={"tags": {"endpoint": "/streaming-chat-with-doc", "chat_session_id": chat_input.chat_session_id}}
         )
+        
         return StreamingResponseWithStatusCode(response_generator, media_type="text/event-stream")
      
     except HTTPException as he:

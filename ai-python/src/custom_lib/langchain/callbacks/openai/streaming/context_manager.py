@@ -23,6 +23,8 @@ async def async_streaming_handler()-> AsyncGenerator[CustomAsyncIteratorCallback
             f"Failed to async context manager: {e}",
             extra={"tags": {"method": "streaming.async_streaming_handler"}}
         )
+        # Cancel handler on exception
+        handler.cancel()
         raise e
     finally:
         logger.info(
