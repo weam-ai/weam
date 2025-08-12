@@ -15,14 +15,17 @@ import GroupIcon from '@/icons/GroupIcon';
 const ChatMembersModal = memo(({ openChatModal, chatmembers }) => {
     const filteredMembers = chatmembers?.filter(currUser => !currUser.teamName && !currUser.teamId) || [];
     let teamCount=0
+    let chatUserCount=0
     const teamMembers = chatmembers?.reduce((acc, curr) => {
         if (curr.teamName) {
             teamCount++;
             acc+=(curr.teamUsers.length || 0);
+        } else {
+            chatUserCount++;
         }
         return acc;
     }, 0);
-    const userCount = filteredMembers.length + teamMembers;
+    const userCount = chatUserCount + teamMembers;
  
     return (
         <div

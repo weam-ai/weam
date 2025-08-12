@@ -1,14 +1,25 @@
 'use client';
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MODULE_ACTIONS } from '@/utils/constant';
+import { MODULE_ACTIONS, RESPONSE_STATUS, RESPONSE_STATUS_CODE } from '@/utils/constant';
 import commonApi from '@/api';
 import { encryptedPersist } from '@/utils/helper';
 import { setUserData, setSessionData } from '@/utils/handleAuth';
-import { USER } from '@/utils/localstorage';
+import { COMPANY_EMAIL, LocalStorage, USER } from '@/utils/localstorage';
 import routes from '@/utils/routes';
+import useSignup from '@/hooks/auth/useSignup';
+import Toast from '@/utils/toast';
 
 const LinkExpiredPage = () => {
+    const { reSendVerificationEmail, loading } = useSignup();
+    const handleResendLink = useCallback(() => {
+        const alreadySent = LocalStorage.get(COMPANY_EMAIL);
+        if (!alreadySent) {
+            Toast('Verification link already sent please check your email.', 'error');
+            return
+        }
+        reSendVerificationEmail(alreadySent);
+    }, []);
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col justify-center p-5 w-full">
             <div className="w-full mx-auto max-w-[400px] text-center">
@@ -16,12 +27,9 @@ const LinkExpiredPage = () => {
                     Link Expired
                 </h2>
                 <p className="mt-2 text-center text-font-16 text-b2">
-                    The link you are trying to access has expired.
+                    The requested action couldn’t be completed as the link has expired. Please click below to resend for verification.
                 </p>
-                <p>
-                    For access, please contact your administrator.
-                </p>
-                {/* <button className='btn btn-blue mt-5'>Resend Link</button> */}
+                <button className='btn btn-blue mt-5' onClick={handleResendLink} disabled={loading}>Resend Link</button>
             </div>
         </div>
     );
@@ -40,7 +48,6 @@ const LinkSubscriptionPage = () => {
                 <p>
                     The user limit of your plan has been reached, please contact your administrator.
                 </p>
-                {/* <button className='btn btn-blue mt-5'>Resend Link</button> */}
             </div>
         </div>
     );
@@ -57,12 +64,13 @@ const InviteViaMagicLink = () => {
     const [linkSubscription,setLinkSubscription]=useState(false);
 
     useEffect(() => {
+        router.prefetch(routes.onboard);
         if (token && hash) {
             inviteMemberLogin2(token, hash);  
         }     
     }, [token, hash]);
     
-    const inviteMemberLogin2 = async (token, hash) => {
+    const inviteMemberLogin2 = async (token: string, hash: string) => {
         try {
             setLoading(true);
             const response = await commonApi({
@@ -90,6 +98,10 @@ const InviteViaMagicLink = () => {
             router.push(routes.onboard)
         } catch (error) {
             console.log('error: ', error);
+            const { data, status } = error?.response || {}; 
+            if (status === RESPONSE_STATUS.GONE && data?.code === RESPONSE_STATUS_CODE.RESEND_LINK) {
+                LocalStorage.set(COMPANY_EMAIL, data?.data);
+            }
             setLinkExpire(true);
         } finally {
             setLoading(false);

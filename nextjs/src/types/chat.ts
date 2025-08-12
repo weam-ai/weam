@@ -349,3 +349,9 @@ export type EditResponseResponseType = {
         [key: string]: any;
     };
 };
+
+export type CitationResponseType = {
+    url: string;
+    title: string;
+    snippet: string;
+}

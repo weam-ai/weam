@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { loginSchemaKeys } from '@/schema/auth';
@@ -9,6 +11,7 @@ import Label from '@/widgets/Label';
 import CommonInput from '@/widgets/CommonInput';
 import ValidationError from '@/widgets/ValidationError';
 import routes from '@/utils/routes';
+import { BASIC_AUTH } from '@/config/config';
 
 const defaultValues:any = {
     email: undefined,
@@ -29,6 +32,40 @@ const LoginForm = () => {
         defaultValues: defaultValues,
         resolver: yupResolver(loginSchemaKeys),
     });
+
+    // const [isAuthenticated, setIsAuthenticated] = useState(false);
+    // const [username, setUsername] = useState('');
+    // const [password, setPassword] = useState('');
+    // const [showAuthPrompt, setShowAuthPrompt] = useState(true);
+    // const router = useRouter();
+
+    // useEffect(() => {
+    //     // Show authentication prompt when component mounts
+    //     if (showAuthPrompt) {
+    //         const usernameInput = prompt('Please enter your username:');
+    //         if (usernameInput== BASIC_AUTH.USERNAME) {
+    //             setUsername(usernameInput);
+    //             const passwordInput = prompt('Please enter your password:');
+    //             if (passwordInput== BASIC_AUTH.PASSWORD) {
+    //                 setPassword(passwordInput);
+    //                 // Simple validation - you can replace this with your actual validation logic
+    //                 if (usernameInput.length > 3 && passwordInput.length > 3) {
+    //                     setIsAuthenticated(true);
+    //                     setShowAuthPrompt(false);
+    //                 } else {
+    //                     alert('Invalid username or password');
+    //                     router.push(routes.login);
+    //                 }
+    //             } else {
+    //                 alert('Authentication required');
+    //                 router.push(routes.login);
+    //             }
+    //         } else {
+    //             alert('Authentication required');
+    //             router.push(routes.login);
+    //         }
+    //     }
+    // }, [showAuthPrompt, router]);
 
     return (
         <form className="w-full" onSubmit={handleSubmit(handleLogin)}>

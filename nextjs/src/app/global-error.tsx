@@ -1,20 +1,16 @@
 'use client';
+
 import { useEffect } from 'react';
 
 export default function GlobalError({
     error,
-    reset,
 }: {
     error: Error & { digest?: string };
-    reset: () => void;
 }) {
-
     useEffect(() => {
-        console.error('Global Error', error);
+        console.log('Global Error:', error);
     }, [error]);
-
     return (
-        // global-error must include html and body tags
         <html>
             <body className="min-h-screen flex flex-col items-center justify-center">
                 <h2 className="text-2xl font-bold mb-4">Something went wrong!</h2>

@@ -120,6 +120,7 @@ const useLogin = () => {
             })
             const userInfo = setUserData(response.data);
             encryptedPersist(userInfo, USER);
+            // persistBrainData(response.data.defaultBrain);
             Toast(response.message);
             pushToMainChat(response, router);
         } finally {

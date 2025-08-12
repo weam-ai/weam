@@ -196,8 +196,8 @@ export const FILE_ALREADY_SELECTED_ERROR_MESSAGE = 'This file is already selecte
 export const AGENT_ALREADY_SELECTED_ERROR_MESSAGE = 'This agent is already selected';
 export const IMAGE_AND_AGENT_ERROR_MESSAGE = 'You cannot choose both images and agent at the same time';
 export const INVALID_DOMAIN_MESSAGE = 'Only company emails are allowed.';
-export const FREE_TIER_END_MESSAGE = 'You have reached the free tier limit. Please upgrade your subscription to continue using the service.';
 export const PRO_AGENT_ERROR_MESSAGE = 'Start a new chat to use pro agents';
+export const FREE_TIER_END_MESSAGE = 'You have reached the free tier limit. Please upgrade your subscription to continue using the service.';
 
 export const REFRENCE_OPTIONS = [
     { value: 'Google Search', label: 'Google Search' },
@@ -333,7 +333,8 @@ export const SOCKET_EVENTS = {
     USER_SUBSCRIPTION_UPDATE: 'usersubscriptionupdate',
     PRIVATE_BRAIN_ON: 'privatebrainon',
     PRIVATE_BRAIN_OFF: 'privatebrainoff',
-    FETCH_SUBSCRIPTION: 'fetchsubscription'
+    FETCH_SUBSCRIPTION: 'fetchsubscription',
+    LLM_RESPONSE_SEND: 'llmresponsesend',
 }
 
 export const THREAD_MESSAGE_TYPE = {
@@ -491,7 +492,8 @@ export const RESPONSE_STATUS = {
     BAD_REQUEST: 400,
     CREATED: 201,
     ERROR: 500,
-    FORBIDDEN: 403
+    FORBIDDEN: 403,
+    GONE: 410
 }
 
 export const RESPONSE_STATUS_CODE = {
@@ -500,6 +502,7 @@ export const RESPONSE_STATUS_CODE = {
     REFRESH_TOKEN: 'REFRESH_TOKEN',
     ERROR: 'ERROR',
     SUCCESS: 'SUCCESS',
+    RESEND_LINK: 'RESEND_LINK',
     CSRF_TOKEN_NOT_FOUND: 'CSRF_TOKEN_NOT_FOUND',
     FORBIDDEN: 'FORBIDDEN',
     CSRF_TOKEN_MISSING: 'CSRF_TOKEN_MISSING',
@@ -940,6 +943,7 @@ export const CUSTOM_DOMAIN_BLOCK_LIST = [
     'outlook.com',
     'mail.com',
     'bitflirt.com',
+    'yahoo.fr',
     'hotmail.com',
     'baldur.edu.kg',
     'aigorithm.space',
@@ -1400,3 +1404,10 @@ export const WEB_RESOURCES_DATA = 'web_resources_data';
 
 // MCP Tool States Cookie Persistence
 export const MCP_TOOLS_COOKIE_NAME = 'mcp_tool_cookie';
+
+
+export const STREAMING_RESPONSE_STATUS = {
+    DONE: '[DONE]',
+    CITATION: '[CITATION]',
+    WEB_SEARCH: '[WEB_SEARCH]',
+}

@@ -69,7 +69,8 @@ const usePrompt = (b?: string) => {
                         sort: {
                             createdAt: DEFAULT_SORT
                         },
-                        ...pagination
+                        // ...pagination
+                        pagination: false,
                     },
                     query: {
                         searchColumns: [SEARCH_AND_FILTER_OPTIONS.NORMAL_TITLE],

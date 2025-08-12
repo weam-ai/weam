@@ -3,7 +3,7 @@ import { MODULE_ACTIONS } from '@/utils/constant';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import routes from '@/utils/routes';
-import { COMPANY_EMAIL, SessionStorage } from '@/utils/localstorage';
+import { COMPANY_EMAIL, LocalStorage, SessionStorage } from '@/utils/localstorage';
 import Toast from '@/utils/toast';
 
 const useSignup = () => {
@@ -47,6 +47,7 @@ const useSignup = () => {
                 data: { email, ...(individualEmail ? {minutes: 1440} : {}) }
             })
             Toast(response.message);
+            LocalStorage.remove(COMPANY_EMAIL);
         } catch (error) {
             console.error('error: reSendVerificationEmail', error);
         } finally {
