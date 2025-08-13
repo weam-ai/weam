@@ -63,14 +63,15 @@ export async function GET(request: NextRequest) {
             const codeTitle = formatToCodeFormat(parsedState.service);
             const updatedKey = `mcpdata.${codeTitle}`;
             const now = Date.now();
-            const expiresAt = toIsoDate(now);
+            const oneHourLater = now + 3600 * 1000;
+            const expiresAt = toIsoDate(oneHourLater);
             const updatedPayload = {
                 access_token:  encryptedData(tokenData.access_token),
                 refresh_token: encryptedData(tokenData.refresh_token),
                 scope: tokenData.scope,
                 name: userInfo.name,
                 email: userInfo.email,
-                createdAt: expiresAt,
+                expiry: expiresAt,
             }
             await updateMcpDataAction({ [updatedKey]: updatedPayload, isDeleted: false })
         }

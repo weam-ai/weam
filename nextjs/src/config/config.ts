@@ -89,3 +89,23 @@ export const GITHUB = {
     USER_INFO_URL: 'https://api.github.com/user',
     SCOPE: 'repo,user,read:org,write:org,admin:org,workflow'
 }
+
+export const ASANA = {
+    CLIENT_ID: process.env.NEXT_PUBLIC_ASANA_OAUTH_CLIENT_ID,
+    CLIENT_SECRET: process.env.NEXT_PUBLIC_ASANA_OAUTH_CLIENT_SECRET,
+    REDIRECT_URI: `${process.env.NEXT_PUBLIC_DOMAIN_URL}/api/auth/asana/callback`,
+    AUTH_URL: 'https://app.asana.com/-/oauth_authorize',
+    TOKEN_URL: 'https://app.asana.com/-/oauth_token',
+    USER_INFO_URL: 'https://app.asana.com/api/1.0/users/me',
+    SCOPE: 'users:read'
+}
+
+export const NOTION = {
+    CLIENT_ID: process.env.NEXT_PUBLIC_NOTION_OAUTH_CLIENT_ID,
+    CLIENT_SECRET: process.env.NEXT_PUBLIC_NOTION_OAUTH_CLIENT_SECRET,
+    REDIRECT_URI: `${process.env.NEXT_PUBLIC_DOMAIN_URL}/api/auth/notion/callback`,
+    AUTH_URL: 'https://api.notion.com/v1/oauth/authorize',
+    TOKEN_URL: 'https://api.notion.com/v1/oauth/token',
+    USER_INFO_URL: 'https://api.notion.com/v1/users/me',
+    SCOPE: 'read,write'
+}

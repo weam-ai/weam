@@ -76,10 +76,10 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
     const handleDisconnect = useCallback(async(title: string) => {
         try {
             setLoading(true);
-            await updateMcpDataAction({ [`mcpdata.${title}`]: 1, isDeleted: true });
+            await updateMcpDataAction({ [`mcpdata.${title}`]: '', isDeleted: true });
         } finally {
-            setLoading(false);
             handleCloseModal(title);
+            setLoading(false);
         }
     }, [handleCloseModal]);
 

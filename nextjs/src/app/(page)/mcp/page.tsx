@@ -1,9 +1,16 @@
 import MCP_OPTIONS from '@/components/Mcp/MCPAppList';
 import { SearchIcon } from 'lucide-react';
-import ConnectedAppSelection from '@/components/Mcp/ConnectedAppCard';
 import SearchInput from '@/components/Mcp/SearchInput';
 import { getSessionUser } from '@/utils/handleAuth';
 import { getUserByIdAction } from '@/actions/user';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import McpCardSkeleton from '@/components/Loader/McpCardSkeleton';
+
+const ConnectedAppSelection = dynamic(() => import('@/components/Mcp/ConnectedAppCard'), {
+    ssr: false,
+    loading: () => <McpCardSkeleton count={12} />,
+});
 
 type McpAppsProps = {
     searchParams: {
@@ -49,7 +56,9 @@ const McpApps = async ({ searchParams }: McpAppsProps) => {
                 </div>
             </div>
 
-            <ConnectedAppSelection filteredApps={filteredApps} mcpData={mcpData} />
+            <Suspense fallback={<McpCardSkeleton count={8} />}>
+                <ConnectedAppSelection filteredApps={filteredApps} mcpData={mcpData} />
+            </Suspense>
         </div>
     );
 };
