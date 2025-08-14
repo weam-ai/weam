@@ -2,6 +2,7 @@ const Brain = require('../models/brains');
 const dbService = require('../utils/dbService');
 const { formatUser, formatBrain, getCompanyId, getDefaultBrainSlug } = require('../utils/helper');
 const ShareBrain = require('../models/shareBrain');
+const ChatMember = require('../models/chatmember');
 const { ROLE_TYPE, NOTIFICATION_TYPE, DEFAULT_NAME } = require('../config/constants/common');
 const { sendCommonNotification } = require('./notification');
 const { addBrainChatMember, removeBrainChatMember } = require('../services/chatmember');
@@ -217,15 +218,47 @@ const deleteBrain = async (req) => {
             }
         }
 
-        const filter = req.body.isShare ? { _id: req.params.id } : { _id: req.params.id, 'user.id': req.userId }
+        let filter;
+        if (req.body.isShare) {
+            // Only allow if the user is a member of the shared brain (exists in ShareBrain)
+            const shareRecord = await ShareBrain.findOne({ 'brain.id': req.params.id, 'user.id': req.user.id });
+            if (!shareRecord) {
+                throw new Error(_localize('module.unAuthorized', req, 'Brain'));
+            }
+            filter = { _id: req.params.id };
+        } else {
+            filter = { _id: req.params.id, 'user.id': req.userId };
+        }
         const existing = await Brain.findOne(filter);
-        if (!existing) false;
+        if (!existing) return false;
         
         const fullname = `${req.user.fname} ${req.user.lname}`;
-        if(req.body.isHardDelete)
-            return Brain.deleteOne({ _id: req.params.id });
-        else
-            return Brain.updateOne({ _id: req.params.id }, { $set: {deletedAt: new Date(), archiveBy: {name: fullname, id: req.userId} }})
+        
+        if(req.body.isHardDelete) {
+            // For hard delete, we need to clean up related records
+            const brainId = req.params.id;
+            
+            try {
+                // Perform cleanup operations in parallel
+                await Promise.all([
+                    // Delete the brain
+                    Brain.deleteOne(filter),
+                    // Delete all ShareBrain records for this brain
+                    ShareBrain.deleteMany({ 'brain.id': brainId }),
+                    // Delete all ChatMember records for this brain
+                    ChatMember.deleteMany({ 'brain.id': brainId })
+                ]);
+                
+                return { deletedCount: 1 };
+            } catch (cleanupError) {
+                // Log the cleanup error but don't fail the operation
+                console.error('Error during brain cleanup:', cleanupError);
+                // Still return success as the main brain deletion succeeded
+                return { deletedCount: 1, cleanupWarning: 'Some related records may not have been cleaned up' };
+            }
+        } else {
+            return Brain.updateOne(filter, { $set: {deletedAt: new Date(), archiveBy: {name: fullname, id: req.userId} }})
+        }
             
     } catch (error) {
         handleError(error, 'Error - deleteBrain');
@@ -234,10 +267,39 @@ const deleteBrain = async (req) => {
 
 const deleteAllBrain = async (req) => {
     try {
-        return Brain.deleteMany({ 
+        // First, get all brain IDs that will be deleted
+        const brainsToDelete = await Brain.find({ 
             deletedAt: { $exists: true },
             'user.id': req.userId 
-        });        
+        }).select('_id');
+        
+        const brainIds = brainsToDelete.map(brain => brain._id);
+        
+        if (brainIds.length === 0) {
+            return { deletedCount: 0 };
+        }
+        
+        try {
+            // Perform cleanup operations in parallel
+            await Promise.all([
+                // Delete the brains
+                Brain.deleteMany({ 
+                    deletedAt: { $exists: true },
+                    'user.id': req.userId 
+                }),
+                // Delete all ShareBrain records for these brains
+                ShareBrain.deleteMany({ 'brain.id': { $in: brainIds } }),
+                // Delete all ChatMember records for these brains
+                ChatMember.deleteMany({ 'brain.id': { $in: brainIds } })
+            ]);
+            
+            return { deletedCount: brainIds.length };
+        } catch (cleanupError) {
+            // Log the cleanup error but don't fail the operation
+            console.error('Error during bulk brain cleanup:', cleanupError);
+            // Still return success as the main brain deletion succeeded
+            return { deletedCount: brainIds.length, cleanupWarning: 'Some related records may not have been cleaned up' };
+        }
     } catch (error) {
         handleError(error, 'Error - deleteBrain');
     }
