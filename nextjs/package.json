@@ -46,6 +46,7 @@
     "formik": "^2.4.6",
     "iron-session": "^8.0.2",
     "json-to-csv-export": "^3.1.0",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.378.0",
     "material-ui-chip-input": "^1.1.0",
     "moment": "^2.30.1",

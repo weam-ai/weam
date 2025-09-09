@@ -2,6 +2,7 @@ import { LINK } from '@/config/config';
 import React, { useState, useRef, useEffect } from 'react';
 import { MarkOutPut } from './MartOutput';
 import ThreeDotLoader from '../Loader/ThreeDotLoader';
+import StreamLoader from '../Loader/StreamLoader';
 import { API_TYPE_OPTIONS, WEB_RESOURCES_DATA } from '@/utils/constant';
 import DocumentProcessing from '../Loader/DocumentProcess';
 import PreviewImage from '../ui/PreviewImage';
@@ -16,6 +17,8 @@ import VideoCallAgentLoader from '../Loader/VideoCallAgentLoader';
 import SalesCallLoader from '../Loader/SalesCallLoader';
 import ShowResources from './ShowResources';
 import TextAreaBox from '@/widgets/TextAreaBox';
+import Lottie from "lottie-react";
+import loaderAnimation from '../loader.json';
 type ResponseLoaderProps = {
     code: string;
     loading: boolean;
@@ -48,7 +51,7 @@ const DallEImagePreview = ({
                 {conversations.length - 1 == i ? (
                     <>
                         {loading ? (
-                            <ThreeDotLoader />
+                            <StreamLoader />
                         ) : answerMessage != '' ? (
                             <GeneratedImagePreview
                                 src={`${LINK.AWS_S3_URL}/${answerMessage}`}
@@ -77,7 +80,7 @@ const StreamingChatLoaderOption = ({ code, loading, proAgentCode }: ResponseLoad
         [ProAgentCode.VIDEO_CALL_ANALYZER]: <VideoCallAgentLoader loading={loading} />,
         [ProAgentCode.SALES_CALL_ANALYZER]: <SalesCallLoader loading={loading} />,
     };
-    return loadingComponents[code] || loadingComponents[proAgentCode] || <ThreeDotLoader />;
+    return loadingComponents[code] || loadingComponents[proAgentCode] || <StreamLoader />;
 };
 
 const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmitPrompt, privateChat = true, isStreamingLoading, proAgentCode, onResponseUpdate, onResponseEdited }) => {
