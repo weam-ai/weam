@@ -414,77 +414,64 @@ const SuperSolutionPage = () => {
                     <div className="mx-auto max-w-[1200px]">
                         <div className="mb-6">
                             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                Super Solution Access Control
+                                App Access Control
                             </h1>
                             <p className="text-gray-600">
-                                Control which apps and solutions are accessible
-                                to your team members.
+                                Manage which apps your team members can access.
                             </p>
                         </div>
-
-                        <Card>
-                            <CardContent>
-                                {loading ? (
-                                    <div className="text-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                                        <p className="mt-2 text-gray-600">
-                                            Loading applications...
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {availableApps.map((app) => (
-                                            <Card
-                                                key={app.id}
-                                                className="relative cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                                                onClick={() =>
-                                                    handleAppClick(app)
-                                                }
-                                            >
-                                                <CardContent className="p-4">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-2xl">
-                                                                {(() => {
-                                                                    const IconComponent = getIconComponent(app.icon);
-                                                                    return (
-                                                                        <IconComponent className="w-6 h-6 text-gray-600" />
-                                                                    );
-                                                                })()}
-                                                            </span>
-                                                            <div>
-                                                                <h3 className="font-semibold">
-                                                                    {app.name}
-                                                                </h3>
-                                                                <p className="text-sm text-gray-600">
-                                                                    {
-                                                                        app.description
-                                                                    }
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">
-                                                            {app.category}
-                                                        </Badge>
-                                                        <span className="text-xs text-gray-500">
-                                                            {app.route}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mt-3 pt-3 border-t border-gray-100">
-                                                        <p className="text-xs text-gray-500">
-                                                            Click to manage
-                                                            access
-                                                        </p>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                            {loading ? (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                                    <p className="mt-2 text-gray-600">
+                                        Loading applications...
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {availableApps.map((app) => (
+                                        <div
+                                            key={app.id}
+                                            className="border p-4 rounded-lg cursor-pointer hover:shadow-lg transition-shadow duration-200 group hover:bg-b12"
+                                            onClick={() =>
+                                                handleAppClick(app)
+                                            }
+                                        >   
+                                            <div className="flex gap-3 mb-3">
+                                                <span>
+                                                    {(() => {
+                                                        const IconComponent = getIconComponent(app.icon);
+                                                        return (
+                                                            <IconComponent className="w-6 h-6 text-gray-600" />
+                                                        );
+                                                    })()}
+                                                </span>
+                                                <div>
+                                                    <h3 className="font-semibold">
+                                                        {app.name}
+                                                    </h3>
+                                                    <p className="text-font-14 text-gray-600">
+                                                        {
+                                                            app.description
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-font-14">
+                                                <Badge variant="outline" className='px-4 py-1.5 group-hover:bg-b11'>
+                                                    {app.category}
+                                                </Badge>
+                                                <span className="text-xs text-gray-500">
+                                                    {app.route}
+                                                </span>
+                                            </div>
+                                            <p className="text-font-14 text-gray-500 mt-3 pt-3 border-t">
+                                                Click to manage access
+                                            </p>                                            
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                     </div>
                 </div>
             </div>
@@ -494,7 +481,7 @@ const SuperSolutionPage = () => {
                 <Dialog open={showAppDetails} onOpenChange={handleDialogClose}>
                     <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto p-5">
                         <DialogHeader>
-                            <DialogTitle className="flex items-center gap-3">
+                            <DialogTitle className="flex items-center gap-3 font-bold">
                                 <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
                                     {(() => {
                                         const IconComponent = getIconComponent(

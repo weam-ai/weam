@@ -17,8 +17,8 @@ import Link from 'next/link';
 import { ROLE_TYPE } from '@/utils/constant';
 import { LINK } from '@/config/config';
 import { getIconComponent } from '@/utils/iconMapping';
-import SolutionAppIcon from '@/icons/SolutionsIcons';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import DashboardIcon from '@/icons/DashboardIcon';
 
 interface SuperSolutionHoverProps {
     className?: string;
@@ -75,10 +75,10 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
         <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-b12 rounded-lg flex items-center justify-center">
-                    <SolutionAppIcon
-                        width={16}
-                        height={16}
-                        className="w-4 h-4 fill-b2"
+                    <DashboardIcon 
+                    height={16} 
+                    width={16} 
+                    className={'w-[16px] h-auto object-contain fill-b5'} 
                     />
                 </div>
                 <h4 className="font-semibold text-gray-900">
@@ -89,8 +89,8 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
             {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                    <span className="ml-2 text-sm text-gray-500">
-                        Loading solutions...
+                    <span className="ml-2 text-font-14 text-gray-500">
+                        Loading Apps...
                     </span>
                 </div>
             ) : solutions.length > 0 ? (
@@ -143,10 +143,10 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
             ) : (
                 <div className="text-center py-8">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <SolutionAppIcon
-                            width={24}
-                            height={24}
-                            className="w-6 h-6 fill-gray-400"
+                        <DashboardIcon 
+                        height={24} 
+                        width={24} 
+                        className={'w-6 h-auto object-contain fill-b5'} 
                         />
                     </div>
                     <p className="text-sm text-gray-500 mb-2">
@@ -184,10 +184,10 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
 
     const triggerElement = (
         <div className={className}>
-            <SolutionAppIcon
-                width={16}
-                height={16}
-                className={'size-[18px] fill-b5'}
+            <DashboardIcon 
+            height={16} 
+            width={16} 
+            className={'w-[16px] h-auto object-contain fill-b5'} 
             />
             <span className='collapsed-text'>Apps</span>
         </div>
