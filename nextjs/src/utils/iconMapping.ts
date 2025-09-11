@@ -17,6 +17,11 @@ import {
     HelpCircle
   } from 'lucide-react';
 import AIDocsIcon from '@/icons/AIDocsIcon';
+import FoloupIcon from '@/icons/FoloupIcon';
+import ChatBotIcon from '@/icons/ChatBotIcon';
+import SeoGenIcon from '@/icons/SeoGenIcon';
+import LandingPageIcon from '@/icons/LandingPageIcon';
+import VideoGenIcon from '@/icons/VideoGenIcon';
   
   // Map backend icon names to actual icon components
   export const iconMapping: Record<string, React.ComponentType<any>> = {
@@ -27,6 +32,11 @@ import AIDocsIcon from '@/icons/AIDocsIcon';
     'writing-icon': AIDocsIcon,
     'document-icon': FileText,
     'ai-docs-icon': AIDocsIcon,
+    'foloup-icon': FoloupIcon,
+    'chat-bot-icon': ChatBotIcon,
+    'seo-article-icon': SeoGenIcon,
+    'landing-page-icon': LandingPageIcon,
+    'video-gen-icon': VideoGenIcon,
     'docs-icon': FileText,
     'code-icon': Code,
     'chart-icon': BarChart3,
