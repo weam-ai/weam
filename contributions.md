@@ -20,9 +20,7 @@
 |------|----------------|
 | Member 1 | [@prd407](https://github.com/prd407) |
 | Member 2 | [@RPXO7](https://github.com/RPXO7) |
-| Member 3 | [@username](https://github.com/username) |
-| Member 3 | [@username](https://github.com/username) |
-
+| Member 3 | [@JAY-KANANI-18](https://github.com/JAY-KANANI-18) |
 
 ---
 
