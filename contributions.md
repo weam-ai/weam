@@ -2,16 +2,13 @@
 
 ## 🏆 Team 1
 
-- **Repository Link:** [Repo URL]
+- **Repository Link:** [https://github.com/weam-ai/t1]
 
 ### 👥 Members
 | Name | GitHub Profile |
 |------|----------------|
-| Member 1 | [@UmeshAhir21](https://github.com/weam-ai/t1) |
-| Member 2 | [@username](https://github.com/username) |
-| Member 3 | [@username](https://github.com/username) |
-| Member 3 | [@username](https://github.com/username) |
-
+| Member 1 | [@UmeshAhir21](https://github.com/UmeshAhir21) |
+| Member 2 | [@nikhilbuts](https://github.com/nikhilbuts)
 ---
 
 ## 🏆 Team 2
