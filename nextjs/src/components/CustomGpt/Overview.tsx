@@ -122,8 +122,6 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                 formData.append('responseModel[provider]', submissionData.responseModel.provider);
                 formData.append('maxItr', submissionData.maxItr);
                 formData.append('itrTimeDuration', submissionData.itrTimeDuration);
-                formData.append('goals', JSON.stringify(['']));
-                formData.append('instructions', JSON.stringify(['']));
 
                 if(submissionData.coverImg instanceof File || submissionData.removeCoverImg){
                     formData.append('coverImg', submissionData.coverImg instanceof File ? submissionData.coverImg : null);
