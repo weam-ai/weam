@@ -32,8 +32,8 @@ function runCommand(command) {
 }
 
 /**
- * Merges environment variables from root and local .env files
- * Priority: Local values take precedence, but if local value is empty, use root value
+ * Advanced environment file merger using Object.assign and spread operator
+ * Dynamically merges any .env files without hardcoded variables
  * @param {string} rootEnvPath - Path to root .env file
  * @param {string} localEnvPath - Path to local .env file
  * @param {string} outputPath - Path where to write the merged .env file
@@ -41,66 +41,68 @@ function runCommand(command) {
  */
 async function mergeEnvironmentFiles(rootEnvPath, localEnvPath, outputPath) {
     try {
-        const rootVars = {};
-        const localVars = {};
-        const mergedVars = {};
-        
-        // Read root .env file
-        if (fs.existsSync(rootEnvPath)) {
-            const rootContent = fs.readFileSync(rootEnvPath, 'utf8');
-            rootContent.split('\n').forEach(line => {
-                const trimmedLine = line.trim();
-                if (trimmedLine && !trimmedLine.startsWith('#') && trimmedLine.includes('=')) {
-                    const [key, ...valueParts] = trimmedLine.split('=');
-                    rootVars[key.trim()] = valueParts.join('=').trim();
-                }
-            });
-        }
-        
-        // Read local .env file
-        if (fs.existsSync(localEnvPath)) {
-            const localContent = fs.readFileSync(localEnvPath, 'utf8');
-            localContent.split('\n').forEach(line => {
-                const trimmedLine = line.trim();
-                if (trimmedLine && !trimmedLine.startsWith('#') && trimmedLine.includes('=')) {
-                    const [key, ...valueParts] = trimmedLine.split('=');
-                    localVars[key.trim()] = valueParts.join('=').trim();
-                }
-            });
-        }
-        
-        // Merge logic: Start with root values, then add local-only variables
-        // If variable exists in both root and local, use root value (skip local)
-        // If variable exists only in local, keep it (even if empty)
-        
-        // Start with all root variables
-        Object.keys(rootVars).forEach(key => {
-            mergedVars[key] = rootVars[key];
-        });
-        
-        // Add local variables that don't exist in root
+        const parseEnvFile = (filePath) => {
+            if (!fs.existsSync(filePath)) return {};
+
+            return fs.readFileSync(filePath, 'utf8')
+                .split(/\r?\n/) // Windows + Linux दोनों के लिए
+                .map(line => line.trim())
+                .filter(line => line && !line.startsWith('#') && line.includes('='))
+                .reduce((acc, line) => {
+                    const idx = line.indexOf('=');
+                    const key = line.substring(0, idx).trim();
+                    const value = line.substring(idx + 1).trim();
+
+                    // अगर duplicate key आया और old value empty थी तो नया overwrite करे
+                    if (!(key in acc) || (acc[key] === '' && value !== '')) {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {});
+        };
+
+        const rootVars = parseEnvFile(rootEnvPath);
+        const localVars = parseEnvFile(localEnvPath);
+
+        // Advanced merge: Root values take precedence, but local values override if they're not empty
+        const mergedVars = { ...rootVars };
+
         Object.keys(localVars).forEach(key => {
-            if (!rootVars.hasOwnProperty(key)) {
-                // This variable doesn't exist in root, so keep it from local (even if empty)
-                mergedVars[key] = localVars[key];
+            const localVal = localVars[key];
+            const rootVal = rootVars[key];
+
+            // If local value is not empty, use it (local overrides root)
+            if (localVal && localVal.trim() !== '') {
+                mergedVars[key] = localVal;
             }
-            // If variable exists in both root and local, we already have root value (skip local)
+            // If local value is empty but root has value, keep root value
+            else if (rootVal && rootVal.trim() !== '') {
+                mergedVars[key] = rootVal;
+            }
+            // If both are empty, keep empty
+            else {
+                mergedVars[key] = localVal || rootVal || '';
+            }
         });
-        
-        // Write merged .env file to output path (not modifying original files)
+
+        const tempFile = outputPath + '.temp';
         const envContent = Object.entries(mergedVars)
             .map(([key, value]) => `${key}=${value}`)
             .join('\n');
-        
-        fs.writeFileSync(outputPath, envContent);
-        console.log(`✅ Merged ${Object.keys(mergedVars).length} environment variables (root values used for common variables)`);
-        
+
+        fs.writeFileSync(tempFile, envContent);
+        fs.renameSync(tempFile, outputPath);
+
+        console.log(`✅ Merge done. Total: ${Object.keys(mergedVars).length}`);
         return mergedVars;
-    } catch (error) {
-        console.error('❌ Error merging environment files:', error);
-        throw error;
+    } catch (err) {
+        console.error('❌ Merge failed:', err);
+        throw err;
     }
 }
+
+
+
 
 /**
  * Detects if Docker Compose is available
@@ -242,8 +244,14 @@ async function installDockerService(config, repoPath) {
 async function installDockerComposeService(config, repoPath) {
     console.log('🐳 Installing Docker Compose service...');
     
-    // Setup environment files - ensure .env is exactly like .env.example
-    await runCommand(`find ${repoPath} -name ".env.example" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
+    // Setup environment files - convert env.example to .env based on config
+    if (config.envFile) {
+        console.log(`📝 Converting ${config.envFile} to .env...`);
+        await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
+    } else {
+        // Fallback: search for any .env.example file
+        await runCommand(`find ${repoPath} -name ".env.example" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
+    }
     
     // Create merged temporary file for build (don't touch original .env)
     const rootEnvPath = '/workspace/.env';
@@ -272,8 +280,8 @@ async function installDockerComposeService(config, repoPath) {
         // Build and start services
         await runCommand(`cd ${repoPath} && docker-compose up -d --build`);
         
-        // Restore original .env file (exactly like .env.example) and clean up
-        await runCommand(`find ${repoPath} -name ".env.example" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
+        // Keep the merged .env file (don't restore original .env.example)
+        // This ensures all merged variables are preserved for the running container
         await runCommand(`rm -f ${tempEnvPath}`);
         
     } else if (repoStructure.hasDockerfile) {
