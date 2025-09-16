@@ -11,7 +11,6 @@ router.post('/allmedia', authentication, normalMedia.array('attachment',5), file
 router.delete('/delete/s3media',validate(s3FileDelete), authentication, fileController.deleteS3Media);
 router.delete('/delete/:id', authentication, fileController.removeFile);
 router.post('/generate-presigned-url', validate(generatePresignedUrl), authentication, fileController.generatePresignedUrl);
-router.post('/create-file-record', authentication, fileController.createFileRecord);
-router.delete('/delete/s3media', authentication, fileController.deleteS3Media);
+router.post('/file-via-streams', authentication, fileController.uploadFileViaStreams);
 
 module.exports = router;

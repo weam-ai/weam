@@ -3,17 +3,135 @@ const { formatUser, formatDBFileData, formatBrain, getCompanyId } = require('../
 const dbService = require('../utils/dbService');
 const CompanyModal = require('../models/userBot');
 const File = require('../models/file');
-const { LINK, API } = require('../config/config');
-const { JWT_STRING } = require('../config/constants/common');
 const ChatDocs = require('../models/chatdocs');
-// const { removeExistingDocument, removeExistingImage, fileData } = require('./uploadFile');
 const Brain = require('../models/brains');
 const ShareBrain = require('../models/shareBrain');
 const { accessOfBrainToUser } = require('./common');
-const { extractAuthToken } = require('./company');
 const { MODAL_NAME } = require('../config/constants/aimodal');
 const { getShareBrains, getBrainStatus } = require('./brain');
-const commonSchema = require('../utils/commonSchema');
+const { ensureIndex, upsertDocuments } = require('./pinecone');
+const { embedText } = require('./embeddings');
+const { RecursiveCharacterTextSplitter } = require('@langchain/textsplitters');
+const { EMBEDDINGS } = require('../config/config');
+const { v4: uuidv4 } = require('uuid');
+const logger = require('../utils/logger');
+const AWS = require('aws-sdk');
+const { AWS_CONFIG } = require('../config/config');
+const pdf = require('pdf-parse');
+const crypto = require('crypto');
+
+// Configure AWS S3
+AWS.config.update({
+    apiVersion: AWS_CONFIG.AWS_S3_API_VERSION,
+    accessKeyId: AWS_CONFIG.AWS_ACCESS_ID,
+    secretAccessKey: AWS_CONFIG.AWS_SECRET_KEY,
+    region: AWS_CONFIG.REGION
+});
+
+const S3 = new AWS.S3({ useAccelerateEndpoint: true });
+const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: EMBEDDINGS.CHUNK_SIZE_CHARS,
+    chunkOverlap: EMBEDDINGS.CHUNK_OVERLAP_CHARS,
+    separators: ['\n\n', '\n', '.', ' ', ''],
+});
+
+/**
+ * Fetch file content from S3 bucket
+ * @param {string} fileUri - File URI from database
+ * @returns {Promise<Buffer>} - File content as buffer
+ */
+async function fetchFileFromS3(fileUri) {
+    try {
+        // Remove leading slash from URI to get S3 key
+        const s3Key = fileUri.replace(/^\//, '');
+        
+        const params = {
+            Bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
+            Key: s3Key
+        };
+        
+        const s3Object = await S3.getObject(params).promise();
+        
+        return s3Object.Body;
+    } catch (error) {
+        logger.error(`Error fetching file from S3: ${error.message}`);
+        throw new Error(`Failed to fetch file from S3: ${error.message}`);
+    }
+}
+
+/**
+ * Extract text content from file buffer based on file type
+ * @param {Buffer} buffer - File buffer
+ * @param {string} mimetype - File MIME type
+ * @param {string} filename - Original filename
+ * @returns {Promise<string>} - Extracted text content
+ */
+async function extractTextFromFile(buffer, mimetype, filename) {
+    try {
+        const fileExtension = getFileExtension(filename)?.toLowerCase();
+        
+        // Handle PDF files
+        if (mimetype === 'application/pdf' || fileExtension === 'pdf') {
+            const data = await pdf(buffer);
+            return data.text || '';
+        }
+        
+        // Handle text files
+        if (mimetype?.startsWith('text/') || ['txt', 'text'].includes(fileExtension)) {
+            return buffer.toString('utf8');
+        }
+        
+        // Handle code files
+        if (['php', 'js', 'css', 'html', 'htm', 'sql', 'py', 'json'].includes(fileExtension)) {
+            return buffer.toString('utf8');
+        }
+        
+        // Handle CSV files
+        if (fileExtension === 'csv' || mimetype === 'text/csv') {
+            return buffer.toString('utf8');
+        }
+        
+        // For other file types, try to extract as text
+        return buffer.toString('utf8');
+        
+    } catch (error) {
+        logger.error(`Error extracting text from file ${filename}: ${error.message}`);
+        return '';
+    }
+}
+
+/**
+ * Get file extension from filename
+ * @param {string} filename - Filename
+ * @returns {string} - File extension
+ */
+function getFileExtension(filename) {
+    if (!filename) return '';
+    const parts = filename.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+}
+
+/**
+ * Generate hash-based vector for fallback when embeddings fail
+ * @param {string} text - Text to hash
+ * @param {number} size - Vector size
+ * @returns {Array} Hash-based vector
+ */
+function generateHashVector(text, size) {
+    try {
+        const hash = crypto.createHash('sha256').update(text).digest('hex');
+        const vector = new Array(size).fill(0);
+        
+        for (let i = 0; i < size; i++) {
+            const hashIndex = (i * 7) % hash.length;
+            const charCode = parseInt(hash[hashIndex], 16);
+            vector[i] = (charCode / 15) - 0.5;
+        }
+        return vector;
+    } catch (error) {
+        return new Array(size).fill(0);
+    }
+}
 
 function chatDocsFileFormat(file) {
     return {
@@ -67,7 +185,7 @@ const addCustomGpt = async (req) => {
             companyId: company.id,
             fileId: file.id,
             api_key_id: defaultEmbedding._id.toString(),
-                tag: file.uri.split('/')[2],
+                tag: file.uri.split('/')[2], // Extract filename from URI: /documents/fileId.extension
             uri: file.uri,
             brainId,
                 file_name: file.name
@@ -204,7 +322,7 @@ const updateCustomGpt = async (req) => {
                 companyId: company.id,
                 fileId: file.id,
                 api_key_id: defaultEmbedding._id.toString(),
-                tag: file.uri.split('/')[2],
+                tag: file.uri.split('/')[2], // Extract filename from URI: /documents/fileId.extension
                 uri: file.uri,
                 brainId: existingBot.brain.id.toString(),
                 file_name: file.name
@@ -286,85 +404,115 @@ const partialUpdate = async (req) => {
     }
 }
 
+/**
+ * Process and store vector data using Pinecone instead of Python API
+ * @param {Object} req - Request object
+ * @param {Array} payloads - Array of file payloads to process
+ * @returns {Promise<boolean>} - Success status
+ */
 const storeVectorData = async (req, payloads) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000);
     try {
-        const token = extractAuthToken(req);
-        
-        const jsonPayload = payloads.map(payload => ({
-            file_type: payload.type,
-            // source: 's3_url',
-            file_url: payload.uri,
-            page_wise: 'False',
-            vector_index: payload.companyId.toString(),
-            dimensions: 1536,
-            id: payload.fileId.toString(),
-            api_key_id: payload.api_key_id.toString(),
-            tag: payload.uri.split('/')[2],
-            company_id: payload.companyId.toString(),
-            brain_id: payload.brainId,
-            file_name: payload.file_name
-        }));
-
-        const response = await fetch(
-            `${LINK.PYTHON_API_URL}/${API.PYTHON_API_PREFIX}/vector/general-multi-store-vector`,
-            {
-                method: 'POST',
-                body: JSON.stringify({'payload_list':jsonPayload}),
-                signal: controller.signal,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `${JWT_STRING}${token}`,
-                    Origin: LINK.FRONT_URL
-                },
+        // Process each file payload
+        for (const payload of payloads) {
+            try {
+                
+                // 1. Fetch file from S3
+                const fileBuffer = await fetchFileFromS3(payload.uri);
+                
+                // 2. Extract text content
+                const textContent = await extractTextFromFile(fileBuffer, payload.type, payload.file_name);
+                
+                if (!textContent || !textContent.trim()) {
+                    logger.warn(`No text content extracted from ${payload.file_name}, skipping`);
+                    continue;
+                }
+                
+                // 3. Split text into chunks
+                const chunks = await textSplitter.splitText(textContent);
+                
+                if (chunks.length === 0) {
+                    logger.warn(`No chunks created for ${payload.file_name}, skipping`);
+                    continue;
+                }
+                
+                // 4. Ensure Pinecone index exists
+                await ensureIndex(payload.companyId, EMBEDDINGS.VECTOR_SIZE || 1536);
+                
+                // 5. Generate embeddings and prepare vectors
+                const vectors = [];
+                const expectDim = EMBEDDINGS.VECTOR_SIZE || 1536;
+                
+                for (let i = 0; i < chunks.length; i++) {
+                    try {
+                        // Generate embedding for this chunk
+                        const embedding = await embedText(chunks[i]);
+                        
+                        // Validate embedding
+                        const vector = Array.isArray(embedding) && embedding.length === expectDim 
+                            ? embedding 
+                            : generateHashVector(chunks[i], expectDim);
+                        
+                        // Create Pinecone point
+                        const point = {
+                            id: uuidv4(),
+                            values: vector,
+                            metadata: {
+                                filename: payload.file_name,
+                                fileId: payload.fileId,
+                                companyId: payload.companyId,
+                                brainId: payload.brainId,
+                                tag: payload.tag,
+                                chunkIndex: i,
+                                text: chunks[i],
+                                mimetype: payload.type,
+                                s3Key: payload.uri.replace(/^\//, '')
+                            }
+                        };
+                        
+                        vectors.push(point);
+                        
+                    } catch (embedError) {
+                        logger.warn(`Embedding failed for chunk ${i} of ${payload.file_name}: ${embedError.message}`);
+                        
+                        // Use hash vector as fallback
+                        const point = {
+                            id: uuidv4(),
+                            values: generateHashVector(chunks[i], expectDim),
+                            metadata: {
+                                filename: payload.file_name,
+                                fileId: payload.fileId,
+                                companyId: payload.companyId,
+                                brainId: payload.brainId,
+                                tag: payload.tag,
+                                chunkIndex: i,
+                                text: chunks[i],
+                                mimetype: payload.type,
+                                s3Key: payload.uri.replace(/^\//, '')
+                            }
+                        };
+                        
+                        vectors.push(point);
+                    }
+                }
+                
+                // 6. Store vectors in Pinecone
+                if (vectors.length > 0) {
+                    const namespace = payload.brainId || '__default__';
+                    await upsertDocuments(payload.companyId, vectors, namespace);
+                }
+                
+            } catch (fileError) {
+                logger.error(`Error processing file ${payload.file_name}: ${fileError.message}`);
+                // Continue with other files even if one fails
             }
-        );
-        logger.info(`openai store vector return ${response.status}`);
-        if (response.ok) return true;
-        return false;
-
+        }
+        return true;
+        
     } catch (error) {
-        handleError(error, 'Error - storeVectorData');
-    } finally {
-        clearTimeout(timeoutId);
+        logger.error(`Error in storeVectorData: ${error.message}`);
+        return false;
     }
-
-    // try {
-    //     const token = extractAuthToken(req);
-    //     const response = await fetch(
-    //         `${LINK.PYTHON_API_URL}${API.PREFIX}/vector/openai-store-vector`,
-    //         {
-    //             method: 'POST',
-    //             body: JSON.stringify({
-    //                 file_type: payload.type,
-    //                 source: 's3_url',
-    //                 file_url: payload.uri,
-    //                 page_wise: 'False',
-    //                 vector_index: payload.companyId.toString(),
-    //                 dimensions: 1536,
-    //                 id: payload.fileId.toString(),
-    //                 api_key_id: payload.api_key_id.toString(),
-    //                 tag: payload.uri.split('/')[2],
-    //                 company_id: payload.companyId.toString(),
-    //                 brain_id: payload.brainId,
-    //                 file_name: payload.file_name
-    //             }),
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 Authorization: `${JWT_STRING}${token}`,
-    //                 Origin: LINK.FRONT_URL
-    //             },
-    //         }
-    //     );
-    //     logger.info(`openai store vector return ${response.status}`);
-    //     if (response.ok) return true;
-    //     return false;
-
-    // } catch (error) {
-    //     handleError(error, 'Error - storeVectorData');
-    // }
-}
+};
 
 const assignDefaultGpt = async (req) => {
     try {
