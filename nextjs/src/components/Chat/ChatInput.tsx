@@ -744,7 +744,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         <div className="w-full h-full overflow-y-auto flex justify-center">
             <div className={`w-full flex flex-col max-lg:flex-col-reverse mx-auto px-5 md:max-w-[90%] lg:max-w-[980px] xl:max-w-[1100px] ${isNavigating ? 'opacity-50' : ''}`}>
                 <div className='flex items-center justify-between'>
-                    <h2 className='hidden lg:block text-font-14 font-bold mt-5 mb-3'>Your Daily AI Smart Suggestions</h2>
+                    <h2 className='hidden lg:block text-font-14 font-bold mt-5 mb-3'>Fresh AI Picks</h2>
                     <p className="text-right hidden lg:block">
                         <button 
                             onClick={handleSeeMoreClick}
