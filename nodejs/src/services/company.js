@@ -1,24 +1,46 @@
 const Company = require('../models/company');
 const User = require('../models/user');
 const dbService = require('../utils/dbService');
-const { inviteUser } = require('../services/auth');
+const { inviteUser } = require('./auth');
 const { getTemplate } = require('../utils/renderTemplate');
 const { sendSESMail } = require('./email');
 const { EMAIL_TEMPLATE, MOMENT_FORMAT, EXPORT_TYPE, ROLE_TYPE, INVITATION_TYPE, JWT_STRING, MODEL_CODE, APPLICATION_ENVIRONMENT } = require('../config/constants/common');
 const moment = require('moment-timezone');
-const { randomPasswordGenerator, encryptedData, generateRandomToken, genHash, getCompanyId, formatBot } = require('../utils/helper');
+const { randomPasswordGenerator, encryptedData, generateRandomToken, genHash, getCompanyId } = require('../utils/helper');
 const bcrypt = require('bcrypt');
 const Role = require('../models/role');
 const UserBot = require('../models/userBot');
 const { OPENAI_MODAL, AI_MODAL_PROVIDER, PINECORN_STATIC_KEY, MODAL_NAME, ANTHROPIC_MODAL, GEMINI_MODAL, PERPLEXITY_MODAL, OPENROUTER_PROVIDER, DEEPSEEK_MODAL, LLAMA4_MODAL, GROK_MODAL, QWEN_MODAL } = require('../config/constants/aimodal');
-const { LINK, FRESHDESK_SUPPORT_URL, API, SERVER, DEFAULT_MSG_CREDIT } = require('../config/config');
+const { LINK, FRESHDESK_SUPPORT_URL, API, SERVER } = require('../config/config');
+const mongoose = require('mongoose');
 const Bot = require('../models/bot');
+const { isBlockedDomain, isDisposableEmail } = require('../utils/validations/emailValidation');
 const BlockedDomain = require('../models/blockedDomain');
-const { addDefaultWorkSpace } = require('./workspace');
-const { defaultCompanyBrain, getDefaultBrain } = require('./brain');
+
+const createUser = async(req) => {
+    return User.create({
+        fname: req.body.fname,
+        lname: req.body.lname,
+        email: req.body.email,
+        password: req.body.password,
+        roleId: req.body.roleId,
+        roleCode: req.body.roleCode,
+        allowuser: req.body.allowuser,
+        inviteSts: req.body.inviteSts
+    })
+}
 
 async function addCompany(req, flag = true) {
     try {
+        
+        if(SERVER.NODE_ENV === APPLICATION_ENVIRONMENT.PRODUCTION) {
+            if(await isBlockedDomain(req.body.email)) {
+                throw new Error('This email domain is not allowed');
+            }
+            if(isDisposableEmail(req.body.email)) {
+                throw new Error('Disposable email addresses are not allowed');
+            }
+        }
    
         const existingEmail = await User.findOne({ email: req.body.email }, { email: 1 });
         if (existingEmail) throw new Error(_localize('module.alreadyExists', req, 'email'));
@@ -29,27 +51,30 @@ async function addCompany(req, flag = true) {
         const role = await Role.findOne({ code: ROLE_TYPE.COMPANY }, { code: 1 })
         req.body.roleId = role._id;
         req.body.roleCode = role.code;
+        req.body.allowuser = 10 // add temp flag manually billing managment
         req.body.inviteSts = INVITATION_TYPE.ACCEPT;
+        const user = flag ? await inviteUser(req) : await createUser(req);
         
         const companyData = {
             slug: slugify(req.body.companyNm),
             ...req.body,
         }
         const company = await Company.create(companyData);
+        const inviteLink = await createVerifyLink(user, {
+            company: {
+                name: company.companyNm,
+                slug: company.slug,
+                id: company._id,
+            }
+        })
         
-        const companyObj = {
-            name: company.companyNm, 
-            slug: company.slug, 
-            id: company._id
-        }
-        const user = await User.create({ ...req.body, company: companyObj, msgCredit: DEFAULT_MSG_CREDIT });
-        const defaultWorkSpace = await addDefaultWorkSpace(company, user);
-        if (defaultWorkSpace) {
-            await defaultCompanyBrain(defaultWorkSpace._id, user);
-        }
-        createPinecornIndex(user, req);
-
-        return true;
+        getTemplate(EMAIL_TEMPLATE.VERIFICATION_LINK, { link: inviteLink, support: FRESHDESK_SUPPORT_URL }).then(
+            async(template) => {
+                await sendSESMail(req.body.email, template.subject, template.body);
+            }
+        )
+        
+        return company;
     } catch (error) {
         handleError(error, 'Error - addCompany');
     }
@@ -296,20 +321,28 @@ async function aiModalCreation(req) {
 
 const checkApiKey = async (req) => {
     try {
-        const { code } = req.body;
 
-        const providerObj = {
-            [AI_MODAL_PROVIDER.OPEN_AI]: openAIApiChecker,
-            [AI_MODAL_PROVIDER.ANTHROPIC]: anthropicApiChecker,
-            [AI_MODAL_PROVIDER.GEMINI]: geminiApiKeyChecker,
-            [AI_MODAL_PROVIDER.PERPLEXITY]: perplexityApiChecker,
-            [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
-        }
-        const provider = await providerObj[code](req);
-        return provider;
+        const companyId = getCompanyId(req.user);
        
+        const response = await fetch(LINK.OPEN_AI_MODAL, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${req.body.key}`
+            }
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            return data;
+        }
+        
+        await Promise.all([
+            Company.updateOne({ _id: companyId }, { $unset: { [`queryLimit.${AI_MODAL_PROVIDER.OPEN_AI}`]: '' }}),
+            openAIBillingChecker(req),
+        ])
+
+        return aiModalCreation(req);
     } catch (error) {
-        console.log(req.body);
         handleError(error, 'Error - checkApiKey');
     }
 };
@@ -352,25 +385,49 @@ const createVerifyLink = async (user, payload, expireTime = 60) => {
 
 async function createPinecornIndex(user, req) {
     try {
-        const token = extractAuthToken(req);
-    
-        const response = await fetch(`${LINK.PYTHON_API_URL}/${API.PYTHON_API_PREFIX}/qdrant/create-qdrant-index`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `${JWT_STRING}${token}`,
-                Origin: LINK.FRONT_URL
+        const { ensureIndex } = require('./pinecone');
+        
+        // Create Pinecone index directly using the new service
+        await ensureIndex(user.company.id, 1536);
+        
+        // Store metadata in MongoDB for reference
+        const data = mongoose.connection;
+        const result = data.db.collection('companypinecone');
+        await result.insertOne({
+            company: {
+                name: user.company.name,
+                slug: user.company.slug,
+                id: user.company.id
             },
-            body: JSON.stringify({
-                companypinecone: 'companypinecone',
-                company_id: user.company.id
-            })
-        })
-        logger.info(`pinecone serverless index return ${response.status}`);
+            vector_index: user.company.id,
+            dimensions: 1536,
+            environment: 'us-west-2',
+            metric: 'cosine',
+            cloud: 'aws',
+            region: 'us-west-2'
+        });
 
-        //createFreeTierApiKey(user);
+        // Set up OpenAI bot if available
+        const openAiBot = await Bot.findOne({ code: AI_MODAL_PROVIDER.OPEN_AI }, { title: 1, code: 1 });
+        if (openAiBot) {
+            req.body = {
+                ...req.body,
+                bot: {
+                    id: openAiBot._id,
+                    title: openAiBot.title,
+                    code: openAiBot.code,
+                },
+                key: LINK.WEAM_OPEN_AI_KEY,
+            };
+            req.user = user;
+            req.roleCode = user.roleCode
+            await aiModalCreation(req);
+        }
+
+        await createFreeTierApiKey(user);
+        
+        logger.info(`Pinecone index created successfully for company: ${user.company.id}`);
     } catch (error) {
-        console.log("🚀 ~ createPinecornIndex ~ error:", error)
         handleError(error, 'Error - createPinecornIndex'); 
     }
 }
@@ -499,22 +556,24 @@ async function anthropicApiChecker(req) {
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
-                model: MODAL_NAME.CLAUDE_SONNET_4_20250514,
+                model: MODAL_NAME.CLAUDE_3_5_SONNET_LATEST,
                 max_tokens: 1024,
                 messages: [
                     { role: 'user', content: 'Hello, world' }
                 ]
             })
         });
-        console.log('anthropicApiChecker',response.status, `${LINK.ANTHROPIC_AI_API_URL}/messages`);
         if (!response.ok) return false;
         const companyId = getCompanyId(req.user);
-        const companydetails = req.user.company;
 
-        const [existingBots, anthropicBot] = await Promise.all([
-            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.ANTHROPIC }),
-            Bot.findOne({ code: AI_MODAL_PROVIDER.ANTHROPIC }, { title: 1, code: 1 })
+        const [company, existingBots] = await Promise.all([
+            Company.findById(companyId, { companyNm: 1, slug: 1 }),
+            UserBot.find({ 'company.id': companyId, 'bot.code': req.body.bot.code })
+
         ]);
+        if (!company) throw new Error(_localize('module.notFound', req, 'company'));
+
+        const { companyNm, slug, _id: companyDbId } = company;
 
         const updates = [];
         const inserts = [];
@@ -524,8 +583,8 @@ async function anthropicApiChecker(req) {
             const existingBot = existingBots.find(bot => bot.name === element.name);
             const modelConfig = {
                 name: element.name,
-                bot: formatBot(anthropicBot),
-                company: companydetails,
+                bot: req.body.bot,
+                company: { name: companyNm, slug, id: companyDbId },
                 config: { apikey: encryptedKey },
                 modelType: element.type,
                 extraConfig: {
@@ -539,7 +598,7 @@ async function anthropicApiChecker(req) {
             if (existingBot)
                 updates.push({
                     updateOne: {
-                        filter: { name: element.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.ANTHROPIC },
+                        filter: { name: element.name, 'company.id': companyId, 'bot.code': req.body.bot.code },
                         update: { $set: modelConfig, $unset: { deletedAt: 1 } }
                     }
                 });
@@ -551,6 +610,7 @@ async function anthropicApiChecker(req) {
 
         if (inserts.length) return UserBot.insertMany(inserts);
 
+        await Company.updateOne({ _id: companyId }, { $unset: { [`queryLimit.${AI_MODAL_PROVIDER.ANTHROPIC}`]: '' }});
         return existingBots[0]?.deletedAt ? existingBots : true;
     } catch (error) {
         handleError(error, 'Error - anthropicApiChecker');
@@ -578,7 +638,7 @@ async function createFreeTierApiKey(user) {
         const anthropicKey = encryptedData(LINK.WEAM_ANTHROPIC_KEY);
         const huggingfaceKey = encryptedData(LINK.WEAM_HUGGING_FACE_KEY);
         const geminiKey = encryptedData(LINK.WEAM_GEMINI_KEY);
-        const perplexityKey = encryptedData(LINK.WEAM_PERPLEXITY_KEY);
+        // const perplexityKey = encryptedData(LINK.WEAM_PERPLEXITY_KEY);
         const deepseekKey = encryptedData(LINK.WEAM_DEEPSEEK_KEY);
         const llama4Key = encryptedData(LINK.WEAM_LLAMA4_KEY);
         const grokKey = encryptedData(LINK.WEAM_GROK_KEY);
@@ -661,20 +721,20 @@ async function createFreeTierApiKey(user) {
                 geminidata.push({ insertOne: { document: modelConfig } });
         });
 
-        PERPLEXITY_MODAL.forEach(element => {
-            const modelConfig = constructModelConfig(element.name, perplexity, company, { apikey: perplexityKey }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type);
-            const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === company._id.toString() && bot.bot.code === perplexity.code);
+        // PERPLEXITY_MODAL.forEach(element => {
+        //     const modelConfig = constructModelConfig(element.name, perplexity, company, { apikey: perplexityKey }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type);
+        //     const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === company._id.toString() && bot.bot.code === perplexity.code);
 
-            if (existingModel)
-                perplexitydata.push({
-                    updateOne: {
-                        filter: { name: element.name, 'company.id': company._id, 'bot.code': perplexity.code },
-                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
-                    }
-                });
-            else
-                perplexitydata.push({ insertOne: { document: modelConfig } });
-        });
+        //     if (existingModel)
+        //         perplexitydata.push({
+        //             updateOne: {
+        //                 filter: { name: element.name, 'company.id': company._id, 'bot.code': perplexity.code },
+        //                 update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+        //             }
+        //         });
+        //     else
+        //         perplexitydata.push({ insertOne: { document: modelConfig } });
+        // });
 
         DEEPSEEK_MODAL.forEach(element => {
             const modelConfig = constructModelConfig(element.name, deepseek, company, { apikey: deepseekKey }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type, false, false, OPENROUTER_PROVIDER.DEEPSEEK);
@@ -784,24 +844,27 @@ async function createGeminiModels(req) {
     try {
         const companydetails = req.user.company;
         const companyId = companydetails.id;
-
-        const [geminiBot, existing] = await Promise.all([
-            Bot.findOne({ code: AI_MODAL_PROVIDER.GEMINI }, { title: 1, code: 1 }),
-            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.GEMINI })
-        ]);
+        
+        const existing = await UserBot.find({ 'company.id': companyId, 'bot.code': req.body.bot.code });
+        
+        const geminiModels = [
+            'gemini-1.5-pro',
+            // 'gemini-1.5-flash-8b',
+            // 'gemini-1.5-flash',
+            'gemini-2.0-flash',
+        ];
 
         const updates = [];
         const inserts = [];
-        const encryptedKey = encryptedData(req.body.key);
 
-        GEMINI_MODAL.forEach(element => {
-            const existingEntry = existing.find(entry => entry.name === element.name);
+        for (const modelName of geminiModels) {
+            const existingEntry = existing.find(entry => entry.name === modelName);
             const modelConfig = {
-                name: element.name,
-                bot: formatBot(geminiBot),
+                name: modelName,
+                bot: req.body.bot,
                 company: companydetails,
                 config: {
-                    apikey: encryptedKey,
+                    apikey: encryptedData(req.body.key),
                 },
                 modelType: 2,
                 isActive: true,
@@ -811,17 +874,25 @@ async function createGeminiModels(req) {
                     topK: 10
                 }
             };
+            
             if (existingEntry) {
                 updates.push({
                     updateOne: {
-                        filter: { name: element.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.GEMINI },
+                        filter: { name: modelName, 'company.id': companyId, 'bot.code': req.body.bot.code },
                         update: { $set: modelConfig, $unset: { deletedAt: 1 } }
                     }
                 });
             } else {
                 inserts.push(modelConfig);
             }
-        });
+        }
+
+        await Promise.all([
+            Company.updateOne(
+                { _id: companyId }, 
+                { $unset: { [`queryLimit.${AI_MODAL_PROVIDER.GEMINI}`]: '' }}
+            )
+        ]);
         
         if (updates.length) {
             return UserBot.bulkWrite(updates);
@@ -840,34 +911,15 @@ async function createGeminiModels(req) {
 async function geminiApiKeyChecker(req) {
     try {
         const response = await fetch(
-            `${LINK.GEMINI_API_URL}/v1beta/models/gemini-2.0-flash:generateContent?key=${req.body.key}`,
+            `${LINK.GEMINI_API_URL}?key=${req.body.key}`,
             {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(
-                    {
-                        system_instruction: {
-                            parts: [
-                                {
-                                    text: 'You are a cat. Your name is Neko.'
-                                }
-                            ]
-                        },
-                        contents: [
-                            {
-                                parts: [
-                                    {
-                                        text: 'Hello there'
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                )
+                }
             }
         );
+
         if (!response.ok) {
             return false;
         }
@@ -907,256 +959,6 @@ const addBlockedDomain = async (req) => {
         return blockedDomain;
     } catch (error) {
         handleError(error, 'Error - addBlockedDomain');     
-    }
-}
-
-async function openAIApiChecker(req) {
-    try {
-        const companyId = getCompanyId(req.user);
-        
-        const response = await fetch(LINK.OPEN_AI_MODAL, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${req.body.key}`
-            }
-        });
-        
-        const jsonData = await response.json();
-        if (!response.ok) {
-            return jsonData;
-        }
-        const { data } = jsonData;
-        const companydetails = req.user.company;
-        const [openAiBot, existing] = await Promise.all([
-            Bot.findOne({ code: AI_MODAL_PROVIDER.OPEN_AI }, { title: 1, code: 1 }),
-            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OPEN_AI })
-        ]);
-        // diffrentiate between embedding and chat models
-        const modalMap = OPENAI_MODAL.reduce((map, val) => {
-            map[val.name] = val.type;
-            return map;
-        }, {});
-
-        const updates = [];
-        const inserts = [];
-        const encryptedKey = encryptedData(req.body.key);
-
-        for (const model of data) {
-            if (!modalMap.hasOwnProperty(model.id)) continue;
-            const existingEntry = existing.find(entry => entry.name === model.id);
-            const modelConfig = {
-                bot: formatBot(openAiBot),
-                company: companydetails,
-                name: model.id,
-                config: {
-                    apikey: encryptedKey,
-                }
-            }
-            if (modalMap[model.id] === 1) {
-                modelConfig['modelType'] = modalMap[model.id];
-                modelConfig['dimensions'] = 1536;
-            }
-            else {
-                if ([MODAL_NAME.GPT_4_1, MODAL_NAME.GPT_4_1_MINI, MODAL_NAME.GPT_4_1_NANO, MODAL_NAME.O4_MINI, MODAL_NAME.O3, MODAL_NAME.CHATGPT_4O_LATEST].includes(model.id)) {
-                    modelConfig['extraConfig'] = {
-                        temperature: 1
-                    }
-                }
-                modelConfig['modelType'] = modalMap[model.id];
-            }
-
-            if (existingEntry)
-                updates.push({
-                    updateOne: {
-                        filter: { name: model.id, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OPEN_AI },
-                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
-                    }
-                });
-            else inserts.push(modelConfig);
-            
-        }
-
-        if(updates.length){
-            await UserBot.bulkWrite(updates)
-        }
-
-        if(inserts.length){
-            return UserBot.insertMany(inserts)
-        }
-        
-        return existing;
-    } catch (error) {
-        handleError(error, 'Error - openAIApiChecker');
-    }
-}
-
-async function perplexityApiChecker(req) {
-    try {
-        const companyId = getCompanyId(req.user);
-        const companydetails = req.user.company;
-        const response = await fetch(`${LINK.PERPLEXITY_API_URL}/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${req.body.key}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: MODAL_NAME.SONAR,
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'Be precise and concise.'
-                    },
-                    {
-                        role: 'user',
-                        content: 'How many stars are there in our galaxy?'
-                    }
-                ]
-            })
-        });
-        console.log('perplexityApiChecker',response.status);
-        if (!response.ok) return false
-        const [perplexityBot, existing] = await Promise.all([
-            Bot.findOne({ code: AI_MODAL_PROVIDER.PERPLEXITY }, { title: 1, code: 1 }),
-            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.PERPLEXITY })
-        ]);
-        const updates = [];
-        const inserts = [];
-        const encryptedKey = encryptedData(req.body.key);
-
-        PERPLEXITY_MODAL.forEach(element => {
-            const existingBot = existing.find(bot => bot.name === element.name);
-            const modelConfig = {
-                name: element.name,
-                bot: formatBot(perplexityBot),
-                company: companydetails,
-                config: {
-                    apikey: encryptedKey,
-                },
-                modelType: element.type,
-                isActive: true,
-                extraConfig: {
-                    stream: true,
-                    temperature: 0.7,
-                    topP: 0.9,
-                    topK: 10
-                }
-            };
-            if (existingBot)
-                updates.push({
-                    updateOne: {
-                        filter: { name: element.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.PERPLEXITY },
-                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
-                    }
-                });
-            else inserts.push(modelConfig);
-        });
-        if (updates.length) {
-            return UserBot.bulkWrite(updates);
-        }
-
-        if (inserts.length) {
-            return UserBot.insertMany(inserts);
-        }
-
-        return existing;
-    } catch (error) {
-        handleError(error, 'Error - perplexityApiChecker');
-    }
-}
-
-async function openRouterApiChecker(req) {
-    try {
-        const companyId = getCompanyId(req.user);
-        const companydetails = req.user.company;
-        
-        const response = await fetch(`${LINK.OPEN_ROUTER_API_URL}/v1/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${req.body.key}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: MODAL_NAME.GPT_4O_MINI,
-                messages: [
-                    { role: 'user', content: 'What is the meaning of life?' }
-                ]
-            })
-        });
-        console.log('openRouterApiChecker',response.status);
-        if (!response.ok) return false;
-        const query = Object.keys(OPENROUTER_PROVIDER);
-        const [openRouterBot, existing] = await Promise.all([
-            Bot.find({ code: { $in: query } }, { title: 1, code: 1 }),
-            UserBot.find({ 'company.id': companyId, 'bot.code': { $in: query } })
-        ]);
-        
-        const updates = [];
-        const inserts = [];
-        const encryptedKey = encryptedData(req.body.key);
-
-        const commonConfig = {
-            company: companydetails,
-            config: {
-                apikey: encryptedKey,
-            },
-            isActive: true,
-            extraConfig: {
-                stream: true,
-                temperature: 0.7,
-                topP: 0.9,
-                topK: 10
-            },
-        }
-
-        const processModalBots = (modalList, providerKey, providerName) => {
-            const botMeta = openRouterBot.find(bot => bot.code === providerKey);
-            modalList.forEach((element) => {
-                const existingBot = existing.find(bot => bot.name === element.name);
-                const modelConfig = {
-                    name: element.name,
-                    bot: formatBot(botMeta),
-                    modelType: element.type,
-                    provider: providerName,
-                    ...commonConfig,
-                };
-
-                if (existingBot) {
-                    updates.push({
-                        updateOne: {
-                            filter: {
-                                name: element.name,
-                                'company.id': companyId,
-                                'bot.code': providerKey
-                            },
-                            update: {
-                                $set: modelConfig,
-                                $unset: { deletedAt: 1 }
-                            }
-                        }
-                    });
-                } else {
-                    inserts.push(modelConfig);
-                }
-            });
-        };
-
-        processModalBots(DEEPSEEK_MODAL, AI_MODAL_PROVIDER.DEEPSEEK, OPENROUTER_PROVIDER.DEEPSEEK);
-        processModalBots(LLAMA4_MODAL, AI_MODAL_PROVIDER.LLAMA4, OPENROUTER_PROVIDER.LLAMA4);
-        processModalBots(QWEN_MODAL, AI_MODAL_PROVIDER.QWEN, OPENROUTER_PROVIDER.QWEN);
-        processModalBots(GROK_MODAL, AI_MODAL_PROVIDER.GROK, OPENROUTER_PROVIDER.GROK);
-
-        if (updates.length) {
-            return UserBot.bulkWrite(updates);
-        }
-
-        if (inserts.length) {
-            return UserBot.insertMany(inserts);
-        }
-
-        return existing;
-    } catch (error) {
-        handleError(error, 'Error - openRouterApiChecker');
     }
 }
 

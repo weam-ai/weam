@@ -104,12 +104,20 @@ const schema = new Schema(
             error_code: { type: String },
         },
         usedCredit: {
-            type: Number, // credit used for the ai response
-            default: 0
+            type: Number, // stored as double in MongoDB
+            default: 1.0,
         },
         isPaid: {
             type: Boolean,
-        }
+        },
+        citations: [
+            {
+                title: { type: String },
+                url: { type: String },
+                snippet: { type: String },
+                domain: { type: String },
+            }
+        ],
     },
     { timestamps: true },
 );

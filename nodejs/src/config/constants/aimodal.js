@@ -17,6 +17,10 @@ const OPENAI_MODAL = [
     { name: 'o4-mini', type: 2},
     { name: 'gpt-4.1-search-medium', type: 2},
     { name: 'chatgpt-4o-latest', type: 2},
+    { name: 'gpt-5', type: 2},
+    { name: 'gpt-5-mini', type: 2},
+    { name: 'gpt-5-nano', type: 2},
+    { name: 'gpt-5-chat-latest', type: 2},
 ]
 
 const ANTHROPIC_MODAL = [
@@ -31,7 +35,7 @@ const ANTHROPIC_MODAL = [
 
 const GEMINI_MODAL = [
     { name: 'gemini-2.0-flash', type: 2 },
-    { name: 'gemini-2.5-flash-preview-04-17', type: 2 },
+    { name: 'gemini-2.5-flash-preview-05-20', type: 2 },
     { name: 'gemini-2.5-pro-preview-05-06', type: 2 },
 ]
 
@@ -82,7 +86,6 @@ const AI_MODAL_PROVIDER = {
     LLAMA4: 'LLAMA4',
     GROK: 'GROK',
     QWEN: 'QWEN',
-    OPEN_ROUTER: 'OPEN_ROUTER',
 }
 
 const OPENROUTER_PROVIDER = {
@@ -116,7 +119,7 @@ const MODAL_NAME = {
     GPT_4_1_MINI: 'gpt-4.1-mini',
     GPT_4_1_NANO: 'gpt-4.1-nano',
     O4_MINI: 'o4-mini',
-    GEMINI_2_5_FLASH_PREVIEW_04_17: 'gemini-2.5-flash-preview-04-17',
+    GEMINI_2_5_FLASH_PREVIEW_05_20: 'gemini-2.5-flash-preview-05-20',
     GEMINI_2_5_PRO_PREVIEW_05_06: 'gemini-2.5-pro-preview-05-06',
     O3: 'o3',
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
@@ -124,10 +127,12 @@ const MODAL_NAME = {
     GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
     CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
     CLAUDE_OPUS_4_20250514: 'claude-opus-4-20250514',
-    SONAR: 'sonar',
-    SONAR_REASONING_PRO: 'sonar-reasoning-pro',
+    GPT_5: 'gpt-5',
+    GPT_5_MINI: 'gpt-5-mini',
+    GPT_5_NANO: 'gpt-5-nano',
+    GPT_5_CHAT_LATEST: 'gpt-5-chat-latest',
 }
-
+const PINECONE_APIKEY_CODE = "PINECONE_APIKEY"
 module.exports = {
     OPENAI_MODAL,
     MESSAGE_TYPE,
@@ -144,4 +149,5 @@ module.exports = {
     LLAMA4_MODAL,
     GROK_MODAL,
     QWEN_MODAL,
+    PINECONE_APIKEY_CODE,
 }

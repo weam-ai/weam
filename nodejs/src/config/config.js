@@ -36,13 +36,13 @@ module.exports = {
         WEAM_HUGGING_FACE_KEY: process.env.HUGGING_FACE_AUTH_TOKEN,
         WEAM_GEMINI_KEY: process.env.WEAM_GEMINI_KEY,
         GEMINI_API_URL: process.env.GEMINI_API_URL,
-        PERPLEXITY_API_URL: process.env.PERPLEXITY_API_URL,
-        OPEN_ROUTER_API_URL: process.env.OPEN_ROUTER_API_URL,
         WEAM_PERPLEXITY_KEY: process.env.WEAM_PERPLEXITY_KEY,
         WEAM_DEEPSEEK_KEY: process.env.WEAM_DEEPSEEK_KEY,
         WEAM_LLAMA4_KEY: process.env.WEAM_LLAMA4_KEY,
         WEAM_GROK_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
-        WEAM_QWEN_KEY: process.env.WEAM_OPEN_ROUTER_KEY        
+        WEAM_QWEN_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
+        OPEN_ROUTER_API_URL: process.env.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1',
+        SEARXNG_API_URL: 'https://dev-searxng.weam.ai',
     },
     AUTH: {
         JWT_SECRET: process.env.JWT_SECRET,
@@ -87,10 +87,10 @@ module.exports = {
         PRIVATE_PORT: process.env.KAFKA_PRIVATE_PORT, 
         CLIENT_ID: process.env.KAFKA_CLIENT_ID,
     },
-    PINECORN: {
-        API_KEY: process.env.PINECORN_API_KEY || 'm3NwQE4/JIHLt7GZfQQSWEamMdA1JtSLvi41oG1fHsA6Qox26eVt76elBxrbd5c0'
+    PINECONE: {
+        API_KEY: process.env.PINECONE_API_KEY,
+        ENVIRONMENT: process.env.PINECONE_ENVIRONMENT || 'us-west-2'
     },
-
     API_RATE_LIMIT: parseInt(process.env.API_RATE_LIMIT),
     SEED: process.env.SEED ?? 0,
     TZ: process.env.TZ ?? 'Asia/Kolkata',
@@ -109,5 +109,19 @@ module.exports = {
         API_KEY: process.env.FRESHSALES_CRM_API_KEY,
         DOMAIN: process.env.FRESHSALES_CRM_DOMAIN_NAME
     },
-    DEFAULT_MSG_CREDIT: process.env.FREE_TIER_CREDIT || 100
+    QDRANT: {
+        HOST: process.env.QDRANT_HOST,
+        PORT: parseInt(process.env.QDRANT_PORT),
+        COLLECTION: process.env.QDRANT_COLLECTION || 'documents',
+    },
+    EMBEDDINGS: {
+        API_BASE: process.env.EMBEDDING_API_BASE || process.env.OPENAI_API_URL || 'http://localhost:11434',
+        API_KEY: process.env.EMBEDDING_API_KEY || process.env.WEAM_OPEN_AI_KEY || '',
+        MODEL: 'text-embedding-3-small',
+        VECTOR_SIZE: 1536,
+        MAX_TEXT_BYTES: 5 * 1024 * 1024,
+        CHUNK_SIZE_CHARS: 3000,
+        CHUNK_OVERLAP_CHARS: 60,
+        BATCH_SIZE: 32,
+    }
 };

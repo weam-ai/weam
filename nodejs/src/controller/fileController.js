@@ -41,13 +41,13 @@ const generatePresignedUrl = catchAsync(async (req, res) => {
     return util.successResponse(result, res);
 })
 
-const createFileRecord = catchAsync(async (req, res) => {
-    const result = await uploadService.createFileRecord(req);
-    if (result) {
-        res.message = _localize('file.record_created', req);
+const uploadFileViaStreams = catchAsync(async (req, res) => {
+    const result = await uploadService.uploadFileViaStreams(req);
+    if (result && result.length > 0) {
+        res.message = _localize('file.upload', req);
         return util.successResponse(result, res);
     }
-    return util.failureResponse(_localize('file.record_creation_failed', req), res);
+    return util.failureResponse(_localize('file.not_uploaded', req), res);
 })
 
 module.exports = {
@@ -56,5 +56,5 @@ module.exports = {
     allMediaUploadToBucket,
     deleteS3Media,
     generatePresignedUrl,
-    createFileRecord
+    uploadFileViaStreams
 }

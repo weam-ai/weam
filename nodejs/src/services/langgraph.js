@@ -1,0 +1,1545 @@
+const { ChatOpenAI } = require('@langchain/openai');
+const { StateGraph, END } = require('@langchain/langgraph');
+const { ToolMessage, HumanMessage, SystemMessage } = require('@langchain/core/messages');
+const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription } = require('../config/constants/llm');
+const { SOCKET_EVENTS } = require('../config/constants/socket');
+const { decryptedData } = require('../utils/helper');
+const { LINK } = require('../config/config');
+const { AI_MODAL_PROVIDER, MODAL_NAME } = require('../config/constants/aimodal');
+const { ChatAnthropic } = require('@langchain/anthropic');
+const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
+const { SearxNGSearchTool } = require('./searchTool');
+const { createLLMConversation } = require('./thread');
+const { getConversationHistory } = require('./memoryService');
+// Commented out qdrant imports - using pinecone instead
+// const { getFilesListFromCollection, searchWithinFileByName, searchWithinFileByFileId } = require('./qdrant');
+const { getFilesListFromIndex, searchWithinFileByName, searchWithinFileByFileId } = require('./pinecone');
+const CustomGpt = require('../models/customgpt');
+const ChatDocs = require('../models/chatdocs');
+const { createCostCallback } = require('./callbacks/contextManager');
+const logger = require('../utils/logger');
+const { deductUserMsgCredit } = require('./user');
+const Chat = require('../models/chat');
+const ChatMember = require('../models/chatmember');
+
+const webSearchTool = new SearxNGSearchTool({
+    searxUrl: LINK.SEARXNG_API_URL,
+    maxResults: 10,
+});
+
+// set web search tool description
+webSearchTool.description = toolDescription.WEB_SEARCH_TOOL;
+// Import the custom DALL-E tool
+const { createDallEImageTool } = require('./imageTool');
+
+// Create the DALL-E image generation tool with default API key
+const imageGenerationTool = createDallEImageTool(LINK.WEAM_OPEN_AI_KEY);
+
+// Vision support configuration
+const MODEL_CONFIGS = {
+    [AI_MODAL_PROVIDER.OPEN_AI]: {
+        supportsVision: true,
+        imageFormats: ['url'],
+        formatImage: (imageUrl) => ({
+            type: 'image_url',
+            image_url: {
+                url: imageUrl
+            }
+        })
+    },
+    [AI_MODAL_PROVIDER.ANTHROPIC]: {
+        supportsVision: true,
+        imageFormats: ['base64'],
+        formatImage: async (imageUrl) => {
+            const { base64, mimeType } = await convertImageToBase64(imageUrl);
+            return {
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: mimeType,
+                    data: base64
+                }
+            };
+        }
+    },
+    [AI_MODAL_PROVIDER.GEMINI]: {
+        supportsVision: true,
+        imageFormats: ['base64'],
+        formatImage: async (imageUrl) => {
+            const { base64, mimeType } = await convertImageToBase64(imageUrl);
+            return {
+                type: 'image_url',
+                image_url: {
+                    url: `data:${mimeType};base64,${base64}`
+                }
+            };
+        }
+    },
+    [AI_MODAL_PROVIDER.DEEPSEEK]: {
+        supportsVision: false,
+        imageFormats: []
+    },
+    [AI_MODAL_PROVIDER.LLAMA4]: {
+        supportsVision: true,
+        imageFormats: ['url'],
+        formatImage: (imageUrl) => ({
+            type: 'image_url',
+            image_url: {
+                url: imageUrl
+            }
+        })
+    },
+     [AI_MODAL_PROVIDER.GROK]: {
+        supportsVision: false,
+        imageFormats: []
+    },
+    [AI_MODAL_PROVIDER.QWEN]: {
+        supportsVision: false,
+        imageFormats: []
+    }
+};
+
+// Helper function to convert image URL to base64 (for Anthropic)
+async function convertImageToBase64(imageUrl) {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const mimeType = response.headers.get('content-type') || 'image/jpeg';
+        return {
+            base64,
+            mimeType
+        };
+    } catch (error) {
+        logger.error('Error converting image to base64:', error);
+        throw new Error(`Failed to convert image to base64: ${error.message}`);
+    }
+}
+
+// Helper function to format images based on model type
+async function formatImagesForModel(imageUrls, provider) {
+    if (!imageUrls || imageUrls.length === 0) return [];
+    
+    const config = MODEL_CONFIGS[provider];
+    if (!config || !config.supportsVision || !config.formatImage) {
+        logger.warn(`Model provider ${provider} does not support vision`);
+        return [];
+    }
+    
+    const formattedImages = [];
+    
+    for (const imageUrl of imageUrls) {
+        try {
+            const formattedImage = await config.formatImage(imageUrl);
+            formattedImages.push(formattedImage);
+        } catch (error) {
+            logger.error(`Error formatting image ${imageUrl}:`, error);
+            // Continue with other images even if one fails
+        }
+    }
+    
+    return formattedImages;
+}
+
+// Helper function to check if vision is enabled
+function shouldEnableVision(data) {
+    return data.imageUrls && Array.isArray(data.imageUrls) && data.imageUrls.length > 0;
+}
+
+// Helper function to create vision message
+async function createVisionMessage(query, imageUrls, provider) {
+    if (!shouldEnableVision({ imageUrls })) {
+        return [['user', query]];
+    }
+    
+    try {
+        const formattedImages = await formatImagesForModel(imageUrls, provider);
+        
+        if (formattedImages.length === 0) {
+            logger.warn('No images could be formatted for vision, falling back to text-only');
+            return [['user', query]];
+        }
+        
+        // Create HumanMessage with text and images
+        const content = [
+            { type: 'text', text: query },
+            ...formattedImages
+        ];
+        
+        return [new HumanMessage({ content })];
+    } catch (error) {
+        logger.error('Error creating vision message:', error);
+        // Fallback to text-only message
+        return [['user', query]];
+    }
+}
+
+const graphState = {
+    messages: {
+        value: (x, y) => x.concat(y),
+        default: () => [],
+    },
+}
+
+// Enhanced tool executor map with agent-specific tools
+function getToolExecutorMap(agentDetails = null) {
+    const baseTools = {
+        [webSearchTool.name]: webSearchTool,
+        [imageGenerationTool.name]: imageGenerationTool,
+    };
+    
+    // Add agent-specific tools if available
+    if (agentDetails && agentDetails.tools && Array.isArray(agentDetails.tools)) {
+        agentDetails.tools.forEach(tool => {
+            if (tool.name && tool.executor) {
+                baseTools[tool.name] = tool.executor;
+            }
+        });
+    }
+    
+    return baseTools;
+}
+
+async function callModel(state, model, data, agentDetails = null) {
+    const { messages } = state;
+    const lastMessageIndex = messages[messages.length - 1];
+    let context = [];
+    
+    // Determine if we're using Gemini provider
+    const isGeminiProvider = data.llmProvider === 'GEMINI' || (data.model && data.model.toLowerCase().includes('gemini'));
+    
+    if (Array.isArray(lastMessageIndex)) {
+        // Use our new conversation history function (matches Python flow)
+        const conversationHistory = await getConversationHistory(data.chatId);
+        
+        // Start with conversation history
+        context = [...conversationHistory];
+        
+        // For Gemini: collect all system messages and consolidate them
+        let consolidatedSystemContent = '';
+        
+        if (isGeminiProvider) {
+            // Extract all system messages and remove them from context
+            const systemMessages = context.filter(msg => msg.constructor.name === 'SystemMessage' || msg.type === 'system');
+            context = context.filter(msg => msg.constructor.name !== 'SystemMessage' && msg.type !== 'system');
+            
+            // Consolidate system message content
+            if (systemMessages.length > 0) {
+                consolidatedSystemContent = systemMessages.map(msg => msg.content).join('\n\n');
+            }
+        }
+        
+        // Add agent's system message if available (this will override or supplement the DB system message)
+        if (agentDetails) {
+            let agentSystemContent = `${agentDetails.systemPrompt}\n\nGoals:\n${agentDetails.goals.join('\n')}\n\nInstructions:\n${agentDetails.instructions.join('\n')}`;
+            
+            // If RAG context is available, add it to the system message (like Python implementation)
+            if (global.currentRagContext) {
+                agentSystemContent += `\n\n----\nContext from uploaded documents:\n${global.currentRagContext}\n----\n\nUse the above document context when relevant to answer the user's question.`;
+            }
+            
+            if (isGeminiProvider) {
+                // For Gemini: consolidate with existing system content
+                if (consolidatedSystemContent) {
+                    consolidatedSystemContent = agentSystemContent + '\n\n' + consolidatedSystemContent;
+                } else {
+                    consolidatedSystemContent = agentSystemContent;
+                }
+            } else {
+                // For other providers: use the original logic
+                const agentSystemMessage = new SystemMessage({
+                    content: agentSystemContent
+                });
+                
+                // Replace the first system message or add at the beginning
+                if (context.length > 0 && (context[0].constructor.name === 'SystemMessage' || context[0].type === 'system')) {
+                    context[0] = agentSystemMessage;
+                } else {
+                    context.unshift(agentSystemMessage);
+                }
+            }
+        } else if (isGeminiProvider && !consolidatedSystemContent) {
+            // For Gemini without agent: still need to consolidate any existing system messages
+            const systemMessages = context.filter(msg => msg.constructor.name === 'SystemMessage' || msg.type === 'system');
+            if (systemMessages.length > 0) {
+                context = context.filter(msg => msg.constructor.name !== 'SystemMessage' && msg.type !== 'system');
+                consolidatedSystemContent = systemMessages.map(msg => msg.content).join('\n\n');
+            }
+        }
+        
+        // For Gemini: insert the consolidated system message at position 0
+        if (isGeminiProvider && consolidatedSystemContent) {
+            const finalSystemMessage = new SystemMessage({
+                content: consolidatedSystemContent
+            });
+            context.unshift(finalSystemMessage);
+        }
+        
+        // Add current messages (the new user query)
+        const currentMessages = messages.map(msg => 
+            Array.isArray(msg) ? new HumanMessage(msg[1]) : msg
+        );
+        context.push(...currentMessages);
+        
+        
+    } else {
+        // Fallback for non-array messages
+        context = messages;
+    }
+    
+    // Log the context being sent to LLM for debugging
+    context.forEach((msg, idx) => {
+        let content = '';
+        try {
+            if (typeof msg.content === 'string') {
+                content = msg.content.substring(0, 100);
+            } else if (Array.isArray(msg.content)) {
+                // For vision messages with image arrays
+                content = `[Array with ${msg.content.length} items]`;
+            } else if (typeof msg.content === 'object') {
+                content = `[Object: ${JSON.stringify(msg.content).substring(0, 50)}...]`;
+            } else {
+                content = String(msg.content || '').substring(0, 100);
+            }
+        } catch (error) {
+            content = '[Content parsing error]';
+        }
+    });
+    
+    const response = await model.invoke(context);
+    
+    // Safe logging for response content
+    let responsePreview = '';
+    try {
+        if (typeof response.content === 'string') {
+            responsePreview = response.content.substring(0, 100);
+        } else if (Array.isArray(response.content)) {
+            responsePreview = `[Array with ${response.content.length} items]`;
+        } else {
+            responsePreview = String(response.content || '').substring(0, 100);
+        }
+    } catch (error) {
+        responsePreview = '[Response content parsing error]';
+    }
+    
+    return { messages: [response] };
+}
+
+async function callTool(state, agentDetails = null) {
+    const { messages } = state;
+    const lastMessage = messages[messages.length - 1];
+
+    if (!lastMessage.tool_calls || lastMessage.tool_calls.length === 0) {
+        return {};
+    }
+
+    const toolExecutorMap = getToolExecutorMap(agentDetails);
+    const toolInvocations = [];
+    
+    for (const toolCall of lastMessage.tool_calls) {
+        const toolExecutor = toolExecutorMap[toolCall.name];
+        if (toolExecutor) {
+            try {
+                // For image generation tool, pass the API key from the query data
+                let toolArgs = toolCall.args;
+                if (toolCall.name === 'dalle_api_wrapper' && global.currentQueryData && global.currentQueryData.apiKey) {
+                    const decryptedApiKey = decryptedData(global.currentQueryData.apiKey);
+                    toolArgs = { ...toolCall.args, apiKey: decryptedApiKey };
+                }
+                
+                // Debug: Log tool call details for DALL-E tool (keeping for now)
+                
+                const toolOutput = await toolExecutor.invoke(toolArgs);
+                
+                // Ensure tool output is properly formatted for LangChain
+                let formattedOutput;
+                if (typeof toolOutput === 'string') {
+                    // If output is a string (like our DALL-E tool), format it properly
+                    formattedOutput = toolOutput;
+                } else if (toolOutput && typeof toolOutput === 'object') {
+                    // If output is an object, extract the content
+                    formattedOutput = toolOutput.content || toolOutput.text || JSON.stringify(toolOutput);
+                } else {
+                    // Fallback for other types
+                    formattedOutput = String(toolOutput);
+                }
+                
+                toolInvocations.push(
+                    new ToolMessage({
+                        content: formattedOutput,
+                        tool_call_id: toolCall.id,
+                    }),
+                );
+            } catch (error) {
+                logger.error(`Error executing tool ${toolCall.name}:`, error);
+                
+                // Add error message to tool invocations
+                toolInvocations.push(
+                    new ToolMessage({
+                        content: `Error executing tool ${toolCall.name}: ${error.message}`,
+                        tool_call_id: toolCall.id,
+                    }),
+                );
+            }
+        }
+    }
+
+    return { messages: toolInvocations };
+}
+
+function shouldContinue(state) {
+    const { messages } = state
+    const lastMessage = messages[messages.length - 1]
+
+    if (!lastMessage.tool_calls || lastMessage.tool_calls.length === 0) {
+        return 'end'
+    }
+    return 'tools'
+}
+
+async function chatOpenRouterWithCallback(modelName, opts = {}, costCallback = null) {
+    const baseURL = LINK.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1';
+    
+    return new ChatOpenAI({
+        model: modelName,
+        temperature: opts.temperature ?? 1,
+        streaming: opts.streaming ?? true,
+        apiKey: opts.apiKey,
+        configuration: {
+            baseURL: baseURL,
+            defaultHeaders: {
+                'HTTP-Referer': 'https://weam.ai',
+                'X-Title': 'Weam AI'
+            }
+        },
+        ...(costCallback && { callbacks: [costCallback] })
+    });
+}
+
+async function toolChatOpenRouterWithCallback(modelName, opts = {}, costCallback = null) {
+    const baseURL = LINK.OPEN_ROUTER_API_URL;
+    return new ChatOpenAI({
+        model: modelName,
+        temperature: opts.temperature ?? 1,
+        streaming: opts.streaming ?? true,
+        apiKey: opts.apiKey,
+        configuration: {
+            baseURL: baseURL,
+            defaultHeaders: {
+                'HTTP-Referer': 'https://weam.ai',
+                'X-Title': 'Weam AI'
+            }
+        },
+        ...(costCallback && { callbacks: [costCallback] })
+    }).bindTools([webSearchTool]);
+}
+
+async function llmFactory(modelName, opts = {}) {
+    
+    // Validate API key
+    if (!opts.apiKey) {
+        throw new Error('API key is required but not provided');
+    }
+    
+    // Ensure we have a valid provider, default to OPEN_AI if none specified
+    let provider = opts.llmProvider;
+    if (!provider || !Object.values(AI_MODAL_PROVIDER).includes(provider)) {
+        provider = AI_MODAL_PROVIDER.OPEN_AI;
+    }
+    
+    // Create cost callback if threadId is provided
+    let costCallback = null;
+    if (opts.threadId) {
+        try {
+            costCallback = await createCostCallback(modelName, {
+                threadId: opts.threadId,
+                collectionName: opts.collectionName || 'messages',
+                encryptedKey: opts.encryptedKey,
+                companyRedisId: opts.companyRedisId,
+                additionalData: opts.additionalData || {}
+            });
+        } catch (error) {
+            logger.error('Failed to create cost callback:', error);
+            // Continue without callback rather than failing
+        }
+    } else {
+    }
+    
+    // Base configuration for all LLMs
+    const baseConfig = {
+        model: modelName,
+        temperature: opts.temperature ?? 1,
+        streaming: opts.streaming ?? true,
+        ...(costCallback && { callbacks: [costCallback] })
+    };
+    
+    
+    const llmConfig = {
+        [AI_MODAL_PROVIDER.OPEN_AI]: (() => {
+            const openAIModel = new ChatOpenAI({
+                ...baseConfig,
+                openAIApiKey: opts.apiKey,
+                configuration: {
+                    apiKey: opts.apiKey
+                }
+            });
+            
+            // chatgpt-4o-latest doesn't support tools, so don't bind them
+            if (modelName.toLowerCase().includes('chatgpt-4o-latest')) {
+                return openAIModel;
+            }
+            
+            return openAIModel.bindTools([webSearchTool, imageGenerationTool]);
+        })(),
+        [AI_MODAL_PROVIDER.ANTHROPIC]: new ChatAnthropic({
+            ...baseConfig,
+            anthropicApiKey: opts.apiKey,
+        }).bindTools([webSearchTool]),
+        [AI_MODAL_PROVIDER.GEMINI]: (() => {
+            try {
+                const geminiLLM = new ChatGoogleGenerativeAI({
+                    ...baseConfig,
+                    apiKey: opts.apiKey,
+                    model: modelName, // Explicitly set the model name
+                }).bindTools([webSearchTool]);
+                return geminiLLM;
+            } catch (error) {
+                logger.error(`❌ [GEMINI] Failed to create ChatGoogleGenerativeAI:`, error);
+                throw error;
+            }
+        })(),
+        [AI_MODAL_PROVIDER.DEEPSEEK]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.LLAMA4]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.GROK]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.QWEN]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+    }
+    
+    
+    const selectedLLM = llmConfig[provider];
+    if (!selectedLLM) {
+        logger.error(`❌ [LLM_FACTORY] No LLM configuration found for provider: ${provider}`);
+        logger.error('Available providers:', Object.keys(llmConfig));
+        logger.error('Using fallback to OpenAI');
+        return llmConfig[AI_MODAL_PROVIDER.OPEN_AI];
+    }
+    
+    
+    // Store callback reference on LLM for later access if needed
+    if (costCallback) {
+        selectedLLM._costCallback = costCallback;
+    }
+    
+    return selectedLLM;
+}
+
+function buildGraph(model, data, agentDetails = null) {
+    const workflow = new StateGraph({ channels: graphState });
+    
+    // Use agent-specific tool executor if available
+    const toolExecutor = (state) => callTool(state, agentDetails);
+    
+    // Pass agentDetails to callModel
+    workflow.addNode('agent', state => callModel(state, model, data, agentDetails));
+    workflow.addNode('tools', toolExecutor);
+    workflow.setEntryPoint('agent');
+    workflow.addConditionalEdges('agent', shouldContinue, {
+        tools: 'tools',
+        end: END,
+    });
+    workflow.addEdge('tools', 'agent');
+    const app = workflow.compile();
+    return app;
+}
+
+function pickContent(result) {
+    // Handle Pinecone result structure
+    if (result.metadata?.text) {
+        return result.metadata.text;
+    }
+    
+    // Handle legacy payload structure
+    if (result.payload) {
+        return result.payload?.content ?? result.payload?.text ?? result.payload?.page_content ?? result.payload?.chunk ?? '';
+    }
+    
+    // Handle direct content
+    return result?.content ?? result?.text ?? result?.page_content ?? result?.chunk ?? '';
+}
+
+// Helper function to build RAG context from search results
+function buildRagContext(searchResults, query) {
+    if (!searchResults || searchResults.length === 0) {
+        return '\n\nNote: No specific relevant documents found for this query, but RAG context is available.\n';
+    }
+    
+    let enhancedContext = '\n\n📄 RELEVANT DOCUMENT CONTENT:\n\n';
+    let totalContentLength = 0;
+    const maxContentLength = 3000; // Increased limit for better context
+    
+    searchResults.forEach((result, index) => {
+        const content = pickContent(result);
+        if (content && totalContentLength < maxContentLength) {
+            const remainingLength = maxContentLength - totalContentLength;
+            const truncatedContent = content.length > remainingLength ? 
+                content.substring(0, remainingLength) + '...' : content;
+            
+            const filename = result.metadata?.filename || result.sourceFile || 'unknown';
+            enhancedContext += `--- Document ${index + 1} (${filename}) ---\n`;
+            enhancedContext += truncatedContent;
+            enhancedContext += '\n\n';
+            
+            totalContentLength += truncatedContent.length;
+        }
+    });
+    
+    enhancedContext += 'Please use the above document content to answer the user\'s question. The content is from uploaded files and should be used as the primary source for your response.\n';
+    return enhancedContext;
+}
+
+// Helper function to check if RAG should be enabled
+function shouldEnableRag(data, agentDetails = null) {
+    // Disable RAG when images are present to avoid conflicts with vision
+    if (data.imageUrls && Array.isArray(data.imageUrls) && data.imageUrls.length > 0) {
+        return false;
+    }
+    
+    // Check for regular uploaded documents
+    const hasUploadedDocuments = Array.isArray(data.cloneMedia) && data.cloneMedia?.some((file) => file?.isDocument);
+    
+    // Check for agent documents (files with isCustomGpt or when agent has documents)
+    const hasAgentDocuments = Array.isArray(data.cloneMedia) && data.cloneMedia?.some((file) => file?.isCustomGpt);
+    
+    // If agent is selected and has documents configured, enable RAG
+    const agentHasDocuments = agentDetails && (
+        (agentDetails.doc && agentDetails.doc.length > 0)
+    );
+    
+    return hasUploadedDocuments || hasAgentDocuments || agentHasDocuments;
+}
+
+// Helper function to check if agent flow should be enabled
+function shouldEnableAgent(data) {
+    // Check if customGptId is provided (main way to detect agent)
+    if (data.customGptId) {
+        return true;
+    }
+    
+    // Also check cloneMedia for backward compatibility
+    const hasAgent = Array.isArray(data.cloneMedia) && data.cloneMedia?.some((file) => file?.isCustomGpt);
+    return hasAgent;
+}
+
+// Helper function to validate pinecone index and files
+async function validatePineconeIndex(uploadedFiles, companyId) {
+    try {
+        // Check if pinecone index exists and has files
+        const pineconeFiles = await getFilesListFromIndex(companyId);
+        
+        if (!pineconeFiles || pineconeFiles.length === 0) {
+            throw new Error('Pinecone index is empty or not accessible');
+        }
+        
+        // Check if any of the uploaded files exist in pinecone index
+        // First try to match by fileId, then fall back to filename for backward compatibility
+        const availableFileIds = pineconeFiles.map(f => f.fileId).filter(id => id); // Filter out undefined fileIds
+        const availableFilenames = pineconeFiles.map(f => f.filename); // Get all filenames for fallback
+        
+        const uploadedFileIds = uploadedFiles.map(f => f._id?.toString()).filter(id => id); // Get MongoDB ObjectIds as strings
+        const uploadedFilenames = uploadedFiles.map(f => f.name || f.filename).filter(name => name); // Get filenames for fallback
+        
+        // First try to match by fileId
+        let matchingFileIds = uploadedFileIds.filter(uploadedId => 
+            availableFileIds.some(availableId => availableId === uploadedId)
+        );
+        
+        // If no matches by fileId, fall back to filename matching for backward compatibility
+        if (matchingFileIds.length === 0) {
+            const matchingFilenames = uploadedFilenames.filter(uploadedName => 
+                availableFilenames.some(availableName => 
+                    availableName === uploadedName || 
+                    availableName.includes(uploadedName) || 
+                    uploadedName.includes(availableName)
+                )
+            );
+            
+            if (matchingFilenames.length > 0) {
+                return true;
+            }
+        } else {
+            return true;
+        }
+        
+        if (matchingFileIds.length === 0) {
+            throw new Error('None of the uploaded files match files in pinecone index (by fileId or filename)');
+        }
+        
+        return true;
+        
+    } catch (error) {
+        logger.error('Pinecone index validation failed:', error.message);
+        return false;
+    }
+}
+
+// Helper function to map uploaded files to pinecone index files
+async function mapFilesToPineconeIndex(uploadedFiles, companyId) {
+    try {
+        // First validate the pinecone index
+        const isValid = await validatePineconeIndex(uploadedFiles, companyId);
+        if (!isValid) {
+            throw new Error('Pinecone index validation failed');
+        }
+        
+        // Get all files from pinecone index
+        const pineconeFiles = await getFilesListFromIndex(companyId);
+        
+        // Map uploaded files to pinecone files
+        const mappedFiles = [];
+        
+        for (const uploadedFile of uploadedFiles) {
+            const uploadedFileId = uploadedFile._id?.toString();
+            const uploadedFileName = uploadedFile.name || uploadedFile.filename;
+            
+            if (!uploadedFileName) {
+                continue;
+            }
+            
+            // First try to find matching file in pinecone index by fileId
+            let matchingPineconeFile = null;
+            
+            if (uploadedFileId) {
+                matchingPineconeFile = pineconeFiles.find(pf => 
+                    pf.fileId === uploadedFileId
+                );
+            }
+            
+            // If no match by fileId, fall back to filename matching for backward compatibility
+            if (!matchingPineconeFile) {
+                matchingPineconeFile = pineconeFiles.find(pf => 
+                    pf.filename === uploadedFileName || 
+                    pf.filename.includes(uploadedFileName) || 
+                    uploadedFileName.includes(pf.filename)
+                );
+            }
+            
+            if (matchingPineconeFile) {
+                mappedFiles.push({
+                    ...uploadedFile,
+                    pineconeFilename: matchingPineconeFile.filename,
+                    pineconeFileId: matchingPineconeFile.fileId || null, // Can be null for old files
+                    pineconeCount: matchingPineconeFile.count,
+                    matchType: matchingPineconeFile.fileId ? 'fileId' : 'filename' // Track how we matched
+                });
+            }
+        }
+        
+        if (mappedFiles.length === 0) {
+            throw new Error('No files could be mapped to pinecone index');
+        }
+        
+        return mappedFiles;
+        
+    } catch (error) {
+        logger.error('Error mapping files to pinecone index:', error);
+        throw error; // Re-throw to handle in the calling function
+    }
+}
+
+// Helper function to perform vector search within specific files
+async function searchWithinFiles(query, mappedFiles, companyId, options = {}) {
+    const { limit = 5, scoreThreshold = 0.15 } = options;  // Updated default to match Pinecone threshold
+    const allResults = [];
+    
+    try {
+        for (const mappedFile of mappedFiles) {
+            let fileResults = null;
+            
+            // Try to search by fileId first (for new files)
+            if (mappedFile.pineconeFileId) {
+                
+                fileResults = await searchWithinFileByFileId(
+                    companyId,
+                    mappedFile.pineconeFileId, 
+                    query, 
+                    Math.ceil(limit / mappedFiles.length)
+                );
+            }
+            
+            // If no results by fileId or fileId is null, fall back to filename search (for old files)
+            if (!fileResults || fileResults.length === 0) {
+                if (mappedFile.pineconeFilename) {
+                    
+                    fileResults = await searchWithinFileByName(
+                        companyId,
+                        mappedFile.pineconeFilename, 
+                        query, 
+                        Math.ceil(limit / mappedFiles.length)
+                    );
+                }
+            }
+            
+            if (fileResults && fileResults.length > 0) {
+                // Filter by score threshold and add file context
+                const filteredResults = fileResults
+                    .filter(result => result.score >= scoreThreshold)
+                    .map(result => ({
+                        ...result,
+                        sourceFile: mappedFile.filename || mappedFile.name,
+                        sourceFileId: mappedFile.pineconeFileId,
+                        pineconeFilename: mappedFile.pineconeFilename,
+                        matchType: mappedFile.matchType || 'unknown'
+                    }));
+                
+                allResults.push(...filteredResults);
+            }
+        }
+        
+        // Sort by score and limit results
+        const sortedResults = allResults
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit);
+        
+        return sortedResults;
+        
+    } catch (error) {
+        logger.error('Error searching within files:', error);
+        return [];
+    }
+}
+
+// Helper function to build agent context from system prompt, goals, and instructions
+function buildAgentContext(agent) {
+    let agentContext = '\n\nAgent Configuration:\n';
+    
+    if (agent.systemPrompt) {
+        agentContext += `\nSystem Prompt: ${agent.systemPrompt}\n`;
+    }
+    
+    if (agent.goals && Array.isArray(agent.goals) && agent.goals.length > 0) {
+        agentContext += `\nGoals:\n`;
+        agent.goals.forEach((goal, index) => {
+            agentContext += `${index + 1}. ${goal}\n`;
+        });
+    }
+    
+    if (agent.instructions && Array.isArray(agent.instructions) && agent.instructions.length > 0) {
+        agentContext += `\nInstructions:\n`;
+        agent.instructions.forEach((instruction, index) => {
+            agentContext += `${index + 1}. ${instruction}\n`;
+        });
+    }
+    
+    agentContext += '\nPlease follow these agent configurations in your response.\n';
+    return agentContext;
+}
+
+// Helper function to fetch agent details
+async function fetchAgentDetails(agentId) {
+    try {
+        const agent = await CustomGpt.findById(agentId).lean();
+        if (!agent) {
+            throw new Error('Agent not found');
+        }
+        return agent;
+    } catch (error) {
+        logger.error('Error fetching agent details:', error);
+        return null;
+    }
+}
+
+async function streamAndLog(app, data, socket, threadId = null) {
+    let proccedMsg = '';
+    let costCallback = null;
+    
+    try {
+        // Extract cost callback from the model if available
+        if (app?.llm?._costCallback) {
+            costCallback = app.llm._costCallback;
+        }
+    } catch (error) {
+        logger.error('Error extracting cost callback:', error);
+    }
+    
+    // Set global query data for tool execution (including API key)
+    global.currentQueryData = data;
+    
+    // Check flow type and build appropriate context
+    let inputs;
+    let isRagEnabled = false;
+    let isAgentEnabled = false;
+    let agentDetails = null;
+    
+    // Check if agent flow should be enabled
+    if (shouldEnableAgent(data)) {
+        try {
+            
+            // Fetch agent details using customGptId
+            agentDetails = await fetchAgentDetails(data.customGptId);
+            if (agentDetails) {
+                isAgentEnabled = true;
+                
+                // Notify frontend that agent is being used
+                socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                    event: llmStreamingEvents.AGENT_ENABLED,
+                    chunk: `Agent activated`
+                });
+            }
+        } catch (error) {
+            logger.error('Agent flow failed:', error);
+        }
+    }
+    
+    // Check if RAG should be enabled (for both normal and agent flows)
+    // Skip RAG entirely if images are present to avoid conflicts with vision
+    if (shouldEnableRag(data, agentDetails)) {
+        try {
+            
+            // Notify frontend that RAG is being used
+            // socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+            //     event: llmStreamingEvents.RAG_ENABLED,
+            //     chunk: `RAG enabled: Searching through ${data.cloneMedia.length} uploaded documents...`
+            // });
+            
+            // Map uploaded files to pinecone index files
+            const companyId = data.companyId || data.user?.company?.id;
+            if (!companyId) {
+                throw new Error('Company ID is required for pinecone search');
+            }
+            
+            // Use the brainId + filename approach for search
+            const { searchAcrossNamespaces, getIndexList } = require('./pinecone');
+            
+            // Get unique tags and namespaces from uploaded files and agent documents
+            const tagList = [];
+            const namespaceList = [];
+            const seenTags = new Set();
+            
+            // Combine cloneMedia files with agent documents
+            let allFiles = [...(data.cloneMedia || [])];
+            
+            // Add agent's pre-configured documents if agent is enabled
+            if (isAgentEnabled && agentDetails) {
+                if (agentDetails.doc && Array.isArray(agentDetails.doc)) {
+                    agentDetails.doc.forEach(agentFile => {
+                        // Convert agent file format to match cloneMedia structure
+                        allFiles.push({
+                            name: agentFile.name,
+                            filename: agentFile.name,
+                            uri: agentFile.uri,
+                            isCustomGpt: true,
+                            isDocument: true, // Mark as document for RAG processing
+                            brainId: agentDetails.brain?.id || data.brainId,
+                            _id: agentFile._id
+                        });
+                    });
+                }
+            }
+            
+            
+            for (const file of allFiles) {
+                // Debug: Log the file object structure
+                
+                // Extract filename from URI (priority method)
+                // URI format: /documents/676ac4b5103171b59d6daf41.pdf
+                let filename = null;
+                
+                // Method 1: Use URI parsing (primary method - matches upload process)
+                if (file.uri) {
+                    filename = file.uri.split('/')[2]; // Extract: 676ac4b5103171b59d6daf41.pdf
+                }
+                // Method 2: Use file._id as fallback
+                else if (file._id) {
+                    const extension = file.name?.split('.').pop() || file.filename?.split('.').pop() || 'pdf';
+                    filename = `${file._id.toString()}.${extension}`;
+                }
+                // Method 3: Use file.id as fallback  
+                else if (file.id) {
+                    const extension = file.name?.split('.').pop() || file.filename?.split('.').pop() || 'pdf';
+                    filename = `${file.id.toString()}.${extension}`;
+                }
+                // Method 4: Use name/filename fields as final fallback
+                else if (file.name) {
+                    filename = file.name;
+                }
+                else if (file.filename) {
+                    filename = file.filename;
+                }
+                
+                if (filename) {
+                    // Try multiple ways to get the brain ID
+                    let fileBrainId = null;
+                    
+                    // Method 1: Use file.brainId if available (most reliable)
+                    if (file.brainId) {
+                        fileBrainId = file.brainId.toString();
+                    }
+                    // Method 2: Use file.brain.id if available
+                    else if (file.brain?.id) {
+                        fileBrainId = file.brain.id.toString();
+                    }
+                    // Method 3: Use file.brain._id if available
+                    else if (file.brain?._id) {
+                        fileBrainId = file.brain._id.toString();
+                    }
+                    // Method 4: Try to lookup brain ID from database using file ID
+                    else if (file._id || file.id) {
+                        try {
+                            const fileId = file._id || file.id;
+                            const chatDoc = await ChatDocs.findOne({ fileId: fileId }).select('brainId');
+                            if (chatDoc && chatDoc.brainId) {
+                                fileBrainId = chatDoc.brainId.toString();
+                            } else {
+                                fileBrainId = data.brainId;
+                                logger.warn(`🧠 Database lookup failed, using current brain: ${fileBrainId} for file: ${fileId}`);
+                            }
+                        } catch (error) {
+                            logger.error(`🧠 Error looking up brain ID: ${error.message}`);
+                            fileBrainId = data.brainId;
+                            logger.warn(`🧠 Database error, using current brain: ${fileBrainId}`);
+                        }
+                    }
+                    // Method 5: Final fallback to current brain ID
+                    else {
+                        fileBrainId = data.brainId;
+                        logger.warn(`🧠 No file brain ID found, using current brain: ${fileBrainId}`);
+                    }
+                    
+                    const searchKey = `${filename}_${fileBrainId}`; // Create unique key to prevent duplicates across brains
+                    if (!seenTags.has(searchKey)) {
+                        seenTags.add(searchKey);
+                        tagList.push(filename);           // Tag = filename
+                        namespaceList.push(fileBrainId); // Namespace = file's brain ID
+                    }
+                } else {
+                    logger.warn(`❌ Could not extract filename from file object:`, file);
+                }
+            }
+            
+            // Search across all relevant namespaces
+            const searchResults = await searchAcrossNamespaces(
+                companyId, 
+                data.query, 
+                18, // topK
+                tagList,
+                namespaceList
+            );
+            
+            // Build enhanced context from search results
+            let enhancedContext = '';
+            let ragContext = '';
+            
+            // Notify frontend about found documents
+            if (searchResults && searchResults.length > 0) {
+                // socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                //     event: llmStreamingEvents.RAG_ENABLED,
+                //     chunk: `Found ${searchResults.length} relevant document sections`
+                // });
+
+                // Build RAG context from search results
+                const relevantTexts = searchResults.map(result => {
+                    const text = result.metadata?.text || '';
+                    const filename = result.metadata?.filename || 'unknown';
+                    return `[From ${filename}]: ${text}`;
+                }).filter(text => text.length > 0);
+                
+                ragContext = relevantTexts.join('\n\n');
+                
+                // Create a clear, structured context for the LLM
+                enhancedContext = `\n\n📄 RELEVANT DOCUMENT CONTENT:\n\n${ragContext}\n\nPlease use the above document content to answer the user's question. The content is from uploaded files and should be used as the primary source for your response.\n`;
+                
+            } else {
+                // socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                //     event: llmStreamingEvents.RAG_ENABLED,
+                //     chunk: `No specific relevant content found, but RAG context is available`
+                // });
+                
+                enhancedContext = `\n\nNote: No specific relevant documents found for this query, but RAG context is available.\n`;
+            }
+            
+            // Store RAG context globally for system message injection (when agent is enabled)
+            let enhancedQuery;
+            
+            if (isAgentEnabled && agentDetails) {
+                // Store only the raw context for system message injection
+                global.currentRagContext = ragContext;
+                
+                // For agent flow, don't append context to query - it will be added to system message
+                enhancedQuery = data.query;
+                
+                // Handle vision support for agent + RAG flow
+                if (shouldEnableVision(data)) {
+                    const mappedProvider = mapProviderCode(data.code);
+                    inputs = { messages: await createVisionMessage(enhancedQuery, data.imageUrls, mappedProvider) };
+                } else {
+                    inputs = { messages: [['user', enhancedQuery]] };
+                }
+            } else {
+                // For non-agent flow, append context to query (existing behavior)
+                enhancedQuery = data.query + enhancedContext;
+                
+                // Debug: Log the enhanced query being sent to LLM
+                
+                // Handle vision support for RAG flow
+                if (shouldEnableVision(data)) {
+                    const mappedProvider = mapProviderCode(data.code);
+                    inputs = { messages: await createVisionMessage(enhancedQuery, data.imageUrls, mappedProvider) };
+                } else {
+                    inputs = { messages: [['user', enhancedQuery]] };
+                }
+            }
+            
+            isRagEnabled = true;
+            
+        } catch (error) {
+            logger.error('🚨 RAG SEARCH FAILED:', error);
+            logger.error(`🚨 RAG ERROR DETAILS:`, {
+                message: error.message,
+                stack: error.stack,
+                companyId: data.companyId || data.user?.company?.id,
+                brainId: data.brainId,
+                fileCount: data.cloneMedia?.length || 0
+            });
+            
+            // Provide specific error messages for different failure types
+            let errorMessage = 'RAG failed, using normal flow';
+            if (error.message.includes('Pinecone index validation failed')) {
+                errorMessage = 'RAG failed: Pinecone index validation failed. Please ensure documents are properly indexed.';
+            } else if (error.message.includes('No files could be mapped')) {
+                errorMessage = 'RAG failed: No uploaded files match the indexed documents. Please check file names.';
+            } else if (error.message.includes('No files found in pinecone index')) {
+                errorMessage = 'RAG failed: No documents found in the vector database. Please ensure documents are indexed.';
+            } else if (error.message.includes('Search across namespaces failed')) {
+                errorMessage = 'RAG failed: Vector search across namespaces failed. Please check index configuration.';
+            }
+            
+            // Fallback to normal flow if RAG fails
+            let fallbackQuery = data.query;
+            
+            // Still add agent context if available
+            if (isAgentEnabled && agentDetails) {
+                const agentContext = buildAgentContext(agentDetails);
+                fallbackQuery += agentContext;
+            }
+            
+            // Handle vision support for fallback flow
+            if (shouldEnableVision(data)) {
+                const mappedProvider = mapProviderCode(data.code);
+                inputs = { messages: await createVisionMessage(fallbackQuery, data.imageUrls, mappedProvider) };
+            } else {
+                inputs = { messages: [['user', fallbackQuery]] };
+            }
+            socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                event: llmStreamingEvents.RAG_DISABLED,
+                chunk: errorMessage
+            });
+        }
+    } else {
+        // Normal flow: No files uploaded
+        let normalQuery = data.query;
+        
+        // Add agent context if agent is enabled
+        if (isAgentEnabled && agentDetails) {
+            const agentContext = buildAgentContext(agentDetails);
+            normalQuery += agentContext;
+        }
+        
+        // Handle vision support for normal flow
+        if (shouldEnableVision(data)) {
+            const mappedProvider = mapProviderCode(data.code);
+            inputs = { messages: await createVisionMessage(normalQuery, data.imageUrls, mappedProvider) };
+        } else {
+            inputs = { messages: [['user', normalQuery]] };
+        }
+        
+        if (isAgentEnabled) {
+            socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                event: llmStreamingEvents.AGENT_ENABLED,
+                chunk: `Agent active (no documents)`
+            });
+        }
+    }
+    
+    try {
+        const eventHandlers = {
+            [langGraphEventName.ON_TOOL_START]: chunk => {
+                if (chunk.name === toolCallOptions.WEB_SEARCH_TOOL) {
+                    socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                        event: llmStreamingEvents.WEB_SEARCH_START,
+                        chunk: toolCallOptions.SEARCHING_THE_WEB
+                    });
+                }
+                if (chunk.name === toolCallOptions.IMAGE_GENERATION_TOOL) {
+                    socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                        event: llmStreamingEvents.IMAGE_GENERATION_START,
+                        chunk: toolCallOptions.GENERATING_IMAGE,
+                    });
+                    // Note: Image generation now includes S3 upload, so it may take longer
+                    // but will return S3 URL directly instead of OpenAI URL
+                }
+            },
+
+            [langGraphEventName.ON_CHAIN_MODEL_STREAM]: chunk => {
+                const token = Array.isArray(chunk.data?.chunk?.content) ? chunk.data?.chunk?.content[0]?.text : chunk.data?.chunk?.content || '';
+                if (token) {
+                    proccedMsg += token;
+                    socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, { chunk: token });
+                }
+            },
+
+            [langGraphEventName.ON_CHAIN_MODEL_END]: async () => { 
+                // Update token usage in database if cost callback is available
+                if (costCallback && threadId) {
+                    try {
+                    
+                    const usage = costCallback.getUsage();
+                    
+                    if (usage.totalTokens > 0) {
+                        await costCallback.updateTokenUsage(threadId, usage);
+                    }
+                    } catch (error) {
+                    logger.error(`❌ [STREAM_LOG] Error updating token usage for thread ${threadId}:`, error);
+                }
+                } else {
+                }
+
+                // Deduct message credit from user (similar to Python implementation)
+                if (data.companyId || (data.user && data.user.company && data.user.company.id)) {
+                    try {
+                        const companyId = data.companyId || data.user.company.id;
+                        // Use model-specific credit amount from frontend (msgCredit field) and ensure it's stored as double
+                        const creditValue = Number((parseFloat(data.msgCredit || data.usedCredit || 1.0)).toFixed(1));
+                        
+                        
+                        const creditResult = await deductUserMsgCredit(companyId, creditValue);
+                    } catch (error) {
+                        logger.error(`❌ [CREDIT_DEDUCT] Error deducting credit:`, error);
+                    }
+                } else {
+                    logger.warn(`⚠️ [CREDIT_DEDUCT] No company ID found in data for credit deduction`);
+                }
+                
+                socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                    chunk: llmStreamingEvents.RESPONSE_DONE,
+                    proccedMsg,
+                });
+            },
+
+            [langGraphEventName.ON_TOOL_END]: chunk => {
+                const toolOutput = chunk.data?.output;
+                
+                if (chunk.name === toolCallOptions.IMAGE_GENERATION_TOOL) {
+                    socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                        event: llmStreamingEvents.IMAGE_GENERATION_TOOL,
+                        chunk: toolOutput,
+                    });
+                    
+                    // Image is already uploaded to S3 by the CustomDallEAPIWrapper
+                    // No need for background upload since it's handled synchronously
+                } else {
+                    try {
+                        const parsedToolOutput = JSON.parse(toolOutput);
+                        if (Array.isArray(parsedToolOutput)) {
+                            socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                                event: llmStreamingEvents.WEB_SEARCH_CITATION,
+                                chunk: parsedToolOutput,
+                            });
+                            data.citations = parsedToolOutput;
+                        }
+                    } catch (parseError) {
+                    }
+                }
+            },
+        };
+        for await (const chunk of app.streamEvents(inputs, {
+            streamMode: 'messages',
+            version: 'v2',
+        })) {
+            const handler = eventHandlers[chunk.event];
+            if (handler) {
+                handler(chunk);
+            }
+        }
+    } catch (error) {
+        logger.error('error streamAndLog', error);
+        
+        // Send error message to frontend
+        socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+            chunk: llmStreamingEvents.RESPONSE_ERROR_MESSAGE,
+        });
+    } finally {
+        if (proccedMsg) {
+            try {
+                await createLLMConversation({ 
+                    ...data, 
+                    answer: proccedMsg, 
+                    usedCredit: data.msgCredit || data.usedCredit || 1 
+                });
+            } catch (saveError) {
+                logger.error('❌ Error saving conversation to database:', saveError);
+            }
+        }
+        proccedMsg = '';
+        
+        // Clean up global query data and RAG context
+        global.currentQueryData = null;
+        global.currentRagContext = null;
+    }
+}
+
+// Helper function to get agent-specific model configuration
+async function getAgentModelConfig(agentDetails, data) {
+    try {
+        if (!agentDetails || !agentDetails.responseModel) {
+            return null;
+        }
+        
+        const { responseModel } = agentDetails;
+        
+        // If agent has a specific model configuration, use it
+        if (responseModel.id && responseModel.bot) {
+            
+            // Infer provider from model name if not explicitly set
+            let inferredProvider = responseModel.provider;
+            if (!inferredProvider || inferredProvider === 'undefined') {
+                const modelName = responseModel.name.toLowerCase();
+                if (modelName.includes('gemini')) {
+                    inferredProvider = 'GEMINI';
+                } else if (modelName.includes('claude')) {
+                    inferredProvider = 'ANTHROPIC';
+                } else if (modelName.includes('gpt') || modelName.includes('o1') || modelName.includes('o3')) {
+                    inferredProvider = 'OPEN_AI';
+                } else if (modelName.includes('deepseek')) {
+                    inferredProvider = 'DEEPSEEK';
+                } else if (modelName.includes('llama')) {
+                    inferredProvider = 'LLAMA4';
+                } else if (modelName.includes('grok')) {
+                    inferredProvider = 'GROK';
+                } else if (modelName.includes('qwen')) {
+                    inferredProvider = 'QWEN';
+                } else {
+                    inferredProvider = 'OPEN_AI'; // Default fallback
+                }
+                
+            }
+            
+            // Return agent-specific configuration
+            const agentConfig = {
+                model: responseModel.name,
+                apiKey: responseModel.config?.apikey || data.apiKey,
+                llmProvider: inferredProvider,
+                temperature: responseModel.extraConfig?.temperature || 0.7,
+                streaming: true
+            };
+            
+            
+            return agentConfig;
+        }
+        
+        return null;
+    } catch (error) {
+        logger.error('Error getting agent model config:', error);
+        return null;
+    }
+}
+
+// Helper function to safely decrypt API key data
+function safeDecryptApiKey(encryptedData) {
+    try {
+        // If the data looks like it's already decrypted (starts with 'sk-'), return as is
+        if (typeof encryptedData === 'string' && encryptedData.startsWith('sk-')) {
+            return encryptedData;
+        }
+        
+        // Try to decrypt the data
+        const decrypted = decryptedData(encryptedData);
+        return decrypted;
+    } catch (error) {
+        logger.error('Error decrypting API key:', error.message);
+        return encryptedData; // Return as is if decryption fails
+    }
+}
+
+// Helper function to map provider codes to AI_MODAL_PROVIDER constants
+function mapProviderCode(code) {
+    if (!code) return AI_MODAL_PROVIDER.OPEN_AI;
+    
+    const codeStr = code.toString().toLowerCase();
+    
+    // Map common provider codes
+    const providerMap = {
+        'openai': AI_MODAL_PROVIDER.OPEN_AI,
+        'open_ai': AI_MODAL_PROVIDER.OPEN_AI,
+        'anthropic': AI_MODAL_PROVIDER.ANTHROPIC,
+        'claude': AI_MODAL_PROVIDER.ANTHROPIC,
+        'gemini': AI_MODAL_PROVIDER.GEMINI,
+        'google': AI_MODAL_PROVIDER.GEMINI,
+        'deepseek': AI_MODAL_PROVIDER.DEEPSEEK,
+        'llama': AI_MODAL_PROVIDER.LLAMA4,
+        'llama4': AI_MODAL_PROVIDER.LLAMA4,
+        'grok': AI_MODAL_PROVIDER.GROK,
+        'qwen': AI_MODAL_PROVIDER.QWEN,
+        'perplexity': AI_MODAL_PROVIDER.PERPLEXITY,
+        'azure': AI_MODAL_PROVIDER.AZURE_OPENAI_SERVICE,
+        'huggingface': AI_MODAL_PROVIDER.HUGGING_FACE,
+        'local': AI_MODAL_PROVIDER.LOCAL_LLM,
+        'anyscale': AI_MODAL_PROVIDER.ANYSCALE
+    };
+    
+    // Check exact matches first
+    if (providerMap[codeStr]) {
+        return providerMap[codeStr];
+    }
+    
+            // Check partial matches
+        for (const [key, value] of Object.entries(providerMap)) {
+            if (codeStr.includes(key) || key.includes(codeStr)) {
+                return value;
+            }
+        }
+    return AI_MODAL_PROVIDER.OPEN_AI;
+}
+
+async function toolExecutor(data, socket) {
+    try {
+        let apiKey, model, app, agentDetails = null;
+        
+        
+        // Map the provider code to the correct constant
+        const mappedProvider = mapProviderCode(data.code);
+        
+        if (shouldEnableAgent(data)) {
+            agentDetails = await fetchAgentDetails(data.customGptId);
+            if (agentDetails) {
+                const agentModelConfig = await getAgentModelConfig(agentDetails, data);
+                if (agentModelConfig) {
+                    // Use agent-specific model configuration
+                    apiKey = safeDecryptApiKey(agentModelConfig.apiKey);
+                    // Map the agent's provider to the correct format
+                    const mappedAgentProvider = mapProviderCode(agentModelConfig.llmProvider);
+                    
+                    model = await llmFactory(agentModelConfig.model, { 
+                        streaming: agentModelConfig.streaming, 
+                        apiKey, 
+                        llmProvider: mappedAgentProvider,
+                        temperature: agentModelConfig.temperature,
+                        threadId: data.threadId
+                    });
+                } else {
+                    // Fallback to user's model configuration
+                    apiKey = safeDecryptApiKey(data.apiKey);
+                    model = await llmFactory(data.model, { streaming: true, apiKey, llmProvider: mappedProvider, threadId: data.threadId });
+                }
+            } else {
+                // Agent not found, use user's model configuration
+                apiKey = decryptedData(data.apiKey);
+                model = await llmFactory(data.model, { streaming: true, apiKey, llmProvider: data.code, threadId: data.threadId });
+            }
+        } else {
+            // Normal flow: use user's model configuration
+            apiKey = decryptedData(data.apiKey);
+            model = await llmFactory(data.model, { streaming: true, apiKey, llmProvider: data.code, threadId: data.threadId });
+        }
+        
+        // Build the graph with the selected model and agent details
+        app = buildGraph(model, data, agentDetails);
+        
+        // Stream and log the response
+        await streamAndLog(app, data, socket, data.threadId);
+        
+    } catch (error) {
+        logger.error('Error in toolExecutor:', error);
+        
+        // Emit error to frontend
+        socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+            chunk: llmStreamingEvents.RESPONSE_ERROR_MESSAGE,
+        });
+    }
+}
+
+async function generateTitleByLLM(payload) {
+    try {
+        const { query, code, apiKey, chatId } = payload;
+        
+        if (!query || !apiKey) {
+            throw new Error('Missing required parameters: query and apiKey are required');
+        }
+        
+        const mappedProvider = mapProviderCode(code);
+        const defaultModelMap = {
+            [AI_MODAL_PROVIDER.OPEN_AI]: 'gpt-4o-mini',
+            [AI_MODAL_PROVIDER.ANTHROPIC]: 'claude-3-5-sonnet-20240620',
+            [AI_MODAL_PROVIDER.GEMINI]: 'gemini-2.0-flash-001',
+            [AI_MODAL_PROVIDER.DEEPSEEK]: 'deepseek-chat',
+            [AI_MODAL_PROVIDER.LLAMA4]: 'llama-3.1-8b-instruct',
+            [AI_MODAL_PROVIDER.GROK]: 'grok-2-1212',
+            [AI_MODAL_PROVIDER.QWEN]: 'qwq-32b',
+            [AI_MODAL_PROVIDER.PERPLEXITY]: 'perplexity-3.5-sonnet',
+        };
+        
+        const defaultModel = defaultModelMap[mappedProvider] || defaultModelMap[AI_MODAL_PROVIDER.OPEN_AI];
+        const decryptedApiKey = decryptedData(apiKey);
+        
+        if (!decryptedApiKey) {
+            throw new Error('Invalid or missing API key');
+        }
+        
+        const model = await llmFactory(defaultModel, { 
+            streaming: false, 
+            apiKey: decryptedApiKey, 
+            llmProvider: mappedProvider 
+        });
+        const titleSystemPrompt = toolDescription.TITLE_SYSTEM_PROMPT.replace('{{query}}', query);
+        const messages = [
+            new SystemMessage(titleSystemPrompt),
+            new HumanMessage(query)
+        ];
+        const result = await model.invoke(messages);
+        const parsedResult = JSON.parse(result.content);
+        const answer = parsedResult.title || 'New Chat';
+        Promise.all([
+            Chat.updateOne({ _id: chatId }, { $set: { title: answer } }),
+            ChatMember.updateMany({ chatId: chatId }, { $set: { title: answer } })
+        ])
+        return answer;
+    } catch (error) {
+        handleError(error, 'Error in generateTitleByLLM');
+    }
+}
+
+async function enhancePromptByLLM() {
+    try {
+        const { query, apiKey } = payload;
+        
+        if (!query || !apiKey) {
+            throw new Error('Missing required parameters: query and apiKey are required');
+        }
+        const decryptedApiKey = decryptedData(apiKey);
+        
+        if (!decryptedApiKey) {
+            throw new Error('Invalid or missing API key');
+        }
+        
+        const model = await llmFactory(MODAL_NAME.GPT_4O_MINI, { 
+            streaming: false, 
+            apiKey: decryptedApiKey, 
+            llmProvider: AI_MODAL_PROVIDER.OPEN_AI 
+        });
+        const enhanceSystemPrompt = toolDescription.ENHANCE_QUERY_PROMPT.replace('{{query}}', query);
+        const messages = [
+            new SystemMessage(enhanceSystemPrompt),
+            new HumanMessage(query)
+        ];
+        const result = await model.invoke(messages);
+        const parsedResult = JSON.parse(result.content);
+    } catch (error) {
+        handleError(error, 'Error in enhancePromptByLLM');
+    }
+}
+
+module.exports = {
+    toolExecutor,
+    generateTitleByLLM
+}

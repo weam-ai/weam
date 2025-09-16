@@ -52,11 +52,11 @@ const addPrompt = async (req) => {
                     child_prompt_ids.push(prompt._id.toString());
                 }
             });
-            scrappingPromptData(req, { 
-                parent_prompt_ids: prompt_ids,
-                company_id: companyId.toString(),
-                child_prompt_ids: child_prompt_ids,
-            });
+            // scrappingPromptData(req, { 
+            //     parent_prompt_ids: prompt_ids,
+            //     company_id: companyId.toString(),
+            //     child_prompt_ids: child_prompt_ids,
+            // });
         }
         return result;
     } catch (error) {
@@ -143,7 +143,7 @@ const updatePrompt = async (req) => {
             const websitesMatch = arraysEqual(reqWebsites, resultWebsites);
             if (!websitesMatch) {
                 req.body.isCompleted = false;
-                scrappingPromptData(req, payload);
+                // scrappingPromptData(req, payload);
             }
         }
         const updateOperation = {
