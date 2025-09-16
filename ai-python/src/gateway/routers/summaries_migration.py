@@ -273,7 +273,7 @@ async def migrate_company_models(current_user=Depends(get_user_data)):
             "id": model_data["_id"]
         }
 
-        api_key = encryptor.encrypt("AIzaSyBR32fpOFicRB5-HRsQKQ6Has_YZ03Bx0w")  
+        api_key = 'default-key'
 
         companies = company_collection.find({})
         for company in companies:
@@ -470,7 +470,7 @@ async def migrate_company_models(current_user=Depends(get_user_data)):
 
                 # If the model does not exist, insert it
                 if not existing_record:
-                    perplexity_api_key = "Iij76GQ5r0Rgj+dMe928/EE+k1Fk+t+v7Zd+ZgmZYj8e/G1srwEX5Ha+ePTC0Y3/rP2gcNiysS7GHslOfMwSeg=="
+                    perplexity_api_key = os.getenv("PERPLEXITY_API_KEY", None)
 
                     new_record = {
                         "name": model_name,

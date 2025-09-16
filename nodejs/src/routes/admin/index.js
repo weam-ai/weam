@@ -25,5 +25,6 @@ router.use('/storagerequest', require('./storagerequest'));
 router.use('/invoice', require('./invoice'));
 router.use('/report', require('./report'));
 router.use('/credit-control', require('./creditControl'));
+router.use('/super-solution', require('./superSolution'));
 
 module.exports = router;

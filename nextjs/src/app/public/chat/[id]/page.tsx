@@ -4,6 +4,7 @@ import Image from 'next/image';
 import React, { Fragment, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import ChatResponse from '@/components/Chat/ChatResponse';
+import { useResponseUpdate } from '@/hooks/chat/useResponseUpdate';
 import ChatUploadedFiles from '@/components/Chat/ChatUploadedFiles';
 import ProfileImage from '@/components/Profile/ProfileImage';
 import { displayName, getModelImageByCode } from '@/utils/common';
@@ -17,6 +18,15 @@ import { getDisplayModelName } from '@/utils/helper';
 const PublicChat = () => {
     const params = useParams();
     const { viewChat, viewLoading, viewShareChat } = useShareChat();
+    
+    // Response update functionality for public chat
+    const { handleResponseUpdate } = useResponseUpdate({
+        onUpdateResponse: async (messageId: string, updatedResponse: string) => {
+            // For public chat, we might want to show a toast or handle differently
+            console.log('Public chat response updated:', { messageId, updatedResponse });
+        }
+    });
+    
     useEffect(() => {
         viewShareChat(params.id);
     }, []);
@@ -92,6 +102,7 @@ const PublicChat = () => {
                                                                         i={index}
                                                                         m={conversation}
                                                                         privateChat={false}
+                                                                        onResponseUpdate={handleResponseUpdate}
                                                                     />
                                                                 </div>
                                                             </div>

@@ -44,13 +44,16 @@ export const useGoogleOAuth = () => {
         const params = new URLSearchParams({
             client_id: GOOGLE_OAUTH.CLIENT_ID,
             scope: [
-                'https://www.googleapis.com/auth/gmail.send',
-                'https://www.googleapis.com/auth/gmail.readonly',
-                'https://www.googleapis.com/auth/calendar',
-                'https://www.googleapis.com/auth/calendar.events',
-                'https://www.googleapis.com/auth/drive.readonly',
-                'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile'
+                "https://www.googleapis.com/auth/userinfo.email",
+                "https://www.googleapis.com/auth/calendar.readonly",
+                "https://www.googleapis.com/auth/calendar.events",
+                "https://www.googleapis.com/auth/drive.readonly",
+                "https://www.googleapis.com/auth/drive.file",
+                "https://www.googleapis.com/auth/gmail.readonly",
+                "https://www.googleapis.com/auth/gmail.send",
+                "https://www.googleapis.com/auth/gmail.compose",
+                "https://www.googleapis.com/auth/gmail.modify",
+                "https://www.googleapis.com/auth/gmail.labels"
             ].join(' '),
             redirect_uri: GOOGLE_OAUTH.REDIRECT_URI,
             state: encodedState,

@@ -13,7 +13,7 @@ from src.chatflow_langchain.service.openai.tool_functions.config import ToolChat
 from src.logger.default_logger import logger
 from src.round_robin.llm_key_manager import APIKeySelectorService,APIKeyUsageService
 from src.chatflow_langchain.service.config.model_config_openai import Functionality
-
+from src.gateway.utils import AsyncHTTPClientSingleton, SyncHTTPClientSingleton
 from langchain_core.messages import HumanMessage
 from fastapi import HTTPException, status
 # Custom Library
@@ -21,21 +21,57 @@ from src.custom_lib.langchain.callbacks.openai.cost.cost_calc_handler import Cos
 from openai import RateLimitError,APIConnectionError,APITimeoutError,APIStatusError, NotFoundError
 from src.celery_worker_hub.extraction.utils import map_file_url, validate_file_url
 from src.chatflow_langchain.utils.fill_additional_prompt import fill_template,format_website_summary_pairs
-from src.chatflow_langchain.service.openai.tool_functions.tools import simple_chat_v2, image_generate,web_search_preview,website_analysis
+from src.chatflow_langchain.service.openai.tool_functions.tools import simple_chat_v2, web_search_preview,website_analysis, get_current_time
 from src.chatflow_langchain.service.openai.tool_functions.utils import extract_error_message
 import gc
-from src.chatflow_langchain.service.openai.tool_functions.utils import extract_error_message
 from src.gateway.openai_exceptions import LengthFinishReasonError,ContentFilterFinishReasonError
 from src.chatflow_langchain.repositories.openai_error_messages_config import OPENAI_MESSAGES_CONFIG,DEV_MESSAGES_CONFIG
 from src.chatflow_langchain.service.config.model_config_openai import OPENAIMODEL 
 from src.celery_worker_hub.web_scraper.tasks.scraping_sitemap import crawler_scraper_task
+import os
+from langchain_core.tools import tool
+from langchain_community.tools.openai_dalle_image_generation import OpenAIDALLEImageGenerationTool
+from src.custom_lib.langchain.chat_models.openai.dalle_wrapper import MyDallEAPIWrapper
+from langgraph.prebuilt import ToolNode
+from langgraph.graph import MessagesState, StateGraph
+from langgraph.graph import StateGraph, START, END
+from langchain_core.runnables import RunnableConfig
 # Service Initilization
+from src.custom_lib.langchain.callbacks.openai.cost.context_manager import get_custom_openai_callback
+from src.custom_lib.langchain.callbacks.openai.cost.cost_calc_handler import CostCalculator
+from src.custom_lib.langchain.callbacks.openai.mongodb.context_manager import get_mongodb_callback_handler
+from src.chatflow_langchain.service.openai.config.openai_tool_description import ToolServiceDescription
+from langchain_experimental.tools.python.tool import PythonREPLTool
+from langchain_core.messages.tool import ToolMessage
+from src.chatflow_langchain.utils.playwright_info_fetcher import LogoFetcherService
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from dotenv import load_dotenv
+from src.MCP.utils import create_mcp_client
+from src.chatflow_langchain.service.openai.tool_functions.utils import encode_image_to_base64
+
+load_dotenv()
+mcp_url = os.getenv("MCP_URL", "http://mcp:8000/sse")
+
 llm_apikey_decrypt_service = LLMAPIKeyDecryptionHandler()
 thread_repo = ThreadRepostiory()
 prompt_repo = PromptRepository()
+cost_callback = CostCalculator()
+
+@tool(description=ToolServiceDescription.IMAGE_GENERATION)
+async def image_generate(query:str=None,image_size:str='1024x1024',
+                         image_url:list=None):
+    try:
+            image_generation = OpenAIDALLEImageGenerationTool(api_wrapper=MyDallEAPIWrapper(
+            model='gpt-image-1', n=1, quality=OPENAIMODEL.DALLE_WRAPPER_QUALITY, size=image_size, api_key=llm_apikey_decrypt_service.decrypt(),images=image_url,timeout=300), verbose=False)
+            return await image_generation.arun(query)
+    except Exception as e:
+        logger.error(
+            f"🚨 Failed to Generate Image {e}",
+            extra={"tags": {"method": "OpenAIToolServiceOpenai.image_generation"}})
+        return ''
 
 class OpenAIToolServiceOpenai(AbstractConversationService):
-    def initialize_llm(self, api_key_id: str = None, companymodel: str = None, dalle_wrapper_size: str = None, dalle_wrapper_quality: str = None, dalle_wrapper_style: str = None, thread_id: str = None, thread_model: str = None, imageT=0,company_id:str=None):
+    async def initialize_llm(self, api_key_id: str = None, companymodel: str = None, dalle_wrapper_size: str = None, dalle_wrapper_quality: str = None, dalle_wrapper_style: str = None, thread_id: str = None, thread_model: str = None, imageT=0,company_id:str=None,mcp_data:str=None,mcp_tools:dict=None,mcp_request:dict=None):
         """
         Initializes the LLM with the specified API key and company model.
 
@@ -51,52 +87,63 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
         Logs an error if the initialization fails.
         """
         try:
-            self.chat_repository_history = CustomAIMongoDBChatMessageHistory()
-  
+            self.jwt_token = mcp_request.headers.get("Authorization", "") if mcp_request else None
+            self.origin = mcp_request.headers.get("origin", "")
+            
+            self.chat_repository_history = CustomAIMongoDBChatMessageHistory()  
+          
             llm_apikey_decrypt_service.initialization(api_key_id=api_key_id, collection_name=companymodel)
             self.original_model_name = llm_apikey_decrypt_service.model_name
             self.encrypted_api_key = llm_apikey_decrypt_service.apikey
             self.companyRedis_id = llm_apikey_decrypt_service.companyRedis_id
+            http_client = SyncHTTPClientSingleton.get_client()
+            http_async_client = await AsyncHTTPClientSingleton.get_client()
             self.llm = ChatOpenAI(
-                model_name=OPENAIMODEL.DEFAULT_TOOL_MODEL,
+                model_name=OPENAIMODEL.MODEL_VERSIONS[llm_apikey_decrypt_service.model_name],
                 temperature=ToolChatConfig.TEMPRATURE,
                 api_key=llm_apikey_decrypt_service.decrypt(),
-                streaming=False,
+                streaming=True,
                 verbose=False,
-                use_responses_api=True
-            
-                
+                stream_usage=True,
+                use_responses_api=True,
+                http_client=http_client,
+                http_async_client=http_async_client
             )
-            self.api_usage_service = APIKeyUsageService()
-           
+            self.mcp_data = mcp_data
+            self.image_gen_prompt = None
             self.thread_id = thread_id
             self.thread_model = thread_model
-            self.imageT = imageT
-            self.image_style = dalle_wrapper_style
-            self.image_size = dalle_wrapper_size
-            self.image_quality = dalle_wrapper_quality
-            self.image_model_name = OPENAIMODEL.LLM_IMAGE_MODEL
             self.model_name = OPENAIMODEL.MODEL_VERSIONS[llm_apikey_decrypt_service.model_name]
-            self.query_arguments = {'simple_chat_v2':
-                                    {'model_name': self.model_name , 'temprature': llm_apikey_decrypt_service.extra_config.get('temperature'),
-
-                                     'openai_api_key': llm_apikey_decrypt_service.decrypt(), 'image_url': None, 'thread_id': self.thread_id, 'thread_model': self.thread_model, 'imageT': self.imageT, 'api_key_id': api_key_id,'encrypted_key':self.encrypted_api_key,'companyRedis_id':self.companyRedis_id},
-
-                                     "web_search_preview":{'model_name': self.model_name , 'temprature': llm_apikey_decrypt_service.extra_config.get('temperature'),
-
-                                     'openai_api_key': llm_apikey_decrypt_service.decrypt(), 'image_url': None, 'thread_id': self.thread_id, 'thread_model': self.thread_model, 'imageT': self.imageT, 'api_key_id': api_key_id, 'encrypted_key':self.encrypted_api_key,'companyRedis_id':self.companyRedis_id},
-                                     "website_analysis":{'model_name': self.model_name , 'temprature': llm_apikey_decrypt_service.extra_config.get('temperature'),"implicit_reference_urls":None,
-
-                                     'openai_api_key': llm_apikey_decrypt_service.decrypt(), 'image_url': None, 'thread_id': self.thread_id, 'thread_model': self.thread_model, 'imageT': self.imageT, 'api_key_id': api_key_id,'encrypted_key':self.encrypted_api_key,'companyRedis_id':self.companyRedis_id},
-
-                                    'image_generate': {'model_name': self.image_model_name, 'n': OPENAIMODEL.n, 'image_quality': self.image_quality, 'image_size': self.image_size, 'image_style': self.image_style, 'openai_api_key': llm_apikey_decrypt_service.decrypt(), 'thread_id': self.thread_id, 'thread_model': self.thread_model,'api_key_id': api_key_id,'llm_model':self.model_name,'encrypted_key':self.encrypted_api_key,'companyRedis_id':self.companyRedis_id}}
-            
+            self.tools = [website_analysis,image_generate, get_current_time]
+            if mcp_tools:
+                self.client = create_mcp_client(self.jwt_token, self.origin)
+                # Get tools directly without using context manager
+                try:
+                    self.mcp_tools_list = await self.client.get_tools()
+                    logger.info(f"MCP tools loaded successfully: {self.mcp_tools_list}")
+                    # Add MCP tools to the existing tools list
+                    if self.mcp_tools_list:
+                        self.mcp_tools_list = [
+                                tool for tool in self.mcp_tools_list
+                                if tool.name in {name for tools in mcp_tools.values() for name in ",".join(tools).split(",")}
+                            ]
+                        self.tools.extend(self.mcp_tools_list)
+                        logger.info(f"Added MCP tools to tools list. Total tools: {len(self.tools)}")
+                except Exception as mcp_error:
+                    logger.error(f"Failed to connect to MCP server: {mcp_error}")
+                    # Continue without MCP tools if connection fails
+                    self.mcp_tools_list = []
+            self.tool_node = ToolNode(self.tools)
             if self.original_model_name in WebSearchConfig.MODEL_LIST:
-                self.tools = [simple_chat_v2, image_generate, web_search_preview]
+                search_context_size = WebSearchConfig.SEARCH_CONTEXT_SIZE
+                web_tool = {"type": "web_search_preview", "search_context_size":search_context_size}
+                self.tools = [web_tool,image_generate]
+   
+            if self.model_name in OPENAIMODEL.TOOL_NOT_SUPPORTED_MODEL:
+                self.llm_with_tools = self.llm    
             else:
-                self.tools = [simple_chat_v2, image_generate, website_analysis]
-            self.llm_with_tools = self.llm.bind_tools(
-                self.tools, tool_choice='any',strict=False)
+                self.llm_with_tools = self.llm.bind_tools(
+                    self.tools)
 
             logger.info(
             "LLM initialization successful.",
@@ -108,6 +155,52 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
             )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail=f"Failed to initialize LLM: {e}")
+    def should_continue(self,state: MessagesState):
+        messages = state["messages"]
+        last_message = messages[-1]
+        if last_message.tool_calls:
+            return "tools"
+        return END
+    
+    async def chatbot(self,state,config):
+        history_messages = self.chat_repository_history.messages
+        history_messages.extend(state['messages'])
+        
+        new_message = await self.llm_with_tools.ainvoke(history_messages,config=config)
+        if hasattr(new_message, 'tool_calls') and new_message.tool_calls:
+            if self.image_url:
+                new_message.tool_calls[0]['args']['image_url'] = self.image_url
+            if new_message.tool_calls[0]['name'] == 'image_generate':
+                self.image_gen_prompt = new_message.tool_calls[0]['args']['query']
+            new_message.tool_calls[0]['args']['mcp_data'] = self.mcp_data
+        return {"messages": [new_message]}
+    
+    async def create_graph_node(self):
+        # memory = MemorySaver()
+        async def node(state: MessagesState,config: RunnableConfig): 
+            new_message = await self.chatbot(state=state,config=config)
+            return new_message
+
+
+        builder = StateGraph(MessagesState).add_node("chatbot",node).add_node("tools",self.tool_node).add_conditional_edges(
+            "chatbot",
+            self.should_continue,
+            # The following dictionary lets you tell the graph to interpret the condition's outputs as a specific node
+            # It defaults to the identity function, but if you
+            # want to use a node named something else apart from "tools",
+            # You can update the value of the dictionary to something else
+            # e.g., "tools": "my_tools"
+            {"tools": "tools", END: END},
+        ).add_edge(START, "chatbot").add_edge("tools", "chatbot")
+        logger.info(
+                "Builder created Starting Compilation",
+                extra={"tags": {"endpoint": "/stream-tool-chat-with-openai"}}
+            )
+        self.graph = builder.compile()
+        logger.info(
+                "Graph Compiled Successfully",
+                extra={"tags": {"endpoint": "/stream-tool-chat-with-openai"}}
+            )
 
     def initialize_repository(self, chat_session_id: str = None, collection_name: str = None,regenerated_flag:bool=False,msgCredit:float=0,is_paid_user:bool=False):
         """
@@ -131,18 +224,11 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
                 regenerated_flag=regenerated_flag,
                 thread_id = self.thread_id
             )
-            self.history_messages = self.chat_repository_history.messages
-
+            self.regenerated_flag=regenerated_flag
+            self.is_paid_user = is_paid_user
+            self.msgCredit = msgCredit
             self.initialize_memory()
-            self.query_arguments['simple_chat_v2'].update(
-                {'chat_repository_history': self.chat_repository_history,'regenerated_flag':regenerated_flag,'msgCredit':msgCredit,'is_paid_user':is_paid_user})
-            self.query_arguments['image_generate'].update(
-                {'chat_repository_history': self.chat_repository_history,'regenerated_flag':regenerated_flag,'msgCredit':msgCredit,'is_paid_user':is_paid_user})
-            self.query_arguments['web_search_preview'].update(  
-                {'chat_repository_history': self.chat_repository_history,'regenerated_flag':regenerated_flag,'msgCredit':msgCredit,'is_paid_user':is_paid_user})
-            
-            self.query_arguments['website_analysis'].update(  
-                {'chat_repository_history': self.chat_repository_history,'regenerated_flag':regenerated_flag,'msgCredit':msgCredit,'is_paid_user':is_paid_user})
+
             logger.info("Repository initialized successfully", extra={
             "tags": {"method": "OpenAIToolServiceOpenai.initialize_repository", "chat_session_id": chat_session_id, "collection_name": collection_name}})
         except Exception as e:
@@ -173,15 +259,7 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
                 chat_memory=self.chat_repository_history
             )
             self.memory.moving_summary_buffer = self.chat_repository_history.memory_buffer
-            self.query_arguments['simple_chat_v2'].update(
-                {'memory': self.memory})
-            self.query_arguments['image_generate'].update(
-                {'memory': self.memory})
-            self.query_arguments['web_search_preview'].update(
-                {'memory': self.memory})
-            self.query_arguments['website_analysis'].update(
-                {'memory': self.memory})
-            
+
             logger.info("Memory initialized successfully", extra={
             "tags": {"method": "OpenAIToolServiceOpenai.initialize_memory"}})
         except Exception as e:
@@ -247,7 +325,6 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
     def map_and_validate_image_url(self, image_url: str, source: str) -> str:
         try:
             # Map the URL
-
             mapped_url = map_file_url(image_url, source)
             # Validate the mapped URL
             validated_url = validate_file_url(mapped_url, source)
@@ -255,7 +332,49 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
         except HTTPException as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    def create_conversation(self, input_text: str = None, **kwargs):
+    async def _save_partial_response(self, thread_id: str, collection_name: str, partial_response: str):
+        """
+        Save partial response to database when streaming is cancelled.
+        
+        Parameters
+        ----------
+        thread_id : str
+            The thread ID for the conversation.
+        collection_name : str
+            The collection name for storing conversation history.
+        partial_response : str
+            The partial response received before cancellation.
+        """
+        try:
+            from langchain_core.messages import AIMessage
+            
+            # Add cancellation notice to the partial response
+            cancelled_response = partial_response
+            
+            # Create AI message with partial response
+            ai_message = AIMessage(content=cancelled_response)
+            
+            # Save to chat history using the repository
+            if hasattr(self, 'chat_repository_history') and self.chat_repository_history:
+                # Pass the required parameters: message, thread_id, and message_type
+                self.chat_repository_history.add_message(ai_message, thread_id, "ai")
+                logger.info(
+                    f"Saved partial response to database for thread {thread_id}", 
+                    extra={"tags": {"method": "OpenAIToolServiceOpenai._save_partial_response"}}
+                )
+            else:
+                logger.warning(
+                    "Chat repository not available for saving partial response",
+                    extra={"tags": {"method": "OpenAIToolServiceOpenai._save_partial_response"}}
+                )
+                
+        except Exception as e:
+            logger.error(
+                f"Failed to save partial response: {e}",
+                extra={"tags": {"method": "OpenAIToolServiceOpenai._save_partial_response"}}
+            )
+
+    async def create_conversation(self, input_text: str = None, **kwargs):
         """
         Creates a conversation chain with a custom tag.
 
@@ -275,25 +394,17 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
             if kwargs.get('regenerate_flag'):
                 input_text = "Regenerate the above response with improvements in clarity, relevance, and depth as needed. Adjust the level of detail based on the query's requirements—providing a concise response when appropriate and a more detailed, expanded answer when necessary." + input_text
             self.inputs = input_text
-            self.query_arguments['image_generate'].update(
-                {'original_query': input_text})
             if kwargs['image_url']:
                 if isinstance(kwargs['image_url'],list):
                     image_url=[]
                     for url in kwargs['image_url']:
-                        image_url.append(self.map_and_validate_image_url(url, kwargs.get('image_source', 'localstack')))
+                        image_url.append(self.map_and_validate_image_url(url, kwargs.get('image_source', 's3_url')))
                     self.image_url = image_url
                 else:
-
-                    kwargs['image_url'] = self.map_and_validate_image_url(kwargs['image_url'], kwargs.get('image_source', 'localstack'))
-                    self.image_url = kwargs['image_url']            
-                result=[]
-                for i in self.image_url:
-                    parts = i.strip("/").split("/")
-                    result.append("/".join(parts[-2:]))
-                self.inputs = self.inputs + " ".join(result)
-                self.query_arguments['simple_chat_v2']['image_url'] = self.image_url
-                self.query_arguments['image_generate']['image_url'] = self.image_url
+                    kwargs['image_url'] = self.map_and_validate_image_url(kwargs['image_url'], kwargs.get('image_source', 's3_url'))
+                    self.image_url = [kwargs['image_url']]
+                if self.image_url:
+                    self.query = {"messages": [{"role": "user", "content": [{"type": "text", "text": self.inputs}, *[{"type": "image", "source": {"type": "url", "url": await encode_image_to_base64(image_path_or_url=url)}} for url in self.image_url]]}]}
                 logger.debug("Image URL set in query arguments.", extra={
                 "tags": {"method": "OpenAIToolServiceOpenai.create_conversation"},
                 "image_url": self.image_url})
@@ -301,18 +412,7 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
                 self.image_url = None
                 logger.debug("No image URL provided; skipping image URL updates.", extra={
                 "tags": {"method": "OpenAIToolServiceOpenai.create_conversation"}})
-
-            if self.additional_prompt is None:
-                self.query_arguments['simple_chat_v2'].update(
-                    {'original_query': input_text})
-                self.query_arguments['web_search_preview'].update({"original_query": input_text})
-                self.query_arguments['website_analysis'].update({"original_query": input_text})
-
-            else:
-                self.query_arguments['simple_chat_v2'].update(
-                    {'original_query': self.additional_prompt+input_text})
-                self.query_arguments['web_search_preview'].update({"original_query": self.additional_prompt+input_text})
-                self.query_arguments['website_analysis'].update({"original_query": self.additional_prompt+input_text})
+                self.query = {"messages": [{"role": "user", "content": self.inputs}]}
 
                 
             logger.info("Conversation creation successful.", extra={
@@ -325,7 +425,7 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail=f"Failed to create conversation: {e}")
 
-    async def tool_calls_run(self, thread_id: str, collection_name: str, **kwargs) -> AsyncGenerator[str, None]:
+    async def tool_calls_run(self, thread_id: str, collection_name: str, async_handler_ref=None, **kwargs) -> AsyncGenerator[str, None]:
         """
         Executes a conversation and updates the token usage and conversation history.
 
@@ -335,6 +435,8 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
             The thread ID for the conversation.
         collection_name : str
             The collection name for storing conversation history.
+        async_handler_ref : list, optional
+            Reference list to store the async handler for external cancellation.
 
         Returns
         -------
@@ -347,45 +449,79 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
         """
         try:
             delay_chunk = kwargs.get("delay_chunk", 0.0)
-            cost = CostCalculator()
-            with get_openai_callback() as cb:
-                tool_history=self.history_messages
-                tool_history.append(HumanMessage(self.inputs))
-                ai_msg = self.llm_with_tools.invoke(tool_history)
-                if ai_msg.tool_calls[0]['name'] == 'image_generate':
-                    image_size = ai_msg.tool_calls[0]['args'].get('image_size','1024x1024')
-                    edit_flag = ai_msg.tool_calls[0]['args'].get('editHistory_flag',False)
-                    self.query_arguments['image_generate']['editHistory_flag'] = edit_flag
-                    if image_size in ToolChatConfig.IMAGE_SIZE_LIST:
-                        self.query_arguments['image_generate']['image_size']=image_size
-                elif ai_msg.tool_calls[0]['name'] == 'website_analysis':
-                    list_urls = []
-                    for i in ai_msg.tool_calls:
-                        x = i['args'].get('implicit_reference_urls', [])
-                        list_urls.extend(x)
-                    self.query_arguments['website_analysis']['implicit_reference_urls'] = list_urls
+            partial_response = ""
+
+                # self.history_messages = self.chat_repository_history.messages
+            annotations=[]
+            
+            # Create a task to handle graph execution
+            graph_task = None
+            
+            try:
+                async with  \
+                    get_custom_openai_callback(self.model_name, cost=cost_callback, thread_id=thread_id, collection_name=collection_name,encrypted_key=self.encrypted_api_key,companyRedis_id=self.companyRedis_id,**kwargs) as cb, \
+                    get_mongodb_callback_handler(thread_id=thread_id, chat_history=self.chat_repository_history, memory=self.memory,collection_name=collection_name,regenerated_flag=self.regenerated_flag,msgCredit=self.msgCredit,is_paid_user=self.is_paid_user,encrypted_key=self.encrypted_api_key,companyRedis_id=self.companyRedis_id) as mongo_handler:
+                    
+                    # Store reference for external cancellation tracking
+                    cancellation_event = asyncio.Event()
+                    if async_handler_ref is not None:
+                        async_handler_ref.append(cancellation_event)
+                    
+                    # Create the graph streaming task
+                    graph_stream = self.graph.astream_events(self.query,{'callbacks':[cb,mongo_handler],"configurable":{'thread_id':'1'}},stream_mode='messages',version='v2')
+                    
+                    async for event in graph_stream:
+                        # Check for cancellation
+                        if cancellation_event.is_set():
+                            logger.info("Client disconnected, stopping stream", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                            break
+                            
+                        if event["event"] == "on_chat_model_stream":
+                            if len(event["data"]["chunk"].content) > 0:
+                                if 'text' in event['data']['chunk'].content[0]:
+                                    token_text = event['data']['chunk'].content[0]['text']
+                                    partial_response += token_text
+                                    token = token_text.encode("utf-8")
+                                    yield f"data: {token}\n\n",200
+                                elif 'annotations' in event['data']['chunk'].content[0]:
+                                    for ann in event['data']['chunk'].content[0]['annotations']:
+                                        annotations.append(ann['url'])
+                                # yield f"event:{event['event']}\ndata: {event['data']}\n\n",200
+                                await asyncio.sleep(delay_chunk)
+                        elif event['event'] == "on_chat_model_end":
+                            if annotations:
+                                try:
+                                    fetcher = LogoFetcherService()
+                                    citations_results = await fetcher.get_logos_async(annotations)
+                                    citations_section = {"web_resources_data": citations_results}
+                                    compact_json = json.dumps(citations_section, separators=(',', ':'))
+                                    data_string = f"data: {compact_json.encode('utf-8')}\n\n"
+                                except Exception as e:
+                                    error_response = {"web_resources_data": []}
+                                    compact_json = json.dumps(error_response, separators=(',', ':'))
+                                    data_string = f"data: {compact_json.encode('utf-8')}\n\n"
+                                yield data_string, 200
                         
-            for tool_call in ai_msg.tool_calls:
-                selected_tool = {tool.name.lower(): tool for tool in self.tools}[
-                    tool_call['name'].lower()]
-                # tool_call['args'].update(
-                #     self.query_arguments[selected_tool.name])
-                
-                logger.info(f"Invoking tool: {selected_tool.name}", extra={
-                "tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}
-            })
-         
-                async for tool_output in selected_tool(self.query_arguments[selected_tool.name]):
-                    yield tool_output  # Process the streamed output here
-                    await asyncio.sleep(delay_chunk)
-                break
-            thread_repo.initialization(
-                thread_id=thread_id, collection_name=collection_name)
-            thread_repo.update_token_usage(cb=cb)
-        
-            # await self.api_usage_service.update_usage(provider=llm_apikey_decrypt_service.bot_data.get('code', 'OPEN_AI'),tokens_used= cb.total_tokens, model=self.model_name, api_key=llm_apikey_decrypt_service.apikey,functionality=Functionality.CHAT,company_id=self.companyRedis_id)
-
-
+                        # Check for cancellation again after processing
+                        if cancellation_event.is_set():
+                            logger.info("Stream cancelled after event processing", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                            break
+                            
+            except asyncio.CancelledError:
+                logger.info("Stream cancelled by client", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                # Save partial response to database
+                if partial_response.strip():
+                    await self._save_partial_response(thread_id, collection_name, partial_response)
+                raise
+            except Exception as e:
+                logger.error(f"Error during streaming: {e}", extra={"tags": {"method": "OpenAIToolServiceOpenai.tool_calls_run"}})
+                if partial_response.strip():
+                    await self._save_partial_response(thread_id, collection_name, partial_response)
+                raise
+                    
+            if self.image_gen_prompt:
+                thread_repo.initialization(thread_id=thread_id, collection_name=collection_name)
+                thread_repo.update_img_gen_prompt(gen_prompt=self.image_gen_prompt)
         except NotFoundError as e:
             error_content,error_code = extract_error_message(str(e))
             if error_code not in OPENAI_MESSAGES_CONFIG:
@@ -689,4 +825,3 @@ class OpenAIToolServiceOpenai(AbstractConversationService):
                 f"Failed to cleanup resources: {e}",
                 extra={"tags": {"method": "OpenAIToolServiceOpenai.cleanup"}}
             )
-

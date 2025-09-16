@@ -12,6 +12,12 @@ import useModal from '@/hooks/common/useModal';
 import BookMarkIcon, { ActiveBookMark } from '@/icons/Bookmark';
 import ActionSuggestion from '../Shared/ActionSuggestion';
 import NoResultFound from '../NoResult/NoResultFound';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function Home() {
     const [isGridView, setIsGridView] = useState(false);
@@ -89,48 +95,74 @@ export default function Home() {
 
                             {/* List/Grid Toggle start */}
                             <div className="md:inline-flex hidden justify-center md:justify-start" role="group">
-                                <button
-                                    type="button"
-                                    id="list-view"
-                                    onClick={handleListViewClick}
-                                    className={`inline-block rounded-s-custom rounded-e-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
-                                        !isGridView ? 'active' : ''
-                                    }`}
-                                >
-                                    <BarIcon
-                                        width={14}
-                                        height={12}
-                                        className="w-[14px] h-3 object-contain mx-auto fill-b6"
-                                    />
-                                </button>
-                                <button
-                                    type="button"
-                                    id="grid-view"
-                                    onClick={handleGridViewClick}
-                                    className={`-ms-px inline-block rounded-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
-                                        isGridView ? 'active' : ''
-                                    }`}
-                                >
-                                    <GridIcon
-                                        width={14}
-                                        height={14}
-                                        className="w-[14px] h-[14px] object-contain mx-auto fill-b6"
-                                    />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => showFavoriteRecords(showFavorites ? false : true)}
-                                    className={`-ms-px inline-block rounded-e-custom rounded-s-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
-                                        showFavorites ? 'active' : ''
-                                    }`}
-                                >
-                                    
-                                    {showFavorites ? (
-                                        <ActiveBookMark width={14} height={14} className="w-[15px] h-auto fill-orange object-contain mx-auto" />
-                                    ) : (
-                                        <BookMarkIcon width={14} height={14} className="w-[15px] h-auto fill-b6 object-contain mx-auto" />
-                                    )}
-                                </button>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                id="list-view"
+                                                onClick={handleListViewClick}
+                                                className={`inline-block rounded-s-custom rounded-e-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
+                                                    !isGridView ? 'active' : ''
+                                                }`}
+                                            >
+                                                <BarIcon
+                                                    width={14}
+                                                    height={12}
+                                                    className="w-[14px] h-3 object-contain mx-auto fill-b6"
+                                                />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="border-none">
+                                            <p className="text-font-14">List view</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                id="grid-view"
+                                                onClick={handleGridViewClick}
+                                                className={`-ms-px inline-block rounded-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
+                                                    isGridView ? 'active' : ''
+                                                }`}
+                                            >
+                                                <GridIcon
+                                                    width={14}
+                                                    height={14}
+                                                    className="w-[14px] h-[14px] object-contain mx-auto fill-b6"
+                                                />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="border-none">
+                                            <p className="text-font-14">Grid view</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={() => showFavoriteRecords(showFavorites ? false : true)}
+                                                className={`-ms-px inline-block rounded-e-custom rounded-s-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
+                                                    showFavorites ? 'active' : ''
+                                                }`}
+                                            >
+                                                {showFavorites ? (
+                                                    <ActiveBookMark width={14} height={14} className="w-[15px] h-auto fill-orange object-contain mx-auto" />
+                                                ) : (
+                                                    <BookMarkIcon width={14} height={14} className="w-[15px] h-auto fill-b6 object-contain mx-auto" />
+                                                )}
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="border-none">
+                                            <p className="text-font-14">Favourite prompts</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
                             {/* List/Grid Toggle End */}
 

@@ -6,7 +6,8 @@ export const PERMISSIONS = {
     UPGRADE_PLAN: 'plan.upgrade',
     ARCHIVE_WORKSPACE: 'workspace.archive',
     CHAT_DELETE: 'chat.delete',
-    COMPANY_USAGE: 'company.usage'
+    COMPANY_USAGE: 'company.usage',
+    SUPER_SOLUTION_ACCESS: 'super-solution.access'
 } as const;
 
 export type Role = keyof typeof ROLES;
@@ -18,13 +19,15 @@ const ROLES = {
         PERMISSIONS.WORKSPACE_EDIT,
         PERMISSIONS.UPGRADE_PLAN,
         PERMISSIONS.ARCHIVE_WORKSPACE,
-        PERMISSIONS.CHAT_DELETE
+        PERMISSIONS.CHAT_DELETE,
+        PERMISSIONS.SUPER_SOLUTION_ACCESS
     ],
     MANAGER: [
         PERMISSIONS.WORKSPACE_ADD,
         PERMISSIONS.WORKSPACE_EDIT,
         PERMISSIONS.ARCHIVE_WORKSPACE,
-        PERMISSIONS.CHAT_DELETE
+        PERMISSIONS.CHAT_DELETE,
+        PERMISSIONS.SUPER_SOLUTION_ACCESS
     ],
     USER: []
 } as const;

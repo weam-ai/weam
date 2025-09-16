@@ -1,16 +1,19 @@
 'use server';
-import { RESPONSE_STATUS, RESPONSE_STATUS_CODE } from '@/utils/constant';
+import { RESPONSE_STATUS, RESPONSE_STATUS_CODE, MODULE_ACTIONS } from '@/utils/constant';
 import { FETCH_ACTION_HANDLERS, getHeaders, setAPIConfig, ConfigOptions } from '../api';
 import { revalidateTag } from 'next/cache';
 import { getSession } from '@/config/withSession';
-import { LINK, NODE_API_PREFIX } from '@/config/config';
+import { cookies } from 'next/headers';
+import { decryptedData } from '@/utils/helper';
+import { AUTH, LINK, NODE_API_PREFIX } from '@/config/config';
+import { serverLogout } from '@/utils/serverAuth';
 
 export async function getAccessToken() {
     const session = await getSession();
     return session?.user?.access_token;
 }
 
-async function fetchUrl({ type = 'GET', url, data = {}, config = {} }:any) {
+async function fetchUrl({ type = 'GET', url, data = {}, config = {} }: any) {
     const actionType = type.toUpperCase();
     const handler = FETCH_ACTION_HANDLERS[actionType];
 
@@ -28,20 +31,26 @@ async function fetchUrl({ type = 'GET', url, data = {}, config = {} }:any) {
     } catch (error) {
         const { status } = (error.response || {});
         const data = (error.data || {});
-        if (status === RESPONSE_STATUS.FORBIDDEN && data.code === RESPONSE_STATUS_CODE.CSRF_TOKEN_MISSING) {
-            return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.CSRF_TOKEN_MISSING }
+        
+        // Handle 403 Forbidden errors - automatically logout user
+        if (status === RESPONSE_STATUS.FORBIDDEN) {
+            // Check if it's a CSRF token issue first
+            if (data.code === RESPONSE_STATUS_CODE.CSRF_TOKEN_MISSING) {
+                return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.CSRF_TOKEN_MISSING }
+            }
+            
+            // For other 403 errors (like token not found, unauthorized access, etc.), logout the user
+            await serverLogout();
+            return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.SERVER_FORBIDDEN, message: 'Access forbidden, user logged out' }
         }
-        if (status === RESPONSE_STATUS.FORBIDDEN || data.code === RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND) {
-            return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND }
-        }
-        // else if (status === RESPONSE_STATUS.UNAUTHENTICATED) {
-        //     return { status: RESPONSE_STATUS.UNAUTHORIZED, code: RESPONSE_STATUS_CODE.REFRESH_TOKEN }
-        // } 
-        else if (status === RESPONSE_STATUS.UNPROCESSABLE_CONTENT) {
+        
+        // Handle other error cases
+        if (status === RESPONSE_STATUS.UNPROCESSABLE_CONTENT) {
             return { status: RESPONSE_STATUS.UNPROCESSABLE_CONTENT, code: data.code, message: data.message }
         } else if (status === RESPONSE_STATUS.UNAUTHENTICATED) {
             return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.CSRF_TOKEN_NOT_FOUND }
         }
+        
         return { status: RESPONSE_STATUS.ERROR, code: RESPONSE_STATUS_CODE.ERROR, message: data.message }
     }
 }
@@ -70,11 +79,21 @@ export async function serverApi({
         return { code: 'ERROR', message: 'Invalid API action or URL.' };
     }
 
-    const token = await getAccessToken()
-    // const tokenCookieValue = cookies().get('csrf_token')?.value;
-    // const tokenCookieRawValue = cookies().get('weam_raw')?.value;
+    const token = await getAccessToken();
+    
+    // If no access token is found, only logout for non-login actions
+    // Login actions don't have tokens yet, so we shouldn't logout for them
+    if (!token && action !== MODULE_ACTIONS.LOGIN && action !== MODULE_ACTIONS.SIGNUP && action !== MODULE_ACTIONS.FORGOT_PASSWORD && action !== MODULE_ACTIONS.RESET_PASSWORD && action !== MODULE_ACTIONS.REGISTER_COMPANY && action !== MODULE_ACTIONS.RESEND_VERIFICATION_EMAIL) {
+        await serverLogout();
+        return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND, message: 'No access token found' }
+    }
+    
+    // Try to get existing CSRF tokens
+    // const tokenCookieValue = cookies().get(AUTH.CSRF_COOKIE_NAME)?.value;
+    // const tokenCookieRawValue = cookies().get(AUTH.CSRF_COOKIE_RAW_NAME)?.value;
     // const csrfToken = tokenCookieValue ? decryptedData(tokenCookieValue) : '';
     // const csrfTokenRaw = tokenCookieRawValue ? decryptedData(tokenCookieRawValue) : '';
+
     setServerAPIConfig({
         getToken: token,
         baseUrl: `${LINK.SERVER_NODE_API_URL}${NODE_API_PREFIX}`,
@@ -91,7 +110,7 @@ export async function serverApi({
     return response;
 }
 
-export async function revalidateTagging(response, tag: string) {
+export async function revalidateTagging(response: any, tag: string) {
     if ([RESPONSE_STATUS.SUCCESS, RESPONSE_STATUS.CREATED].includes(response.status)) {
         revalidateTag(tag);
     }

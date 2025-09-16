@@ -33,7 +33,7 @@ const EmptyChatProAgentQuestion = ({ conversation }: EmptyChatProAgentQuestionPr
 const EmptyChatQuestion = ({ conversation }: EmptyChatQuestionProps) => {
     return (
         <div className='h-full w-full'>
-            <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[32rem] lg:max-w-[40rem] xl:max-w-[48.75rem]">
+            <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[90vw] lg:max-w-[40rem] xl:max-w-[48.75rem]">
                 <div className="relative group bg-gray-100 flex flex-1 text-font-16 text-b2 ml-auto gap-3 rounded-10 transition ease-in-out duration-150 md:max-w-[30rem] xl:max-w-[36rem] px-3 pt-4 pb-6">
                     <div className="relative flex flex-col flex-shrink-0">
                         <div className="pt-0.5">

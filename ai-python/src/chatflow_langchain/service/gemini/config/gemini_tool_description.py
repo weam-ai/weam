@@ -12,14 +12,14 @@ class ToolServiceDescription:
 
     Parameters:
     - original_query (str): The current user's input query. **Do not modify** this parameter.
-    - implicit_reference_urls (List[str]): A list of URLs that are implicitly referenced in the user's query.
+    - reference_urls (List[str]): A list of URLs that are implicitly referenced in the user's query.
 
     Runtime Behavior:
-    - STRICTLY: Only the `implicit_reference_urls` parameter should be passed to the tool at runtime.
+    - STRICTLY: Only the `reference_urls` parameter should be passed to the tool at runtime.
       This list must include all URLs implicitly referenced by the user's query.
     - Do not invoke this tool more than once per user query — all relevant URLs must be included in a **single call**.
-    - Use `implicit_reference_urls` only when the user query **does not explicitly contain a URL**, 
-      but instead refers to previously mentioned or related pages.
+    - Use `reference_urls` only when the user query **explicitly contain a URL**, 
+      Or instead refers to previously mentioned or related pages.
     
     ''' 
 

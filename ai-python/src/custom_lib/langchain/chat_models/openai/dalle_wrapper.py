@@ -5,6 +5,10 @@ from src.logger.default_logger import logger
 from langchain_community.utils.openai import is_openai_v1
 import requests
 from io import BytesIO
+from src.celery_worker_hub.web_scraper.tasks.upload_file_s3 import task_upload_image_to_s3,task_upload_huggingfaceimage_to_s3
+import base64
+from src.chatflow_langchain.utils.upload_image import generate_random_file_name
+
 class MyDallEAPIWrapper(DallEAPIWrapper):
     """Wrapper for OpenAI's DALL-E Image Generator.
 
@@ -62,6 +66,12 @@ class MyDallEAPIWrapper(DallEAPIWrapper):
                     )
             if self.model_name in ['dall-e-3','dall-e-2']:
                 response = self.separator.join([item.url for item in response.data])
+            elif self.model_name == 'gpt-image-1':
+                response=response.data[0]
+                response = base64.b64decode(response.b64_json)
+                s3_file_name = generate_random_file_name()
+                result=task_upload_huggingfaceimage_to_s3.apply_async(kwargs={'image_bytes': response, 's3_file_name': s3_file_name}).get()
+                response = result
         else:
             response = self.client.create(
                 prompt=query, n=self.n, size=self.size, model=self.model_name
@@ -69,4 +79,10 @@ class MyDallEAPIWrapper(DallEAPIWrapper):
             
             if self.model_name in ['dall-e-3','dall-e-2']:
                 response = self.separator.join([item["url"] for item in response["data"]])
-        return response
+            elif self.model_name == 'gpt-image-1':
+                response=response.data[0]
+                response = base64.b64decode(response.b64_json)
+                s3_file_name = generate_random_file_name()
+                result=task_upload_huggingfaceimage_to_s3.apply_async(kwargs={'image_bytes': response, 's3_file_name': s3_file_name}).get()
+                response=result
+        return {'type':'text','content':f'![{query}]({response})',"image_url": response}

@@ -29,7 +29,9 @@ const Docs = ({ onPrev, customGptData, setCustomGptData }) => {
             const formData = new FormData();
             formData.append('title', customGptData.title);
             formData.append('systemPrompt', customGptData.systemPrompt);
-
+            if (customGptData.charimg) {
+                formData.append('charimg', customGptData.charimg);
+            }
             formData.append('responseModel[name]', customGptData.responseModel.name);
             formData.append('responseModel[id]', customGptData.responseModel.id);
             formData.append('responseModel[company][name]', customGptData.responseModel.company.name);

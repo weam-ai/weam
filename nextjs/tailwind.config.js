@@ -61,6 +61,8 @@ module.exports = {
                 greendark: '#43855B',
                 greenlight: '#F6FEF2',
                 blue: '#6637EC',
+                blue2: '#857FC3',
+                blue3: '#F5F6FF',
                 blue5: '#ebe7f4',
                 bluelight: '#F3F3FF',
                 bluehover: '#1D4ED8',

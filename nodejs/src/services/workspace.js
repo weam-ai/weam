@@ -8,9 +8,9 @@ const { addWorkSpaceTeam } = require("./teamMember");
 const { accessOfWorkspaceToUser } = require("./common");
 const Brain = require('../models/brains');
 const ShareBrain = require("../models/shareBrain");
-const { createDefaultBrain } = require("./brain");
 
 const addWorkSpace = async (req) => {
+    const { createDefaultBrain } = require("./brain");
     try {
         const existing = await WorkSpace.findOne({
             slug: slugify(req.body.title),

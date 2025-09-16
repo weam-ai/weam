@@ -90,7 +90,7 @@ OPENAI_MESSAGES_CONFIG = {
     "common_response": {
         "content": (
             "We encountered an issue and were unable to receive a response. This could be due to a variety of reasons including network issues, server problems, or unexpected errors.\n\n"
-            "Please try your request again later. If the problem persists, check your network connection or [contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
+            "Please try your request again later. If the problem persists, check your network connection."
         ),
         "error_code": "common_response"
     }
@@ -347,7 +347,7 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
     "rate_limit_exceeded": {
         "content": (
             "## Oops! You've hit the OpenRouter API rate limit.\n\n"
-            "Please wait before making more requests. For details on rate limits, [Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
+            "Please wait before making more requests."
         ),
         "error_code": "rate_limit_exceeded"
     },
@@ -355,7 +355,6 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
         "content": (
             "## Billing Issue Detected\n\n"
             "It looks like there's a problem with your OpenRouter billing details. You might have reached your usage limit or have missing billing information.\n\n"
-            "For more details contact us, [Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
         ),
         "error_code": "billing_error"
     },
@@ -370,7 +369,6 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
         "content": (
             "## Invalid Request\n\n"
             "The request was not properly formatted or contained invalid parameters.\n\n"
-            "[Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
         ),
         "error_code": "invalid_request_error"
     },
@@ -378,7 +376,6 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
         "content": (
             "## Model Not Found\n\n"
             "The specified model is not available. Please check the model name and ensure it is correctly spelled.\n\n"
-            "[Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
         ),
         "error_code": "model_not_found"
     },
@@ -386,7 +383,6 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
         "content": (
             "## Connection Issue\n\n"
             "There was a problem connecting to OpenRouter. It could be due to network issues or temporary API downtime.\n\n"
-            "Please check your internet connection and try again. If the problem persists, [Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
         ),
         "error_code": "connection_error"
     },
@@ -394,7 +390,6 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
         "content": (
             "## Request Timed Out\n\n"
             "The request to OpenRouter took too long and was canceled. This could be due to network latency or high server load.\n\n"
-            "Try again later. If this issue continues, [Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
         ),
         "error_code": "timeout_error"
     },
@@ -402,14 +397,13 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
         "content": (
             "## Insufficient Quota\n\n"
             "Your OpenRouter account has exceeded its quota for API usage.\n\n"
-            "[Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
         ),
         "error_code": "quota_exceeded"
     },
     "content_policy_violation": {
         "content": (
             "## Content Policy Violation\n\n"
-            "Your request was blocked due to a policy violation. [Contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
+            "Your request was blocked due to a policy violation."
         ),
         "error_code": "content_policy_violation"
     },
@@ -423,7 +417,7 @@ WEAM_ROUTER_MESSAGES_CONFIG = {
     "common_response": {
         "content": (
             "We encountered an issue and were unable to receive a response. This could be due to a variety of reasons including network issues, server problems, or unexpected errors.\n\n"
-            "Please try your request again later. If the problem persists, check your network connection or [contact support](https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue) for further assistance."
+            "Please try your request again later."
         ),
         "error_code": "common_response"
     }

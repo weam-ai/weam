@@ -129,7 +129,7 @@ const PromptList: React.FC<PromptListProps> = ({ isGridView, loading, promptList
                     </div>
                     {/* Prompt Detail start */}
                     <div className='overflow-y-auto max-h-80'>
-                        { !item.isCompleted && <span className='text-font-14 px-[10px] py-[3px] inline-block mt-[3px] bg-white text-b5 rounded-md'>{`We're preparing your prompt.`}</span> }
+                        { !item.isCompleted && <span className='text-font-12 px-[10px] py-[3px] inline-block mt-[3px] bg-white border text-b5 rounded-md'>{`We're preparing your prompt.`}</span> }
                         <p className='text-font-12 text-b5 mt-2.5 md:group-hover/item:text-b15 transition duration-150 ease-in-out'>
                             {item.content}
                         </p>

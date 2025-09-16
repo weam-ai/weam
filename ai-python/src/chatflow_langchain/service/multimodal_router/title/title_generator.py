@@ -15,6 +15,7 @@ from src.chatflow_langchain.service.multimodal_router.title.config import REFORM
 import gc
 from src.chatflow_langchain.service.multimodal_router.title.utils import extract_error_message, get_default_title
 from src.gateway.openai_exceptions import LengthFinishReasonError,ContentFilterFinishReasonError
+from src.gateway.utils import SyncHTTPClientSingleton
 from src.chatflow_langchain.repositories.openai_error_messages_config import WEAM_ROUTER_MESSAGES_CONFIG
 from openai import RateLimitError,APIConnectionError,APITimeoutError,APIStatusError,NotFoundError
 from src.crypto_hub.utils.crypto_utils import MessageEncryptor,MessageDecryptor
@@ -71,15 +72,17 @@ class RouterTitleGenerationService(AbstractTitleGeneration):
         try:
             llm_apikey_decrypt_service.initialization(api_key_id, companymodel)
             self.model_name = llm_apikey_decrypt_service.model_name
+            http_client = SyncHTTPClientSingleton.get_client()
             self.llm = ChatOpenAI(
                     model_name=llm_apikey_decrypt_service.model_name,
                     temperature=llm_apikey_decrypt_service.extra_config.get(
                     'temperature'),
                     openai_api_key=llm_apikey_decrypt_service.decrypt(),
                     openai_api_base="https://openrouter.ai/api/v1",
+                    model=ROUTERMODEL.GPT_4_1_MINI,
                     streaming=False,
-                    model=OPENAIMODEL.GPT_4_1_MINI,
-                    max_tokens=35
+                    max_tokens=35,
+                    http_client=http_client,
                 )
             self.default_token_dict={"totalCost":"$0.000","promptT":0,"completion":0,"totalUsed":0}
         except Exception as e:

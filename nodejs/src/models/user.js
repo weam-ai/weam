@@ -109,7 +109,15 @@ const schema = new Schema(
         isPrivateBrainVisible :{
             type: Boolean,
             default: true
-        }
+        },
+        tempblocked: {
+            type: Boolean,
+            default: false
+        },
+        onboard: {
+            type: Boolean,
+            default: true
+        },
     },
     {
         toJSON: {

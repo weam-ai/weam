@@ -73,6 +73,7 @@ export type SelectedContextData = {
     itrTimeDuration?: string;
     maxItr?: number;
     coverImg?: FileType;
+    charimg?: string;
     summaries?: ObjectType;
     fileId?: string;
     isremove?:boolean;
@@ -333,3 +334,18 @@ export type SalesAgentFileMetadataType = {
     type: string;
     url: string;
 }
+
+export type EditResponseRequestType = {
+    messageId: string;
+    updatedResponse: string;
+};
+
+export type EditResponseResponseType = {
+    success: boolean;
+    message: string;
+    data: {
+        messageId: string;
+        updatedResponse: string;
+        [key: string]: any;
+    };
+};

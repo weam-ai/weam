@@ -13,5 +13,5 @@ class ClientService:
         }
         BUCKET_TYPE = os.environ.get("BUCKET_TYPE", "MINIO")
 
-
+        self.bucket_type = BUCKET_TYPE
         self.client_type = S3_CLIENTS.get(BUCKET_TYPE)()

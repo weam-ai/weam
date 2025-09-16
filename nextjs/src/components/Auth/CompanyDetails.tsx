@@ -281,7 +281,7 @@ const CompanyDetails = () => {
                 </div>
 
                 <div className="submit-wrap flex items-center justify-center mt-2 md:mt-10 mx-auto w-full">
-                    <button className="btn btn-blue py-[12px] w-full max-w-[300px]" disabled={loading}>
+                    <button className="btn btn-black py-[12px] w-full max-w-[300px]" disabled={loading}>
                         Sign Up
                     </button>
                 </div>

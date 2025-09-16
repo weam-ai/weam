@@ -101,8 +101,10 @@ export const MCP_TOOLS = {
     ]
 };
 
-const MCP_BUTTON_CLASSNAME = 'text-b4 bg-white border border-b10 hover:bg-b2 hover:text-white transition-all duration-200';
-const MCP_CONFIGURE_BUTTON_NAME = 'Configure';
+export const MCP_BUTTON_CLASSNAME = 'text-b4 bg-white border border-b10 hover:bg-b2 hover:text-white transition-all duration-200';
+export const MCP_COMING_SOON_BUTTON_CLASSNAME = 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed transition-all duration-200';
+export const MCP_CONFIGURE_BUTTON_NAME = 'Configure';
+export const MCP_COMING_SOON_BUTTON_NAME = 'Coming Soon';
 
 const MCP_OPTIONS = [
     {
@@ -136,24 +138,6 @@ const MCP_OPTIONS = [
         tools: ["gmail_get_messages","gmail_send_message"]
     },
     {
-        icon: <NotionIcon className="size-6" />,
-        title: 'Notion',
-        code: MCP_CODES.NOTION,
-        description:
-            'Sync with Notion to manage docs, databases, and notes dynamically.',
-        buttonText: MCP_CONFIGURE_BUTTON_NAME,
-        buttonClassName: MCP_BUTTON_CLASSNAME,
-    },
-    {
-        icon: <StripeIcon className="size-6" />,
-        title: 'Stripe',
-        code: MCP_CODES.STRIPE,
-        description:
-            'Connect Stripe to track payments, manage invoices, and trigger events from transactions.',
-        buttonText: MCP_CONFIGURE_BUTTON_NAME,
-        buttonClassName: MCP_BUTTON_CLASSNAME,
-    },
-    {
         icon: <GoogleDriveIcon className="size-6" />,
         title: 'Google Drive',
         code: MCP_CODES.GOOGLE_DRIVE,
@@ -171,13 +155,31 @@ const MCP_OPTIONS = [
         buttonClassName: MCP_BUTTON_CLASSNAME,
     },
     {
+        icon: <NotionIcon className="size-6" />,
+        title: 'Notion',
+        code: MCP_CODES.NOTION,
+        description:
+            'Sync with Notion to manage docs, databases, and notes dynamically.',
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
+    },
+    {
+        icon: <StripeIcon className="size-6" />,
+        title: 'Stripe',
+        code: MCP_CODES.STRIPE,
+        description:
+            'Connect Stripe to track payments, manage invoices, and trigger events from transactions.',
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
+    },
+    {
         icon: <ZapierIcon className="size-6" />,
         title: 'Zapier',
         code: MCP_CODES.ZAPIER,
         description:
             'Use Zapier to unlock thousands of app integrations in just a few clicks.',
-        buttonText: MCP_CONFIGURE_BUTTON_NAME,
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
     {
         icon: <AirTableIcon className="size-6" />,
@@ -185,8 +187,8 @@ const MCP_OPTIONS = [
         code: MCP_CODES.AIRTABLE,
         description:
             'Connect Airtable for powerful spreadsheet-database functionality in workflows.',
-        buttonText: 'Configure',
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
     {
         icon: <AsanaIcon className="size-6" />,
@@ -194,8 +196,8 @@ const MCP_OPTIONS = [
         code: MCP_CODES.ASANA,
         description:
             'Link Asana to automate task creation and updates with your project workflows.',
-        buttonText: 'Configure',
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
     {
         icon: <MongoDBIcon className="size-6" />,
@@ -203,8 +205,8 @@ const MCP_OPTIONS = [
         code: MCP_CODES.MONGODB,
         description:
             'Connect MongoDB to query, write, and automate database actions.',
-        buttonText: 'Configure',
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
     {
         icon: <CanvaIcon className="size-6" />,
@@ -212,8 +214,8 @@ const MCP_OPTIONS = [
         code: MCP_CODES.CANVA,
         description:
             'Bring in Canva to auto-generate or manage creative assets right inside workflows.',
-        buttonText: 'Configure',
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
     {
         icon: <NeightNIcon className="size-6" />,
@@ -221,8 +223,8 @@ const MCP_OPTIONS = [
         code: MCP_CODES.N8N,
         description:
             'Integrate n8n to build advanced workflows with your existing tools.',
-        buttonText: 'Configure',
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
     {
         icon: <FigmaIcon className="size-6" />,
@@ -230,8 +232,8 @@ const MCP_OPTIONS = [
         code: MCP_CODES.FIGMA,
         description:
             'Connect Figma to sync design files or trigger actions from new updates.',
-        buttonText: 'Configure',
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
     {
         icon: <CalendlyIcon className="size-6" />,
@@ -239,8 +241,8 @@ const MCP_OPTIONS = [
         code: MCP_CODES.CALENDLY,
         description:
             'Sync Calendly to automate scheduling and capture meeting data instantly.',
-        buttonText: 'Configure',
-        buttonClassName: MCP_BUTTON_CLASSNAME,
+        buttonText: MCP_COMING_SOON_BUTTON_NAME,
+        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },
 ] as const;
 

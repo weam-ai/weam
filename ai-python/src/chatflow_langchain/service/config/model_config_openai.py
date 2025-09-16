@@ -23,6 +23,7 @@ class OPENAIMODEL:
     DALLE_WRAPPER_SIZE = "1024x1024"
     DALLE_WRAPPER_QUALITY = 'high'
     DALLE_WRAPPER_STYLE = 'vivid'
+    TOOL_NOT_SUPPORTED_MODEL=['chatgpt-4o-latest']
     n = 1
 
 class Functionality:

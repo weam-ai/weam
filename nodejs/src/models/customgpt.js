@@ -65,7 +65,8 @@ const schema = new Schema(
             default: true,
         },
         defaultgpt: { type: Boolean },
-        imageEnable: { type: Boolean, default: false }
+        imageEnable: { type: Boolean, default: false },
+        charimg: { type: String }
     },
     { timestamps: true },
 );

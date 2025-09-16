@@ -35,7 +35,10 @@ const UserProfile = () => {
     const userDetail = getCurrentUser();
     const [myImage, setMyImage] = useState(undefined);
     const dispatch = useDispatch();
-    const { closeSidebar } = useSidebar();
+    const { closeSidebar, isCollapsed } = useSidebar();
+    
+    // Determine tooltip side based on sidebar collapse state
+    const tooltipSide = isCollapsed ? "right" : "top";
 
     dispatch(setProfileImgAction(userDetail?.profileImg));
 
@@ -72,7 +75,7 @@ const UserProfile = () => {
                                 />
                             </div>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="border-none">
+                            <TooltipContent side={tooltipSide} className="border-none">
                             <p className='text-font-14'>Profile Settings</p>
                             </TooltipContent>
                         </Tooltip>

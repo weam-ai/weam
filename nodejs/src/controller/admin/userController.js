@@ -82,6 +82,15 @@ const toggleUserBrain = catchAsync(async (req, res) => {
     return util.failureResponse(_localize('module.createError', req, 'Private brain toggle'), res);
 })
 
+const changeUserRole = catchAsync(async (req, res) => {
+    const result = await userService.changeUserRole(req);
+    if (result) {
+        res.message = _localize('module.update', req, 'user role');
+        return util.successResponse(result, res);
+    }
+    return util.failureResponse(_localize('module.updateError', req, 'user role'), res);
+})
+
 module.exports = {
     addUser,
     updateUser,
@@ -90,5 +99,6 @@ module.exports = {
     getAllUser,
     exportUser,
     approveStorageRequest,
-    toggleUserBrain
+    toggleUserBrain,
+    changeUserRole
 }

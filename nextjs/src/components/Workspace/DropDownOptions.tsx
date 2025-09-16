@@ -22,6 +22,15 @@ import { BrainListType } from '@/types/brain';
 import { chatMemberListAction } from '@/lib/slices/chat/chatSlice';
 import { useSidebar } from '@/context/SidebarContext';
 import { getCurrentUser } from '@/utils/handleAuth';
+import { setSelectedAIModal } from '@/lib/slices/aimodel/assignmodelslice';
+import GlobalSearch from '../Search/GlobalSearch';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '../ui/tooltip';
+
 
 export const WorkspaceSelection = memo(({ w, brainList }) => {
     const dispatch = useDispatch();
@@ -113,7 +122,8 @@ export const WorkspaceNewChatButton = memo(() => {
     const router = useRouter();
     const dispatch = useDispatch();
     const brainData = useSelector((store: RootState) => store.brain.combined);
-    const { closeSidebar } = useSidebar();
+    const availableModels = useSelector((store: RootState) => store.assignmodel.list);
+    const { closeSidebar, isCollapsed } = useSidebar();
     const currentUser= useMemo( () => getCurrentUser(),[])
 
     const handleNewChatClick = () => {
@@ -131,11 +141,26 @@ export const WorkspaceNewChatButton = memo(() => {
         router.push(`${routes.main}?b=${encodedId}&model=${AI_MODEL_CODE.DEFAULT_OPENAI_SELECTED}`);
     };
     return (
-        <div className='mb-4 mt-2' >
-            <div onClick={handleNewChatClick} className='flex items-center gap-x-2 cursor-pointer text-font-14'>
-                <span className='text-font-14 font-medium w-5 h-5 leading-4 text-center rounded-full border border-b5 block group-hover:border-b10'>+</span>
-                New Chat
+        <div className='mb-4 mt-2 flex gap-x-2 collapsed-new-chat' >
+            
+            <div onClick={handleNewChatClick} className='flex items-center gap-x-2 cursor-pointer text-font-14 border rounded-lg py-3 px-3 w-full collapsed-plus'>
+                {isCollapsed ? (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span className='text-font-14 font-medium block text-blue2'>+</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="border-none">
+                                <p className="text-font-14">New Chat</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                ) : (
+                    <span className='text-font-14 font-medium block text-blue2'>+</span>
+                )}
+                <span className='collapsed-text'>New Chat</span>
             </div>
+            <GlobalSearch />
         </div>
     );
 });

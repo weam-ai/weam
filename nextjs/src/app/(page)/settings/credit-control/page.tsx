@@ -23,17 +23,17 @@ const CreditControl = async () => {
                             <TabsTrigger className="px-0 font-medium text-font-14 max-md:text-font-12" value="allocation">
                                 Credit Allocation
                             </TabsTrigger>
-                            <TabsTrigger className="px-0 font-medium text-font-14 max-md:text-font-12" value="transactions">
+                            {/* <TabsTrigger className="px-0 font-medium text-font-14 max-md:text-font-12" value="transactions">
                                 Transaction History
-                            </TabsTrigger>
+                            </TabsTrigger> */}
                         </TabsList>
 
                         <TabsContent value="allocation" className="p-0">
                             <CreditAllocation />
                         </TabsContent>
-                        <TabsContent value="transactions" className="p-0">
+                        {/* <TabsContent value="transactions" className="p-0">
                             <CreditTransaction />
-                        </TabsContent>
+                        </TabsContent> */}
                         
                     </Tabs>
                 </div>

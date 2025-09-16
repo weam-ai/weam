@@ -81,7 +81,7 @@ const BookmarkDialog = React.memo(({ onSelect, isWebSearchActive, selectedAttach
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger disabled={isWebSearchActive}>
-                            <div className={`chat-btn cursor-pointer bg-white transition ease-in-out duration-200 hover:bg-b11 rounded-md w-auto h-8 flex items-center px-[5px] ${
+                            <div className={`chat-btn cursor-pointer transition ease-in-out duration-200 hover:bg-b11 rounded-md w-auto h-8 flex items-center px-[5px] ${
                                             isWebSearchActive ? 'opacity-50 pointer-events-none' : ''
                                             }`}
                             >

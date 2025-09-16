@@ -16,7 +16,6 @@ import EditIcon from '@/icons/Edit';
 
 const handleEdit = (rowData) => {
     // Your edit handler logic
-    console.log('Edit row:', rowData);
 };
 const data = [
     {

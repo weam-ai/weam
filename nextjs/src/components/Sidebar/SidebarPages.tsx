@@ -30,18 +30,19 @@ const SidebarPages: React.FC<SidebarPagesProps> = ({ children, settingSidebar })
         [routes.profileSetting]: <ProfileSidebar />, 
         [routes.twoFactorAuthentication]: <ProfileSidebar />,
         [routes.changePassword]: <ProfileSidebar/>,
-        [routes.creditControl]: settingSidebar
+        [routes.creditControl]: settingSidebar,
+        [routes.superSolution]: settingSidebar
     };
 
     if (dynamicChatPath || dynamicCustomGptEditPath) return (
-        <div className={`flex flex-col h-full w-[290px] border-r`}>
+        <div className={`flex flex-col h-full w-full border-r`}>
             {/* <Suspense fallback={<Spinner />}> */}
                 {routeComponents[pathname] || children}
             {/* </Suspense> */}
         </div> 
     )
     return (
-        <div className={`flex flex-col h-full w-[290px] border-r`}>
+        <div className={`flex flex-col h-full w-full border-r`}>
             {/* <Suspense fallback={<Spinner />}> */}
                 {routeComponents[pathname] || children}
             {/* </Suspense> */}

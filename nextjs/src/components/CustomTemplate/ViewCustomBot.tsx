@@ -23,9 +23,9 @@ const ViewCustomBot = ({ bot }) => {
                 <DialogHeader className="rounded-t-10 px-[30px] pb-3 border-b">
                     <DialogTitle className="font-semibold flex items-center">
                         <Customgpt
-                            width={24}
-                            height={24}
-                            className="w-6 h-auto object-contain fill-b2 me-3 inline-block align-text-top" />
+                            width={20}
+                            height={20}
+                            className="w-5 h-auto object-contain fill-b5 me-3 inline-block align-text-top" />
                         Agents
                     </DialogTitle>
                     <DialogDescription>

@@ -67,6 +67,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Sidebar collapse styles */
+.collapsed-pbrains{
+  @apply border-none mt-2 pt-2;
+}
+.collapsed .sidebar-dropdown, .collapsed .collapsed-text {
+  @apply hidden;
+}
+.collapsed .collapsed-new-chat{
+  @apply gap-0 flex-col gap-y-2 items-center;
+}
+.collapsed .g-search{
+ @apply flex items-center justify-center border-none;
+}
+.collapsed .g-search svg{
+  @apply w-4 h-auto fill-b2;
+}
+.collapsed .collapsed-new-chat .collapsed-plus{
+  @apply p-0 flex items-center justify-center border-none;
+}
+.collapsed .collapsed-new-chat .collapsed-plus span{
+  @apply text-black text-font-18;
+}
+.collapsed .sidebar-footer {
+  @apply flex-col-reverse bg-white border-none;
+}
+.collapsed .collapsed-icon{
+  @apply fill-b2;
+}
+.collapsed .collapsed-logo{
+  @apply justify-center;
+}
+.collapsed .collapsed-logo .logo{
+  @apply ml-0;
+}
+.collapsed .collapsed-icon-only{
+  @apply items-center;
+}
+.collapsed .collapsed-center{
+  @apply justify-center;
+}
+.collapsed-brain{
+  @apply hidden;
+}
+.collapsed .collapsed-brain{
+  @apply block;
+}
 
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -182,6 +228,43 @@
   width: 100%
 }
 
+@media (min-width: 1200px) {
+  .markdown .markdown-table-wrap {
+    --thread-content-max-width: min(1200px, 92vw);
+    position: relative;
+    overflow: visible;
+    display: inline-block;
+  }
+  .markdown table[data-col-size] {
+    width: auto;
+    display: inline-table;
+    table-layout: auto;
+  }
+  
+  .markdown table[data-col-size=md], .markdown table[data-col-size=lg], .markdown table[data-col-size=xl] {
+    max-width: calc(100vw + 300px);
+    min-width: calc((100vw - 290px) / 2 + 200px);
+  }
+}
+
+/* Below 1200px: keep tables 100% width with horizontal scroll */
+@media (max-width: 1199.98px) {
+  .markdown .markdown-table-wrap {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: inline-block;
+    max-width: 100%;
+  }
+  .markdown table[data-col-size] {
+    width: 100%;
+    max-width: 100%;
+    min-width: auto;
+    display: table;
+    table-layout: auto;
+  }
+}
+
 .markdown th {
   background-color: rgba(0,0,0,.1);
   background-color: var(--border-light);
@@ -204,6 +287,8 @@
 
 .markdown td {
   border-bottom-width: 1px;
+  min-width: 70px;
+  word-break: keep-all;
   border-color: rgba(0,0,0,.15);
   border-color: var(--border-medium);
   border-left-width: 1px;
@@ -512,7 +597,7 @@ body .MuiChipsInput-TextField{
   li{
     position: relative;
     &::after{
-      @apply content-[''] transition-all duration-150 ease-in-out opacity-0 absolute -right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-transparent border-solid border-b-[10px] border-t-[10px] border-l-[12px] border-l-blue; 
+      @apply content-[''] transition-all duration-150 ease-in-out opacity-0 absolute -right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-transparent border-solid border-b-[10px] border-t-[10px] border-l-[12px] border-l-b2; 
     @apply xl:block hidden
     }
     &.active{

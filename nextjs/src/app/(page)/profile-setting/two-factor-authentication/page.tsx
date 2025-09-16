@@ -66,7 +66,7 @@ const TwoFactorAuthentication = () => {
 
     return (
         <>
-        <div className="max-md:h-[50px] max-md:sticky max-md:top-0 bg-white z-10"></div>
+        <div className="max-lg:h-[50px] max-lg:sticky max-lg:top-0 bg-white z-10"></div>
         <div className="w-full relative h-full overflow-y-auto py-3 lg:py-10 px-2">            
             <div className="mx-auto max-w-[450px] h-full flex flex-col items-center justify-center">
                 {twomfa && (

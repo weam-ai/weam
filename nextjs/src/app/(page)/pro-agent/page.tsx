@@ -131,7 +131,7 @@ const ProAgentChat = () => {
                 ref={contentRef}
                 className="pb-8 pt-4 mt-[68px] h-full overflow-y-auto w-full relative"
             >
-                <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[32rem] lg:max-w-[40rem] xl:max-w-[48.75rem]">
+                <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[90vw] lg:max-w-[40rem] xl:max-w-[48.75rem]">
                     <div className="bg-gray-100 flex text-font-16 text-b2 ml-auto gap-3 rounded-10 transition ease-in-out duration-150 md:max-w-[30rem] xl:max-w-[36rem] px-3 pt-4 pb-6">
                         <div className="relative flex size-[25px] justify-center overflow-hidden rounded-full">
                             <span className="user-char flex items-center justify-center size-6 rounded-full bg-[#B3261E] text-b15 text-font-12 font-normal">

@@ -1,6 +1,6 @@
 from docx import Document
 from typing import Union,List
-import textract
+from spire.doc import Document as SpireDocument
 import tempfile
 from src.content_extraction.text.s3_extractor import S3TextExtractor,LocalStackTextExtractor,MinioTextExtractor
 from src.content_extraction.text.extractor_base import TextExtractor
@@ -43,7 +43,9 @@ class DOCTextExtractor(TextExtractor):
             temp.flush()  # Make sure all data is written
             # Extract text from the .doc file using textract
             try:
-                text = textract.process(temp.name, encoding='utf-8').decode('utf-8')
+                doc = SpireDocument()
+                doc.LoadFromFile(temp.name)
+                text = doc.GetText()
                 end_time = time.time()  # End timing
                 logger.info(
                     f"Time taken to extract text from DOC: {end_time - start_time} seconds",
@@ -121,7 +123,9 @@ class S3DOCTextExtractor(S3TextExtractor):
             temp.flush()  # Make sure all data is written
             # Extract text from the .doc file using textract
             try:
-                text = textract.process(temp.name, encoding='utf-8').decode('utf-8')
+                doc = SpireDocument()
+                doc.LoadFromFile(temp.name)
+                text = doc.GetText()
                 end_time = time.time()  # End timing
                 
                 if page_wise:
@@ -199,7 +203,9 @@ class LSTACKDOCTextExtractor(LocalStackTextExtractor):
             temp.flush()  # Make sure all data is written
             # Extract text from the .doc file using textract
             try:
-                text = textract.process(temp.name, encoding='utf-8').decode('utf-8')
+                doc = SpireDocument()
+                doc.LoadFromFile(temp.name)
+                text = doc.GetText()
                 end_time = time.time()  # End timing
                 
                 if page_wise:
@@ -278,7 +284,9 @@ class MINIODOCTextExtractor(MinioTextExtractor):
             temp.flush()  # Make sure all data is written
             # Extract text from the .doc file using textract
             try:
-                text = textract.process(temp.name, encoding='utf-8').decode('utf-8')
+                doc = SpireDocument()
+                doc.LoadFromFile(temp.name)
+                text = doc.GetText()
                 end_time = time.time()  # End timing
                 
                 if page_wise:

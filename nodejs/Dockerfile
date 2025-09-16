@@ -12,7 +12,7 @@ RUN apk del make gcc g++ python3
 
 # Production stage with minimal Alpine
 FROM alpine:3.19
-RUN apk add --no-cache nodejs npm
+RUN apk add --no-cache nodejs npm git docker-cli bash
 COPY --from=builder /node_modules /node_modules
 
 WORKDIR /usr/src/app

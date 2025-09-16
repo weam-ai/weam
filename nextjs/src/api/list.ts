@@ -52,6 +52,18 @@ const apiList = {
         url: () => `${WEB}/message/send`,
         method: 'POST'
     },
+    createFileRecord: {
+        url: () => `upload/create-file-record`,
+        method: 'POST',
+    },
+    editResponse: {
+        url: () => `chat/update-response`,
+        method: 'PUT'
+    },
+    updateMessage: {
+        url: (id: string) => `${WEB}/message/update/${id}`,
+        method: 'PUT'
+    },
     forkChat: {
         url: () => `${WEB}/chat/fork`,
         method: 'POST'
@@ -185,6 +197,10 @@ const apiList = {
         url: ()=> `${WEB}/user/favorite-list`,
         method: 'POST'
     },
+    solutionInstall: {
+        url: () => `${WEB}/solution-install`,
+        method: 'POST'
+    },
     globalSearch: {
         url: () => `${WEB}/message/global-search`,
         method: 'POST'
@@ -208,6 +224,55 @@ const apiList = {
     updateMcpData: {
         url: () => `common/update-mcp-data`,
         method: 'PUT'
+    },
+    getMembersToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/members/list`,
+        method: 'POST'
+    },
+    addMembersToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/members/add`,
+        method: 'POST'
+    },
+    removeMembersFromSolutionApp: {
+        url: () => `${ADMIN}/super-solution/members/remove`,
+        method: 'POST'
+    },
+    getTeamsToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/teams/list`,
+        method: 'POST'
+    },
+    addTeamsToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/teams/add`,
+        method: 'POST'
+    },
+    removeTeamsFromSolutionApp: {
+        url: () => `${ADMIN}/super-solution/teams/remove`,
+        method: 'POST'
+    },
+    getSolutionAppByUserId: {
+        url: (id: string) => `${ADMIN}/super-solution/get-by-user-id/${id}`,
+        method: 'GET'
+    },
+        // Page operations
+    createPage: {
+        url: () => `${WEB}/page/create`,
+        method: 'POST'
+    },
+    getAllPages: {
+        url: () => `${WEB}/page/list`,
+        method: 'POST'
+    },
+    getPageById: {
+        url: (id: string) => `${WEB}/page/${id}`,
+        method: 'GET'
+    },
+    pageUpdate: {
+        url: (id: string) => `${WEB}/page/${id}`,
+        method: 'PUT'
+    },
+    deletePage: {
+        url: (id: string) => `${WEB}/page/${id}`,
+        method: 'DELETE'
     },
     commonUrl: (prefix: string, module: string) => ({
         list: {
@@ -285,6 +350,10 @@ const apiList = {
         favorite: {
             url: (id: string) => `${prefix}/${module}/favorite/${id}`,
             method: 'PUT'
+        },
+        changeRole: {
+            url: () => `${prefix}/${module}/change-role`,
+            method: 'POST'
         }
     })
 }

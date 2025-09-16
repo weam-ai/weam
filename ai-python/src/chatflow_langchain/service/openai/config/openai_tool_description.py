@@ -33,7 +33,8 @@ class ToolServiceDescription:
     1024x1536 (Portrait): Perfect for mobile content, social media stories, and vertical ads.
     1536x1024 (Landscape): Great for presentations, video thumbnails, website banners, and widescreen displays.
 
-    editHistory_flag:bool = False (True,If user Requests to edit or remove objects, replace elements, insert new items, Edit Images and make other detailed modifications from the history) Always pass this flag.
+   Parameters:
+    - image_size (str): The desired size of the generated image. Supported values are "1024x1024", "1024x1536", and "1536x1024".
 
     IMPORTANT: Do NOT use this tool if the user requests to generate code based on an image input and a prompt. For such cases, use the chat tool to generate code from the image and prompt.
     """
@@ -51,3 +52,11 @@ class ToolServiceDescription:
         Answering factual or information-based questions.
         Assisting with coding tasks, debugging, or generating code snippets.
         Providing descriptive responses for user-provided image prompts or generating new visuals based on detailed requests."""
+
+    CURRENT_TIME = """
+        A Tool that gives current date and time.
+        Call this tool when prompted with date or time related questions/queries.
+        Call this tool when the user has time related terms in the query like "current time", "now", "today", "tomorrow", etc.
+        Returns:
+            str: Current date and time in ISO and human readable format
+    """

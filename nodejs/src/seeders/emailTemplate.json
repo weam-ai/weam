@@ -80,7 +80,14 @@
 		"subject": "Verify Your Account – Resend Verification Link",
 		"body": "{{header}}<tr><td><table border='0' cellpadding='0' cellspacing='0' style='width: 100%; padding: 15px 30px 30px 30px;'><tr><td style='font-size: 18px; line-height: 26px;'><p>We noticed that you requested to resend your email verification link. To complete the registration process and activate your account, please verify your email address by clicking the button below:</p><p></p></td></tr><tr><td><table border='0' cellpadding='0' cellspacing='0' width='200px' style='width: 200px;'><tr><td><a href={{link}} style='background-color: #6637EC; color: #FFF; padding: 8px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Verify Your Account</a></td></tr></table></td></tr><tr><td style='height: 15px;'>&nbsp;</td></tr><tr><td style='height: 1px; background-color: #EEEEEE;'></td></tr><tr><td style='height: 15px;'>&nbsp;</td></tr><tr><td style='font-size: 16px; line-height: 24px;'><p>If you're having trouble with the button, <a href='{{support}}' style='color: #6637EC;'>click here for support</a></p><p style='margin-bottom: 5px;'>Happy collaborating!</p><p style='margin-top: 0; margin-bottom: 0;'>Best,</p><p style='margin-top: 0; margin-bottom: 5px;'>The Weam Team</p></td></tr></table></td></tr>{{footer}}",
 		"isActive": true
-	},
+	},	
+	{
+		"nm": "Role Updated",
+		"code": "ROLE_CHANGE",
+		"subject": "Your Role Has Been Updated",
+		"body": "{{header}}<tr><td><table border='0' cellpadding='0' cellspacing='0' style='width: 100%; padding: 15px 30px 30px 30px;'><tr><td style='font-size: 18px; line-height: 26px;'><p>Hey <strong style='color: #6637EC;'>{{name}},</strong></p><p>Your role on Weam has been updated by an administrator.</p><p><strong>New Role:</strong> {{newRole}}</p><p><strong>Previous Role:</strong> {{previousRole}}</p><p><strong>Updated By:</strong> {{updatedBy}}</p><p>This change will take effect immediately. You may need to log out and log back in to see the new permissions associated with your updated role.</p><p>If you have any questions about this change, please contact your administrator or reach out to our support team.</p></td></tr><tr><td style='height: 15px;'>&nbsp;</td></tr><tr><td><table border='0' cellpadding='0' cellspacing='0' width='200px' style='width: 200px;'><tr><td><a href='https://app.weam.ai/login' target='_blank' style='background-color: #6637EC; color: #FFF; padding: 8px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Log In to Weam</a></td></tr></table></td></tr><tr><td style='height: 15px;'>&nbsp;</td></tr></table></td></tr>{{footer}}",
+		"isActive": true
+	},			
 	{
 		"nm": "Storage Request Approved",
 		"code": "STORAGE_REQUEST_APPROVED",

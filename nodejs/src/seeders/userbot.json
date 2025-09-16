@@ -1,0 +1,467 @@
+[
+    {
+        "name": "llama3.2",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "llama3.1",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "llama3",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "llama2",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "mistral",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "mixtral",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "codellama",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "deepseek-coder",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "phi3",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "phi3.5",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "gemma2",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "gemma",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "qwen2.5",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "qwen2",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "codeqwen",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "starcoder2",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "orca-mini",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "vicuna",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "neural-chat",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "starling-lm",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "tinyllama",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "wizard-vicuna-uncensored",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "nous-hermes2",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "dolphin-mistral",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "llava",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "bakllava",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "solar",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "openchat",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "zephyr",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "yi",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    },
+    {
+        "name": "falcon",
+        "bot": {
+            "title": "Ollama",
+            "code": "OLLAMA"
+        },
+        "config": {
+            "apikey": "local"
+        },
+        "modelType": 2,
+        "isActive": true,
+        "stream": true,
+        "tool": false,
+        "provider": "ollama"
+    }
+]

@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 import re
 from fastapi import APIRouter, Depends
 from bs4 import BeautifulSoup
-from src.chatflow_langchain.utils.playwright_info_fetcher import PageInfoFetcher
+# from src.chatflow_langchain.utils.playwright_info_fetcher import PageInfoFetcher
 from typing import List
 from src.gateway.jwt_decode import get_user_data
 from src.chatflow_langchain.utils.url_validator import URLCheckerService
@@ -60,21 +60,21 @@ class MultiPageInfoRequest(BaseModel):
 class SinglePageInfoRequest(BaseModel):
     url: str
 
-@router.post("/page_info")
-async def get_page_info(page_request: SinglePageInfoRequest,current_user=Depends(get_user_data)):
-    # checker = URLCheckerService(base_name=page_request.url)
-    # reachable, not_reachable = await checker.check_urls_async()
+# @router.post("/page_info")
+# async def get_page_info(page_request: SinglePageInfoRequest,current_user=Depends(get_user_data)):
+#     # checker = URLCheckerService(base_name=page_request.url)
+#     # reachable, not_reachable = await checker.check_urls_async()
 
-    # if not reachable:
-    #     response = {"url": None, "domain": None, "logo": None, "title": None, "snippet": None}
-    #     return response
+#     # if not reachable:
+#     #     response = {"url": None, "domain": None, "logo": None, "title": None, "snippet": None}
+#     #     return response
     
-    fetcher = PageInfoFetcher(timeout_ms=5000)
-    response = await fetcher.fetch_single_page_info(page_request.url)
-    return response
+#     fetcher = PageInfoFetcher(timeout_ms=5000)
+#     response = await fetcher.fetch_single_page_info(page_request.url)
+#     return response
 
-@router.post("/multi_page_info")
-async def get_multi_page_info(page_request: MultiPageInfoRequest,current_user=Depends(get_user_data)):
-    fetcher = PageInfoFetcher(timeout_ms=5000)
-    response = await fetcher.fetch_multiple_pages_info(page_request.url)
-    return response
+# @router.post("/multi_page_info")
+# async def get_multi_page_info(page_request: MultiPageInfoRequest,current_user=Depends(get_user_data)):
+#     fetcher = PageInfoFetcher(timeout_ms=5000)
+#     response = await fetcher.fetch_multiple_pages_info(page_request.url)
+#     return response

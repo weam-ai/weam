@@ -64,7 +64,7 @@ const LocalStorage = {
         }
 
         return false;
-    },
+    }
 };
 
 const SessionStorage = {

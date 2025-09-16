@@ -94,6 +94,8 @@ import useMCP from '@/hooks/mcp/useMCP';
 import ToolsConnected from './ToolsConnected';
 import SearchIcon from '@/icons/Search';
 import ThreeDotLoader from '../Loader/ThreeDotLoader';
+import { useResponseUpdate } from '@/hooks/chat/useResponseUpdate';
+import { usePageOperations } from '@/hooks/chat/usePageOperations';
 const defaultContext = {
     type: null,
     prompt_id: undefined,
@@ -234,8 +236,10 @@ const ChatPage = memo(() => {
         showHoverIcon,
         getAIProAgentChatResponse,
         isStreamingLoading,
+        isActivelyStreaming,
         generateSeoArticle,
-        getSalesCallResponse
+        getSalesCallResponse,
+        stopStreaming
     } = useConversation();
     const { chatInfo, socketChatById, handleAIApiType } = useChat();
     const {
@@ -250,6 +254,37 @@ const ChatPage = memo(() => {
     const { getSeoKeyWords, isLoading, leftList, rightList, setLeftList, setRightList } = useProAgent();
 
     const socket = useSocket(); // Hook for socket connection
+    
+    // Track which responses have been edited
+    const [editedResponses, setEditedResponses] = useState<Set<string>>(new Set());
+    
+    // Response update functionality
+    const { handleResponseUpdate, updateConversationResponse } = useResponseUpdate({
+        onUpdateResponse: async (messageId: string, updatedResponse: string) => {
+            // Update the conversation in the state
+            setConversations(prevConversations => 
+                prevConversations.map(conv => 
+                    conv.id === messageId 
+                        ? { ...conv, response: updatedResponse }
+                        : conv
+                )
+            );
+            
+            // Here you can make an API call to persist the changes
+            // await updateResponseInDatabase(messageId, updatedResponse);
+        }
+    });
+
+    // Page operations
+    const { createPageFromResponse, isCreatingPage } = usePageOperations({
+        onPageCreated: (pageData, isUpdate) => {
+        },
+        onError: (error) => {
+            Toast('Failed to process page. Please try again.', 'error');
+        }
+    });
+
+
     const { copyToClipboard, handleModelSelectionUrl, getDecodedObjectId, blockProAgentAction, handleProAgentUrlState, getAgentContent } = useConversationHelper();
     const { getChatMembers } = useChatMember();
     const { onSelectMenu } = useThunderBoltPopup({
@@ -286,6 +321,58 @@ const ChatPage = memo(() => {
     const handleWebSearchClick = useCallback(() => {
         dispatch(setIsWebSearchActive(!isWebSearchActive));
     }, [isWebSearchActive]);
+
+    const handleAddToPages = useCallback(async (title: string, message: any) => {
+        try {
+            // Get the current brain data
+            const currentBrainId = getDecodedObjectId();
+            
+            let brain :any = brainData.find((brain: BrainListType) => {
+                return brain._id === currentBrainId
+            });
+            
+            console.log('Found brain:', brain);
+            
+            // If no brain found, create a default brain object
+            if (!brain) {
+                brain = {
+                    _id: currentBrainId,
+                    title: 'General Brain',
+                    slug: 'general-brain'
+                };
+            }
+            
+            // Format the brain data properly using formatBrain function
+            const formattedBrain = formatBrain(brain);
+            
+            const pageData :any = {
+                originalMessageId: message.id,
+                title: title,
+                content: message.response,
+                chatId: params.id,
+                user: message.user,
+                brain: formattedBrain,
+                model: message.model,
+                tokens: message.tokens,
+                responseModel: message.responseModel,
+                responseAPI: message.responseAPI,
+                companyId: companyId
+            };
+            const result :any = await createPageFromResponse(pageData);
+            
+            // Show appropriate message based on whether it's an update or create
+            if (result.isUpdate) {
+                Toast('Page updated successfully!', 'success');
+            } else {
+                Toast('Page added successfully!', 'success');
+            }
+        } catch (error) {
+            console.error('Error creating page:', error);
+            Toast('Failed to add page. Please try again.', 'error');
+        }
+    }, [createPageFromResponse, brainData, params.id, companyId]);
+
+
 
     const handleImageConversation = useCallback((files: UploadedFileType[]) => {
         const hasImage = files.some((file) => file?.mime_type?.startsWith('image/'));
@@ -1214,7 +1301,7 @@ const ChatPage = memo(() => {
                                 return (
                                     <React.Fragment key={i}>
                                         {/* Chat item Start*/}
-                                        <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[32rem] lg:max-w-[40rem] xl:max-w-[48.75rem]">
+                                        <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[90vw] lg:max-w-[40rem] xl:max-w-[48.75rem]">
                                             <div className="relative group bg-gray-100 flex flex-1 text-font-16 text-b2 ml-auto gap-3 rounded-10 transition ease-in-out duration-150 md:max-w-[30rem] xl:max-w-[36rem] px-3 md:pt-4 pt-3 pb-9">
                                                 {/* Hover Icons start */}
                                                 {!chatInfo?.brain?.id?.deletedAt && !blockProAgentAction() &&
@@ -1227,7 +1314,12 @@ const ChatPage = memo(() => {
                                                             handleOpenThreadModal(m,THREAD_MESSAGE_TYPE.QUESTION)
                                                         }
                                                         copyToClipboard={copyToClipboard}
-                                                        getAgentContent={getAgentContent} 
+                                                        getAgentContent={getAgentContent}
+                                                        onAddToPages={async (title: string) => {
+                                                            await handleAddToPages(title, m);
+                                                        }}
+                                                        hasBeenEdited={editedResponses.has(m.id)}
+                                                        isAnswer={false}
                                                     />
                                                 }
                                                 {/* Hover Icons End */}
@@ -1283,7 +1375,7 @@ const ChatPage = memo(() => {
                                         </div>
                                         {/* Chat item End*/}
                                         {/* Chat item Start*/}
-                                        <div className="chat-item w-full px-4 lg:py-2 py-2 lg:gap-6 m-auto md:max-w-[32rem] lg:max-w-[40rem] xl:max-w-[48.75rem]">
+                                        <div className="chat-item w-full px-4 lg:py-2 py-2 lg:gap-6 m-auto md:max-w-[90vw] lg:max-w-[40rem] xl:max-w-[48.75rem]">
                                             <div className="relative group bg-white flex flex-1 text-font-16 text-b2 mx-auto gap-3 px-3 pt-3 pb-9 rounded-10 transition ease-in-out duration-150">
                                                 {/* Hover Icons start */}
                                                 {!chatInfo?.brain?.id?.deletedAt && showHoverIcon && !blockProAgentAction() &&
@@ -1306,6 +1398,11 @@ const ChatPage = memo(() => {
                                                         getPerplexityResponse={getPerplexityResponse}
                                                         getAIDocResponse={getAIDocResponse}
                                                         custom_gpt_id={persistTagData?.custom_gpt_id}
+                                                        onAddToPages={async (title: string) => {
+                                                            await handleAddToPages(title, m);
+                                                        }}
+                                                        hasBeenEdited={editedResponses.has(m.id)}
+                                                        isAnswer={true}
                                                     />
                                                 }
                                                 {/* Hover Icons End */}
@@ -1340,6 +1437,10 @@ const ChatPage = memo(() => {
                                                                         handleSubmitPrompt={handleSubmitPrompt}
                                                                         isStreamingLoading={isStreamingLoading}
                                                                         proAgentCode={m?.proAgentData?.code}
+                                                                        onResponseUpdate={handleResponseUpdate}
+                                                                        onResponseEdited={(messageId) => {
+                                                                            setEditedResponses(prev => new Set([...prev, messageId]));
+                                                                        }}
                                                                     />
                                                             }
                                                         </div>
@@ -1383,7 +1484,7 @@ const ChatPage = memo(() => {
                     <div className="w-full pt-2">
                         
                         
-                        <div className="flex flex-col mx-auto relative px-5 md:max-w-[32rem] lg:max-w-[40rem] xl:max-w-[48.75rem]">
+                        <div className="flex flex-col mx-auto relative px-5 md:max-w-[90vw] lg:max-w-[40rem] xl:max-w-[48.75rem]">
                             <div className="flex flex-col text-font-16 mx-auto group overflow-hidden rounded-[12px] [&:has(textarea:focus)]:shadow-[0_2px_6px_rgba(0,0,0,.05)] w-full flex-grow relative border border-b11">
                                 {globalUploadedFile.length > 0 && (                          
                                     <UploadFileInput
@@ -1430,21 +1531,25 @@ const ChatPage = memo(() => {
                                                                 >
                                                                     
                                                                     <div className="flex items-center flex-wrap xl:flex-nowrap">
-                                                                        <Image
-                                                                            src={
-                                                                                gpt?.coverImg?.uri
-                                                                                    ? `${LINK.AWS_S3_URL}${gpt.coverImg.uri}`
-                                                                                    : defaultCustomGptImage.src
-                                                                            }
-                                                                            height={60}
-                                                                            width={60}
-                                                                            className="w-6 h-6 object-contain rounded-custom inline-block"
-                                                                            alt={
-                                                                                gpt?.coverImg
-                                                                                    ?.name ||
-                                                                                'Default Image'
-                                                                            }
-                                                                        />
+                                                                                                                                                    <Image
+                                                                                src={
+                                                                                    gpt?.coverImg?.uri
+                                                                                        ? `${LINK.AWS_S3_URL}${gpt.coverImg.uri}`
+                                                                                        : gpt?.charimg
+                                                                                        ? gpt.charimg
+                                                                                        : defaultCustomGptImage.src
+                                                                                }
+                                                                                height={60}
+                                                                                width={60}
+                                                                                className="w-6 h-6 object-contain rounded-custom inline-block"
+                                                                                alt={
+                                                                                    gpt?.coverImg
+                                                                                        ?.name ||
+                                                                                    gpt?.charimg
+                                                                                        ? 'Character Image'
+                                                                                        : 'Default Image'
+                                                                                }
+                                                                            />
                                                                         <p className="text-font-12 font-medium text-b2 mx-2">
                                                                             {gpt.title}
                                                                         </p>
@@ -1657,6 +1762,9 @@ const ChatPage = memo(() => {
                                         <TextAreaSubmitButton
                                             disabled={isSubmitDisabled}
                                             handleSubmit={handleSubmitPrompt}
+                                            loading={loading}
+                                            isActivelyStreaming={isActivelyStreaming}
+                                            onStopStreaming={() => stopStreaming(params?.id)}
                                         />
                                 </div>
                             </div>

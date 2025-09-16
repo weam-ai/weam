@@ -14,7 +14,7 @@ const defaultQueue = new Queue(QUEUE_NAME.DEFAULT, { ...queueOptions, db: 1 });
 const mailQueue = new Queue(QUEUE_NAME.MAIL, { ...queueOptions, db: 2 });
 const notificationQueue = new Queue(QUEUE_NAME.NOTIFICATION, { ...queueOptions, db: 3 });
 
-logger.info('bull-job-queue loaded 🍺🍻');
+logger.info('bull-job-queue loaded');
 
 const handleFailure = async (job, err) => {
     if (job.attemptsMade >= job.opts.attempts) {

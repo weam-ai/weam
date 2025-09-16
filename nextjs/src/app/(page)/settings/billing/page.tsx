@@ -18,7 +18,7 @@ export default function BillingSettings() {
     
     return (
         <>
-            <div className="max-md:h-[50px] max-md:sticky max-md:top-0 bg-white z-10"></div>
+            <div className="max-lg:h-[50px] max-lg:sticky max-lg:top-0 bg-white z-10"></div>
             <div className="flex flex-col flex-1 relative h-full overflow-hidden lg:pt-20 pb-10 px-2">
                 <div className="h-full overflow-y-auto w-full relative">
                     <div className="mx-auto md:max-w-[950px] max-w-full">

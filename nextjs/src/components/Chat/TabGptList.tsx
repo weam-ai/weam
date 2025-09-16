@@ -532,6 +532,8 @@ const TabGptList: React.FC<TabGptListProps> = ({
                                                         src={
                                                             gpt?.coverImg?.uri
                                                                 ? `${LINK.AWS_S3_URL}${gpt.coverImg.uri}`
+                                                                : gpt?.charimg
+                                                                ? gpt.charimg
                                                                 : defaultCustomGptImage.src
                                                         }
                                                         height={60}
@@ -540,7 +542,9 @@ const TabGptList: React.FC<TabGptListProps> = ({
                                                         alt={
                                                             gpt?.coverImg
                                                                 ?.name ||
-                                                            'Default Image'
+                                                            gpt?.charimg
+                                                                ? 'Character Image'
+                                                                : 'Default Image'
                                                         }
                                                     />
                                                     <p className="text-font-12 font-medium text-b2">

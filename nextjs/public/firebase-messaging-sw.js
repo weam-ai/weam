@@ -3,13 +3,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js');
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBJAnDC3nwmj2nmqZhIX2ufTpJXwNL2y3k',
-  authDomain: 'weam-ai.firebaseapp.com',
-  projectId: 'weam-ai',
-  storageBucket: 'weam-ai.appspot.com',
-  messagingSenderId: '919707575721',
-  appId: '1:919707575721:web:e516d10c84887b8975d0b8',
-  measurementId: 'G-ZBRX9MDN05'
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_STORAGE_BUCKET',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID',
+  measurementId: 'YOUR_MEASUREMENT_ID'
 };
 
 firebase.initializeApp(firebaseConfig);

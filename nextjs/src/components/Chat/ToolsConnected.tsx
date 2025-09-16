@@ -22,6 +22,8 @@ import routes from '@/utils/routes';
 import { MCPDialogAppList } from '@/components/Mcp/MCPDialogAppList';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
+import AppIcon from '@/icons/AppsIcon';
+import { toSentenceCaseFromSnakeCase } from '@/utils/helper';
 
 interface ToolsConnectedProps {
     isWebSearchActive: boolean;
@@ -100,7 +102,7 @@ const ToolsConnected = ({ isWebSearchActive, toolStates, onToolStatesChange }: T
     // Handler for toggling all tools for selected MCP
     const handleAllToolsToggle = (checked: boolean) => {
         if (selectedMCP) {
-            const tools = MCP_TOOLS[selectedMCP as keyof typeof MCP_TOOLS] || [];
+            const tools = MCP_TOOLS[selectedMCP] || [];
             onToolStatesChange({
                 ...toolStates,
                 [selectedMCP]: checked ? tools : []
@@ -116,7 +118,7 @@ const ToolsConnected = ({ isWebSearchActive, toolStates, onToolStatesChange }: T
                 icon: mcpOption?.icon || '',
                 mcpTitle: mcpOption?.title || '',
                 mcpCode: mcpCode,
-                tools: MCP_TOOLS[mcpCode as keyof typeof MCP_TOOLS] || []
+                tools: MCP_TOOLS[mcpCode] || []
             };
         });
     }, [mcpData]);
@@ -137,17 +139,16 @@ const ToolsConnected = ({ isWebSearchActive, toolStates, onToolStatesChange }: T
                         <Tooltip>
                             <TooltipTrigger>
                                 <div
-                                    className={`chat-btn cursor-pointer bg-white transition ease-in-out duration-200 hover:bg-b11 rounded-md w-auto h-8 flex items-center px-[5px] ${
+                                    className={`chat-btn cursor-pointer transition ease-in-out duration-200 hover:bg-b11 rounded-md w-auto h-8 flex items-center px-[5px] ${
                                         isWebSearchActive
                                             ? 'opacity-50 pointer-events-none'
                                             : ''
                                     }`}
                                 >
-                                    <ToolIcon
+                                    <AppIcon 
                                         width={16}
                                         height={16}
-                                        className="w-auto h-[15px] fill-b5"
-                                    />
+                                        className="w-auto h-[15px] fill-b5"/>
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -240,7 +241,7 @@ const ToolsConnected = ({ isWebSearchActive, toolStates, onToolStatesChange }: T
 
                             {selectedTools.map((tool) => (
                                 <div key={tool} className="flex items-center gap-x-2 cursor-pointer hover:bg-gray-100 rounded-md p-1.5">
-                                    <p className="text-font-14">{tool}</p>
+                                    <p className="text-font-14">{toSentenceCaseFromSnakeCase(tool)}</p>
                                     <div className="ml-auto">
                                         <Switch 
                                             id={tool}

@@ -88,6 +88,7 @@ export const setUserData = (data: SetUserData) => {
         access_token: data?.access_token,
         inviteSts: data?.inviteSts,
         isFreeTrial: data?.isFreeTrial,
+        onboard: data?.onboard,
     }
 }
 

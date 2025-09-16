@@ -351,140 +351,23 @@ async def image_generate(image_query:bool=False, model_name=None, image_quality=
 
 
 
-
 @tool(description=ToolServiceDescription.WEB_ANALYSIS)
-async def website_analysis(query:bool=False, gemini_api_key:str=None, temprature:float=None, model_name:str=None,implicit_reference_urls:list[str]=[],
-                         image_url:str=None, thread_id:str=None, thread_model:str=None, imageT:int=0, memory:object=None, chat_repository_history:object=None, original_query:str=None,api_key_id:str=None,regenerated_flag:bool=False,msgCredit:float=0,is_paid_user:bool=False,encrypted_key:str=None,companyRedis:str=None):
-    # Set model parameters here
-    try:   
-        custom_handler = CustomAsyncIteratorCallbackHandler()
-        implicit_reference_urls = [domain for item in implicit_reference_urls for domain in item.split(",")]
-        urls = re.findall(r'https?://[^\s"\'>)]+', original_query)
-        urls.extend(implicit_reference_urls)
+async def website_analysis(reference_urls:list[str]=[]):
+    try:
+        reference_urls = [domain for item in reference_urls for domain in item.split(",")]
+        urls = []
+        urls.extend(reference_urls)
         urls = list(set(urls))  # Remove duplicates
-        
     
         # web_content=await scraping_service.multiple_crawl_and_clean(urls=urls)
         if len(urls)> 0:
             web_content = crawler_scraper_task.apply_async(kwargs={'urls': urls}).get()
         else:
             web_content= '' 
-
-        llm = ChatGoogleGenerativeAI(model=model_name,
-                temperature=temprature,
-                api_key=gemini_api_key,
-                disable_streaming=False,
-                verbose=False,
-                callbacks=[custom_handler])
-        prompt_list = chat_repository_history.messages
-        if len(prompt_list) > 0:
-            prompt_list = [prompt for prompt in prompt_list if prompt.content != '']
-        
-        prompt_list.append(HumanMessagePromptTemplate.from_template(template=[{"type": "text", "text": '{query}'}]))
-        web_query_input = {"query":original_query}
-        if web_content:
-            prompt_list.append(HumanMessagePromptTemplate.from_template(template=[{"type": "text", "text": '{web_content}'}]))
-            web_query_input.update({"web_content": web_content})
-      
-        chat_prompt = ChatPromptTemplate.from_messages(prompt_list)     
-        # final_response = ''
-        llm_chain = LLMChain(llm=llm, prompt=chat_prompt)
-        async with gemini_async_cost_handler(model_name=model_name,thread_id=thread_id,collection_name=thread_model,encrypted_key=encrypted_key,companyRedis=companyRedis) as cb,\
-        get_mongodb_callback_handler(thread_id=thread_id, chat_history=chat_repository_history, memory=memory,collection_name=thread_model,regenerated_flag=regenerated_flag,model_name=model_name,msgCredit=msgCredit,is_paid_user=is_paid_user,encrypted_key=encrypted_key,companyRedis=companyRedis) as mongo_handler:
-            async for token in llm_chain.astream_events(web_query_input,{'callbacks':[cb,mongo_handler]},version="v1",stream_usage=True):
-                if token['event']=="on_chat_model_stream":
-                    max_chunk_size = 5  # Set your desired chunk size
-                    chunk=token['data']['chunk'].content
-                    for i in range(0, len(chunk), max_chunk_size):
-                        small_chunk = chunk[i:i + max_chunk_size]
-                        small_chunk = small_chunk.encode("utf-8")
-                        yield f"data: {small_chunk}\n\n", 200
-                else:
-                    pass
-
-            
-        
-    # Handle ResourceExhaustedError
-    except ResourceExhausted as e:
-        error_content = extract_google_error_message(str(e))
-        logger.error(
-            f"🚨 Google API Error: {error_content}",
-            extra={"tags": {"method": "GeminiToolService.website_analysis.ResourceExhausted"}})
-        thread_repo.initialization(thread_id, thread_model)
-        thread_repo.add_message_gemini("resource_exhausted_error")
-        # llm_apikey_decrypt_service.update_deprecated_status(True)
-        content = GENAI_ERROR_MESSAGES_CONFIG.get("resource_exhausted_error", GENAI_ERROR_MESSAGES_CONFIG.get("common_response"))
-        yield json.dumps({"status": status.HTTP_417_EXPECTATION_FAILED, "message": error_content, "data": content}), status.HTTP_417_EXPECTATION_FAILED
-    
-    except GoogleAPICallError as e:
-        error_content = extract_google_error_message(str(e))
-        logger.error(
-            f"🚨 Google API Error: {error_content}",
-            extra={"tags": {"method": "GeminiToolService.website_analysis.GoogleAPICallError"}})
-        thread_repo.initialization(thread_id, thread_model)
-        thread_repo.add_message_gemini("google_api_call_error")
-        # llm_apikey_decrypt_service.update_deprecated_status(True)
-        content = GENAI_ERROR_MESSAGES_CONFIG.get("google_api_call_error", GENAI_ERROR_MESSAGES_CONFIG.get("common_response"))
-        yield json.dumps({"status": status.HTTP_417_EXPECTATION_FAILED, "message": error_content, "data": content}), status.HTTP_417_EXPECTATION_FAILED
-    
-    # Handle GoogleAPIError
-    except GoogleAPIError as e:
-        error_content = extract_google_error_message(str(e))
-        logger.error(
-            f"🚨 Google API Error: {error_content}",
-            extra={"tags": {"method": "GeminiToolService.website_analysis.GoogleAPIError"}})
-        thread_repo.initialization(thread_id, thread_model)
-        thread_repo.add_message_gemini("google_api_error")
-        # llm_apikey_decrypt_service.update_deprecated_status(True)
-        content = GENAI_ERROR_MESSAGES_CONFIG.get("google_api_error", GENAI_ERROR_MESSAGES_CONFIG.get("common_response"))
-        yield json.dumps({"status": status.HTTP_417_EXPECTATION_FAILED, "message": error_content, "data": content}), status.HTTP_417_EXPECTATION_FAILED
-    
-    except GoogleGenerativeAIError as e:
-        error_content = extract_google_genai_error_message(str(e))
-        logger.error(
-            f"🚨 Google API Error: {error_content}",
-            extra={"tags": {"method": "GeminiToolService.website_analysis.GoogleGenerativeAIError"}})
-        thread_repo.initialization(thread_id, thread_model)
-        thread_repo.add_message_gemini("google_genai_error")
-        # llm_apikey_decrypt_service.update_deprecated_status(True)
-        content = GENAI_ERROR_MESSAGES_CONFIG.get("google_genai_error", GENAI_ERROR_MESSAGES_CONFIG.get("common_response"))
-        yield json.dumps({"status": status.HTTP_417_EXPECTATION_FAILED, "message": error_content, "data": content}), status.HTTP_417_EXPECTATION_FAILED
-    
+        return web_content
     except Exception as e:
-        try:
-            # Attempt to extract the error message using both extractors
-            error_content = None
-            # First, try extracting with extract_google_error_message
-            try:
-                error_content = extract_google_error_message(str(e))
-            except Exception as inner_e:
-                logger.warning(
-                    f"Warning: Failed to extract using extract_google_error_message: {inner_e}",
-                    extra={"tags": {"method": "GeminiToolService.Exception.extract_google_error_message"}})
-            # If no content from the first extractor, try the second one
-            if not error_content:
-                try:
-                    error_content = extract_google_genai_error_message(str(e))
-                except Exception as inner_e:
-                    logger.warning(
-                        f"Warning: Failed to extract using extract_google_genai_error_message: {inner_e}",
-                        extra={"tags": {"method": "GeminiToolService.Exception.extract_google_genai_error_message"}})
-            # Default error message if extraction fails
-            if not error_content:
-                error_content = DEV_MESSAGES_CONFIG.get("genai_message")
-            logger.error(
-                f"🚨 Failed to stream run conversation: {error_content}",
-                extra={"tags": {"method": "GeminiToolService.website_analysis.Exception_Try"}})
-            thread_repo.initialization(thread_id, thread_model)
-            thread_repo.add_message_gemini("common_response")
-            content = GENAI_ERROR_MESSAGES_CONFIG.get("common_response", GENAI_ERROR_MESSAGES_CONFIG.get("common_response"))
-            yield json.dumps({"status": status.HTTP_417_EXPECTATION_FAILED, "message": error_content, "data": content}), status.HTTP_417_EXPECTATION_FAILED  
-        except Exception as inner_e:
-            logger.error(
-                f"🚨 Failed to stream run conversation: {inner_e}",
-                extra={"tags": {"method": "GeminiToolService.website_analysis.Exception_Except"}})
-            thread_repo.initialization(thread_id, thread_model)
-            thread_repo.add_message_gemini("common_response")
-            content = GENAI_ERROR_MESSAGES_CONFIG.get("common_response")
-            yield json.dumps({"status": status.HTTP_400_BAD_REQUEST, "message": DEV_MESSAGES_CONFIG.get("genai_message"), "data": content}), status.HTTP_400_BAD_REQUEST
+        logger.error(
+            f"🚨 Failed to scrape and clean web content: {e}",
+            extra={"tags": {"method": "OpenAIToolServiceOpenai.website_analysis"}})
+        return ''
 

@@ -1,6 +1,7 @@
 import os
 import jwt
 from src.db.config import db_instance
+from src.db.async_config import async_db_instance
 from pydantic import BaseModel
 from fastapi import Request, HTTPException, status
 from src.logger.default_logger import logger
@@ -60,8 +61,10 @@ async def get_current_user(request: Request):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authorization header format")
 
 async def get_user_by_id(user_id: str):
-    collection = db_instance.get_collection("user")
-    user = collection.find_one({"_id": ObjectId(user_id)})
+    logger.info(f"Fetching user by ID:")
+    collection = async_db_instance.get_collection("user")
+    user = await collection.find_one({"_id": ObjectId(user_id)},{"profile":1,"email":1, "lname":1,"fname":1,"mcpdata":1})
+    logger.info(f"User fetched:")
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")

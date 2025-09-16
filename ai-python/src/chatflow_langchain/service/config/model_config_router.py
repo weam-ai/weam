@@ -13,6 +13,7 @@ class ROUTERMODEL:
     DALLE_WRAPPER_SIZE = "1024x1024"
     DALLE_WRAPPER_QUALITY = 'high'
     DALLE_WRAPPER_STYLE = 'vivid'
+    TOOL_NOT_SUPPORTED_MODELS=['deepseek/deepseek-r1:free','qwen/qwen3-30b-a3b:free']
     n = 1
 
 class Functionality:

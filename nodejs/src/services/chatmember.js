@@ -78,7 +78,7 @@ const memberList = async (req) => {
           const currChat=  await Chat.findById({_id:req.body.query.chatId})
 
           
-          const currBrain=await Brain.findById({ _id:currChat.brain.id})
+          const currBrain=await Brain.findById({ _id:currChat?.brain?.id})
 
             if(!isPrivateBrainVisible && !currBrain.isShare){
                return {

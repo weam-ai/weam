@@ -49,7 +49,7 @@ def task_upload_image_to_s3(self,image_url, s3_file_name):
 )
 def task_upload_huggingfaceimage_to_s3(self, image_bytes, s3_file_name):
     """
-    Upload a PIL Image directly to S3 without saving it locally.
+    Upload a PIL Image directly to S3 without saving it locally and return the CDN URL.
     """
     try:
         # Reconstruct the image from the bytes
@@ -60,8 +60,11 @@ def task_upload_huggingfaceimage_to_s3(self, image_bytes, s3_file_name):
 
         # Initialize S3 client
         client_service = ClientService()
+
         s3_client = client_service.client_type.client
         bucket_name = client_service.client_type.bucket_name
+        cdn_base_url = client_service.client_type.cdn_url
+        bucket_type = client_service.bucket_type
 
         # Upload the image directly to S3 using `upload_fileobj`
         temp_bytes.seek(0)  # Ensure the stream is at the beginning again
@@ -72,6 +75,13 @@ def task_upload_huggingfaceimage_to_s3(self, image_bytes, s3_file_name):
             ExtraArgs={'ContentType': f'image/{image_format.lower()}'}
         )
         logger.info(f"Image successfully uploaded to S3 bucket: {bucket_name} as: {s3_file_name}")
+
+        # Construct the CDN URL
+        if bucket_type == "MINIO":
+            cdn_url = f"{cdn_base_url.replace('minio', 'localhost')}/{bucket_name}/{s3_file_name}"
+        else:
+            cdn_url = f"{cdn_base_url}/{bucket_name}/{s3_file_name}"
+        return cdn_url
     except Exception as e:
         logger.error(f"Failed to upload image to S3: {e}")
-   
+        return None   

@@ -18,3 +18,38 @@ export const removeUserAction = async (userId: string) => {
 
     return response;
 }
+
+export const changeMemberRoleAction = async (userId: string, newRole: string) => {
+    const sessionUser = await getSessionUser();
+    
+    // Check if current user is admin
+    if (sessionUser.roleCode !== 'COMPANY') {
+        return {
+            status: 'ERROR',
+            message: 'Only admins can change user roles',
+            code: 'UNAUTHORIZED'
+        };
+    }
+    
+    // Prevent admin from changing their own role
+    if (sessionUser._id === userId) {
+        return {
+            status: 'ERROR',
+            message: 'You cannot change your own role',
+            code: 'INVALID_OPERATION'
+        };
+    }
+    
+    const response = await serverApi({
+        action: 'changeRole',
+        prefix: MODULE_ACTIONS.ADMIN_PREFIX,
+        module: MODULES.USER,
+        data: {
+            userId : userId,
+            roleCode: newRole
+        },
+        common: true
+    });
+    
+    return response;
+}

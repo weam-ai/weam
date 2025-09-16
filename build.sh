@@ -24,7 +24,7 @@ echo "✅ Docker Compose Command: $COMPOSE_CMD"
 
 # Step 1: Build base image
 echo "🚧 Step 1/5: Building base image (pybase_docker)..."
-$COMPOSE_CMD build pybase_docker --no-cache || { echo "❌ Failed to build pybase_docker"; exit 1; }
+$COMPOSE_CMD build --no-cache pybase_docker || { echo "❌ Failed to build pybase_docker"; exit 1; }
 echo "✅ pybase_docker image built successfully."
 
 # Step 2: Load .env

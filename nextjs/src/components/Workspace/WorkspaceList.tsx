@@ -1,4 +1,3 @@
-import DownArrowIcon from '@/icons/DownArrow';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -8,10 +7,10 @@ import Mainlogo from '@/icons/Mainlogo';
 import Link from 'next/link';
 import { EditWorkspaceIcon, WorkspaceAddButton, WorkspaceSelection } from './DropDownOptions';
 import { WorkspaceListType } from '@/types/workspace';
-import GlobalSearch from '../Search/GlobalSearch';
 import dynamic from 'next/dynamic';
 import { SelectedWorkspaceProps } from './SelectedWorkspace';
 import { BrainListType } from '@/types/brain';
+import DropDownIcon from '@/icons/DropDownIcon';
 const SelectedWorkspace = dynamic<SelectedWorkspaceProps>(() => import('./SelectedWorkspace').then(mod => mod.default), { ssr: false });
 
 type WorkspaceDropdownProps = {
@@ -23,22 +22,22 @@ type WorkspaceDropdownProps = {
 const WorkspaceDropdown = async ({ workspaceList, session, brainList }: WorkspaceDropdownProps) => {
     const user = session?.user;
     return (
-        <div className='flex items-center justify-between border-b border-b10'>
-            <div className="logo w-9 h-9 ml-2 flex items-center justify-center rounded-md">
+        <div className='flex items-center justify-between mt-5 collapsed-logo'>
+            <div className="logo w-8 h-8 ml-2 flex items-center justify-center rounded-md">
                 <Link href={"#"}>
                     <Mainlogo width={'32'} height={'32'} className={"fill-white"} />
                 </Link>
             </div>
-            <div className="w-full py-4 pl-3 pr-6 relative">
+            <div className="w-full px-3 mr-4 relative sidebar-dropdown">
                 {workspaceList?.length > 0 && (
                     <DropdownMenu className="workspace-list-dropdown">
                         <DropdownMenuTrigger className="text-font-16 leading-[1.3] font-bold text-b2 flex w-full items-center transition duration-150 ease-in-out focus:outline-none focus:ring-0 motion-reduce:transition-none [&[data-state=open]>span>.drop-arrow]:rotate-180">
                             <SelectedWorkspace workspaceList={workspaceList} />
                             <span className="ml-auto">
-                                <DownArrowIcon
-                                    width={'14'}
-                                    height={'8'}
-                                    className="drop-arrow w-3.5 h-2 object-contain fill-b6 transition duration-150 ease-in-out"
+                                <DropDownIcon
+                                    width={'12'}
+                                    height={'12'}
+                                    className="drop-arrow w-3 h-auto object-contain fill-b6 transition duration-150 ease-in-out"
                                 />
                             </span>
                         </DropdownMenuTrigger>
@@ -60,7 +59,6 @@ const WorkspaceDropdown = async ({ workspaceList, session, brainList }: Workspac
                     </DropdownMenu>
                 )}
             </div>
-            <GlobalSearch />
         </div>
     );
 };

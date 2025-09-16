@@ -5,9 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
 
-export const SettingActiveIcon = ({ key, setting, children }) => {
+export const SettingActiveIcon = ({ key, setting, children, isCollapsed }:any) => {
     const pathname = usePathname();
     const { closeSidebar } = useSidebar();
+    
+    // Conditionally apply hover class based on sidebar collapse state
+    const hoverClass = isCollapsed ? '' : 'hover:bg-b11';
+    
     return (
         <Link
             key={key}
@@ -15,7 +19,7 @@ export const SettingActiveIcon = ({ key, setting, children }) => {
             target={setting.target && `${setting.target}`}
             className={`${
                 pathname === setting.slug ? 'active' : ''
-            } sidebar-sub-menu-items cursor-pointer flex items-center py-2.5 px-5 mb-2 rounded-custom hover:bg-b11 [&.active]:bg-b12`}
+            } sidebar-sub-menu-items cursor-pointer flex items-center py-2.5 px-5 mb-2 rounded-custom ${hoverClass} [&.active]:bg-b12`}
             onClick={closeSidebar}
         >
             {children}

@@ -23,6 +23,7 @@ const routes = {
     settingReports: '/settings/reports',
     settingBilling: '/settings/billing',
     docs: '/docs',
+    pages: '/pages',
     profileSetting: '/profile-setting',
     twoFactorAuthentication: '/profile-setting/two-factor-authentication',
     dashboard: '/dashboard',  
@@ -34,7 +35,8 @@ const routes = {
     testSubscription: '/test-subscription',
     weeklyReport: '/settings/weekly-report',
     creditControl: '/settings/credit-control',
-    mcp: '/mcp'
+    mcp: '/mcp',
+    superSolution: '/settings/super-solution'
 };
 
 export default routes;

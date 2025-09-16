@@ -40,6 +40,10 @@ const APIModelChoose = () => {
                 label: MODAL_NAME_CONVERSION.PERPLEXITY,
             },
             {
+                value: AI_MODEL_CODE.OLLAMA,
+                label: MODAL_NAME_CONVERSION.OLLAMA,
+            },
+            {
                 value: AI_MODEL_CODE.OPEN_ROUTER,
                 label: MODAL_NAME_CONVERSION.OPEN_ROUTER,
             },
@@ -109,7 +113,6 @@ const APIModelChoose = () => {
 }
 
 export const ModelDeleteButton = ({ modelCode }: APIModelChooseProps) => {
-    console.log('modelCode: ', modelCode);
     const { isOpen, openModal, closeModal } = useModal();
     const [deleteModel, pending] = useServerAction(deleteAiModal);
     const handleDeleteModel = useCallback(async () => {
@@ -138,7 +141,7 @@ export const ModelDeleteButton = ({ modelCode }: APIModelChooseProps) => {
                             onClick={handleTriggerTrash}
                         />
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" >
+                    <TooltipContent side="bottom">
                         <p>Delete Model</p>
                     </TooltipContent>
                 </Tooltip>

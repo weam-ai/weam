@@ -1,5 +1,5 @@
 from datetime import datetime,timedelta
-import pytz
+import pytz, httpx
 from src.logger.default_logger import logger
 from src.logger.test_logger import logger as test_logger
 from src.chatflow_langchain.repositories.additional_prompts import PromptRepository
@@ -1052,3 +1052,49 @@ class ForceCleanupMiddleware(BaseHTTPMiddleware):
         await asyncio.sleep(0.1)
         gc.collect()
         tracemalloc.clear_traces()
+
+class AsyncHTTPClientSingleton:
+    _client: httpx.AsyncClient = None
+
+    @classmethod
+    async def get_client(cls):
+        if cls._client is None:
+            cls._client = httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                limits=httpx.Limits(
+                    max_connections=200,
+                    max_keepalive_connections=100,
+                    keepalive_expiry=10.0
+                ),
+                http2=True
+            )
+        return cls._client
+
+    @classmethod
+    async def close_client(cls):
+        if cls._client:
+            await cls._client.aclose()
+            cls._client = None
+
+class SyncHTTPClientSingleton:
+    _client: httpx.Client = None
+
+    @classmethod
+    def get_client(cls):
+        if cls._client is None:
+            cls._client = httpx.Client(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                limits=httpx.Limits(
+                    max_connections=200,
+                    max_keepalive_connections=100,
+                    keepalive_expiry=10.0
+                ),
+                http2=True
+            )
+        return cls._client
+
+    @classmethod
+    def close_client(cls):
+        if cls._client:
+            cls._client.close()
+            cls._client = None

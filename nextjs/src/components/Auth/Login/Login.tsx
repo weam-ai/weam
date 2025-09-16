@@ -67,7 +67,7 @@ const LoginForm = () => {
 
             <button
                 type="submit"
-                className="btn btn-blue py-[14px] w-full"
+                className="btn btn-black py-[14px] w-full"
                 disabled={pending}
             >
                 Sign In

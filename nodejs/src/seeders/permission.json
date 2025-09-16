@@ -21,6 +21,7 @@
             "billing.list",
             "workspaceuser.delete",
             "user.delete",
+            "user.changerole",
             "toggle.create",
             "team.create",
             "team.update",
@@ -33,7 +34,14 @@
             "report.companyUsage",
             "report.userUsage",
             "report.weeklyUsage",
-            "creditControl.addCreditById"
+            "creditControl.addCreditById",
+            "solutionApp.list",
+            "solutionApp.member-add",
+            "solutionApp.member-list",
+            "solutionApp.member-remove",
+            "solutionApp.team-add",
+            "solutionApp.team-list",
+            "solutionApp.team-remove"
         ]
     },
     {
@@ -63,7 +71,14 @@
             "storagerequest.decline",
             "storagerequest.approve",
             "invoice.list"            ,
-            "creditControl.addCreditById"
+            "creditControl.addCreditById",
+            "solutionApp.list",
+            "solutionApp.member-add",
+            "solutionApp.member-list",
+            "solutionApp.member-remove",
+            "solutionApp.team-add",
+            "solutionApp.team-list",
+            "solutionApp.team-remove"
         ]
     }
 ]

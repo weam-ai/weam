@@ -9,8 +9,14 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '../ui/tooltip';
+import { useSidebar } from '@/context/SidebarContext';
+
 function Notification() {
     const { isOpen, openModal, closeModal } = useModal();
+    const { isCollapsed } = useSidebar();
+    
+    // Determine tooltip side based on sidebar collapse state
+    const tooltipSide = isCollapsed ? "right" : "top";
     return (
         <TooltipProvider>
             <Tooltip>
@@ -33,7 +39,7 @@ function Notification() {
                     )}
                 </span>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="border-none">
+                <TooltipContent side={tooltipSide} className="border-none">
                 <p className='text-font-14'>Notifications</p>
                 </TooltipContent>
             </Tooltip>

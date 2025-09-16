@@ -20,5 +20,6 @@ export type AgentRecordType = {
         id: string;
     };
     coverImg?: FileType;
+    charimg?: string;
     favoriteByUsers: string[];
 };

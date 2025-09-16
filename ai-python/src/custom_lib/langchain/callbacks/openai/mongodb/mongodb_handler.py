@@ -37,65 +37,72 @@ class MongoDBCallbackHandler(AsyncCallbackHandler):
 
     async def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
         try:
-            self.api_usage_service = APIKeyUsageService()
+            if len(response.generations[0][0].message.content) > 0:
+                self.api_usage_service = APIKeyUsageService()
 
-            self.messages = ''
-            if self.stream_flag:
-                for generation_list in response.generations:
-                    for generation in generation_list:
-                        self.messages += generation.text
+                self.messages = ''
+                if self.stream_flag:
+                    # if response.generations[0][0].message.additional_kwargs.get('reasoning', {}).get('summary'):
+                    #         summary_list = response.generations[0][0].message.additional_kwargs['reasoning']['summary']
+                    #         self.messages+='<reasoning>'
+                    #         for summary_text in summary_list:
+                    #             self.messages += summary_text['text']
+                    #         self.messages+='</reasoning>'
+                    for generation_list in response.generations:
+                        for generation in generation_list:
+                            self.messages += generation.text
 
-                chunk_output=response.generations[0][0].message.content[0]
-                if "annotations" in chunk_output:
-                    citations=[url['url'] for url in chunk_output['annotations']]
-                    try:
-                        citations_results = await fetcher.get_logos_async(citations)
-                    except Exception as e:
-                        citations_results = []
+                    chunk_output=response.generations[0][0].message.content[0]
+                    if "annotations" in chunk_output:
+                        citations=[url['url'] for url in chunk_output['annotations']]
+                        try:
+                            citations_results = await fetcher.get_logos_async(citations)
+                        except Exception as e:
+                            citations_results = []
 
-                    self.chat_history.add_ai_message_kwargs(
-                    message=self.messages,
-                    thread_id=self.thread_id,
-                    web_resources_data=citations_results)
-                else:
-                    self.chat_history.add_ai_message(
+                        self.chat_history.add_ai_message_kwargs(
                         message=self.messages,
-                        thread_id=self.thread_id
-                    )
-             
+                        thread_id=self.thread_id,
+                        web_resources_data=citations_results)
+                    else:
+                        self.chat_history.add_ai_message(
+                            message=self.messages,
+                            thread_id=self.thread_id
+                        )
                 
-                model_name=generation.message.response_metadata['model_name']
-                thread_repo.initialization(thread_id=self.thread_id,collection_name=self.collection_name)
-                if self.is_paid_user:
-                    thread_repo.update_credits(msgCredit=self.msgCredit)
-                else:
-                    company_repo.initialization(company_id=str(thread_repo.result['companyId']),collection_name='company')
-                    company_repo.update_free_messages(model_code='OPEN_AI')
-                if not self.regenerated_flag:
-                    with get_openai_callback() as cb:
-                        self.memory.prune()
+                    
+                    model_name=generation.message.response_metadata['model_name']
+                    thread_repo.initialization(thread_id=self.thread_id,collection_name=self.collection_name)
+                    if self.is_paid_user:
+                        thread_repo.update_credits(msgCredit=self.msgCredit)
+                    else:
+                        company_repo.initialization(company_id=str(thread_repo.result['companyId']),collection_name='company')
+                        company_repo.update_free_messages(model_code='OPEN_AI')
+                    if not self.regenerated_flag:
+                        with get_openai_callback() as cb:
+                            self.memory.prune()
 
-                    thread_repo.update_token_usage_summary(cb=cb)
-                    # await self.api_usage_service.update_usage(provider='OPEN_AI',tokens_used= cb.total_tokens, model=self.memory.llm.model_name, api_key=self.encrypted_key,functionality=Functionality.CHAT,company_id=self.companyRedis_id)
-                        
+                        thread_repo.update_token_usage_summary(cb=cb)
+                        # await self.api_usage_service.update_usage(provider='OPEN_AI',tokens_used= cb.total_tokens, model=self.memory.llm.model_name, api_key=self.encrypted_key,functionality=Functionality.CHAT,company_id=self.companyRedis_id)
+                            
 
-                    self.chat_history.add_message_system(
-                        message=self.memory.moving_summary_buffer,
-                        thread_id=self.thread_id
+                        self.chat_history.add_message_system(
+                            message=self.memory.moving_summary_buffer,
+                            thread_id=self.thread_id
+                        )
+                    else: 
+                        if model_name in MODEL_VERSIONS:
+                            model_name = MODEL_VERSIONS[model_name]
+                        thread_repo.update_response_model(responseModel=model_name,model_code='OPEN_AI')
+                    logger.info(
+                        "Successfully stored the response",
+                        extra={"tags": {"method": "MongoDBCallbackHandler.on_llm_end"}}
                     )
-                else: 
-                    if model_name in MODEL_VERSIONS:
-                        model_name = MODEL_VERSIONS[model_name]
-                    thread_repo.update_response_model(responseModel=model_name,model_code='OPEN_AI')
-                logger.info(
-                    "Successfully stored the response",
-                    extra={"tags": {"method": "MongoDBCallbackHandler.on_llm_end"}}
-                )
-            else:
-                logger.info(
-                    "LLM response was condensed, no storage needed",
-                    extra={"tags": {"method": "MongoDBCallbackHandler.on_llm_end"}}
-                )
+                else:
+                    logger.info(
+                        "LLM response was condensed, no storage needed",
+                        extra={"tags": {"method": "MongoDBCallbackHandler.on_llm_end"}}
+                    )
         except Exception as e:
             logger.error(
                 "Error processing LLM response",

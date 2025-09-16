@@ -66,7 +66,7 @@ class ToolController:
         return self.managers.get(self.code)()
 
 
-    async def service_hub_handler(self, chat_input,**kwargs):
+    async def service_hub_handler(self, chat_input, async_handler_ref=None, **kwargs):
         """
         Handles the Tool input and returns the response.
 
@@ -74,6 +74,8 @@ class ToolController:
         ----------
         chat_input : Any
             The input data for the chat.
+        async_handler_ref : list, optional
+            Reference list to store the async handler for external cancellation.
         kwargs : Any
             Additional parameters.
 
@@ -87,7 +89,7 @@ class ToolController:
             if tool_manager is None:
                 raise ValueError("Invalid Tool code provided.")
             
-            tool_manager.initialize_llm(
+            await tool_manager.initialize_llm(
             api_key_id=chat_input.llm_apikey,
             companymodel=chat_input.companymodel,
             dalle_wrapper_size = chat_input.dalle_wrapper_size,
@@ -96,7 +98,10 @@ class ToolController:
             thread_id=chat_input.thread_id,
             thread_model=chat_input.threadmodel,
             imageT=chat_input.imageT,
-            company_id=chat_input.company_id
+            company_id=chat_input.company_id,
+            mcp_data=chat_input.mcp if hasattr(chat_input, 'mcp') else None,
+            mcp_tools=chat_input.mcp_tools,
+            mcp_request = chat_input.request if hasattr(chat_input, 'request') else None
         )
             tool_manager.initialize_repository(
                 chat_session_id=chat_input.chat_session_id,
@@ -105,15 +110,31 @@ class ToolController:
                 msgCredit=chat_input.msgCredit,
                 is_paid_user=chat_input.is_paid_user
             )
+            logger.info(
+                "Initaliazing Repository ended and create graph node started",
+                extra={"tags": {"endpoint": "/stream-tool-chat-with-openai"}}
+            )
+            await tool_manager.create_graph_node()
+            logger.info(
+                "Create graph node ended and create conversation started",
+                extra={"tags": {"endpoint": "/stream-tool-chat-with-openai"}}
+            )
             # prompt attach
-            tool_manager.prompt_attach(additional_prompt_id=chat_input.prompt_id,collection_name=chat_input.promptmodel)  
-            
+            # tool_manager.prompt_attach(additional_prompt_id=chat_input.prompt_id,collection_name=chat_input.promptmodel)  
+
             ## conversation create
-            tool_manager.create_conversation(input_text=chat_input.query, image_url=chat_input.image_url,image_source=chat_input.image_source,regenerate_flag = chat_input.isregenerated)  
+            await tool_manager.create_conversation(input_text=chat_input.query, image_url=chat_input.image_url,image_source=chat_input.image_source,regenerate_flag = chat_input.isregenerated)  
 
 
             # streaming the chat chat serivce
-            response_generator = tool_manager.tool_calls_run(thread_id=chat_input.thread_id, \
+            # Check if the tool manager supports async_handler_ref parameter
+            import inspect
+            tool_calls_run_signature = inspect.signature(tool_manager.tool_calls_run)
+            if 'async_handler_ref' in tool_calls_run_signature.parameters:
+                response_generator = tool_manager.tool_calls_run(thread_id=chat_input.thread_id, \
+                                                                            collection_name=chat_input.threadmodel,delay_chunk=chat_input.delay_chunk, async_handler_ref=async_handler_ref)
+            else:
+                response_generator = tool_manager.tool_calls_run(thread_id=chat_input.thread_id, \
                                                                             collection_name=chat_input.threadmodel,delay_chunk=chat_input.delay_chunk)
 
                 

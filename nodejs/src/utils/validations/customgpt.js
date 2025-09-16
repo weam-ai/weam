@@ -75,7 +75,8 @@ const updateCustomGptKeys = joi.object({
         .optional(),
     brain: joi.object(brainSchemaKeys).required(),
     imageEnable: joi.boolean().optional(),
-    removeDoc: joi.string().optional()
+    removeDoc: joi.string().optional(),
+    charimg: joi.string().optional()
 });
 
 const assignDefaultGpt = joi.object({
@@ -105,7 +106,8 @@ const assignDefaultGpt = joi.object({
             'array.min': 'At least one brain is required',
             'any.required': 'Please select brain',
         }),
-    imageEnable: joi.boolean().optional()
+    imageEnable: joi.boolean().optional(),
+    charimg: joi.string().optional()
 }).unknown(true);
 
 module.exports = {

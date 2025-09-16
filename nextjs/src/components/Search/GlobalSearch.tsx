@@ -21,6 +21,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useSelector } from 'react-redux';
+import { useSidebar } from '@/context/SidebarContext';
 
 const GlobalSearch = () => {
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -31,7 +32,11 @@ const GlobalSearch = () => {
     const dialogBodyRef = useRef(null);
     const selectedIndexRef = useRef(-1);
     const privateBrain = useSelector((store: any) => store?.brain?.privateList); 
-    const combinedBrain = useSelector((store: any) => store?.brain?.combined); 
+    const combinedBrain = useSelector((store: any) => store?.brain?.combined);
+    const { isCollapsed } = useSidebar();
+    
+    // Determine tooltip side based on sidebar collapse state
+    const tooltipSide = isCollapsed ? "right" : "top"; 
     
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (!searchResults.length) return;
@@ -220,18 +225,17 @@ const GlobalSearch = () => {
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <div className="mr-4 inline-block cursor-pointer">
-                    
+                <div>
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <span className="cursor-pointer [&>svg]:fill-b5 [&>svg]:hover:fill-b2">
-                                <SearchIcon width={15} height={15} className={
-                                            'w-[15px] h-[15px] object-cover inline-block fill-b5'
-                                        } />
+                                <span className="cursor-pointer [&>svg]:fill-blue2 [&>svg]:hover:fill-b2 inline-block rounded-lg border py-2.5 px-3 g-search">
+                                    <SearchIcon width={15} height={15} className={
+                                        'w-[15px] h-[15px] object-cover inline-block'
+                                    } />
                                 </span>
                             </TooltipTrigger>
-                            <TooltipContent className="border-none">
+                            <TooltipContent side={tooltipSide} className="border-none">
                                 <p className='text-font-14'>{`Search chats`}</p>
                             </TooltipContent>
                         </Tooltip>

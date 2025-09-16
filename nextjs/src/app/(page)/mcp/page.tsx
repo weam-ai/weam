@@ -30,7 +30,7 @@ const McpApps = async ({ searchParams }: McpAppsProps) => {
         : MCP_OPTIONS;
 
     return (
-        <div className="w-full h-full mt-8 md:px-10 px-4 overflow-hidden">
+        <div className="w-full h-full mt-8 max-lg:mt-12 md:px-10 px-4 overflow-hidden">
             <div className="flex items-center">
                 <div>
                     <h2 className="text-font-22 font-bold">Connections</h2>

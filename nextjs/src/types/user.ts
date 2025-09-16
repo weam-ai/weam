@@ -53,6 +53,7 @@ export type SetUserData = {
     access_token?: string,
     inviteSts?: string,
     isFreeTrial?: CreditInfoType,
+    onboard?: boolean,
 }
 
 export type CreditInfoType = {

@@ -102,7 +102,7 @@ export const useThunderBoltPopup = ({
                     mime_type: data.doc[0].mime_type,
                     type: data.doc[0].mime_type,
                     gptname: data?.title,
-                    gptCoverImage: (data?.coverImg?.uri && `${LINK.AWS_S3_URL}${data?.coverImg?.uri}`) || defaultCustomGptImage.src,
+                    gptCoverImage: (data?.coverImg?.uri && `${LINK.AWS_S3_URL}${data?.coverImg?.uri}`) || (data?.charimg ? data.charimg : defaultCustomGptImage.src),
                     responseModel: data?.responseModel?.name,
                     persistTag
                 }
@@ -117,7 +117,7 @@ export const useThunderBoltPopup = ({
                     mime_type: 'application/jpeg',
                     type: 'application/jpeg',
                     gptname: data?.title,
-                    gptCoverImage: (data?.coverImg?.uri && `${LINK.AWS_S3_URL}${data?.coverImg?.uri}`) || defaultCustomGptImage.src,
+                    gptCoverImage: (data?.coverImg?.uri && `${LINK.AWS_S3_URL}${data?.coverImg?.uri}`) || (data?.charimg ? data.charimg : defaultCustomGptImage.src),
                     responseModel: data?.responseModel?.name,
                     persistTag
                 }
@@ -133,7 +133,7 @@ export const useThunderBoltPopup = ({
                 textDisable: false,
                 attachDisable: true,
                 title: data.title,
-                gptCoverImage: (data?.coverImg?.uri && `${LINK.AWS_S3_URL}${data?.coverImg?.uri}`) || defaultCustomGptImage.src,
+                gptCoverImage: (data?.coverImg?.uri && `${LINK.AWS_S3_URL}${data?.coverImg?.uri}`) || (data?.charimg ? data.charimg : defaultCustomGptImage.src),
             });
         } else if (GPTTypes.Docs == type) {
             const doc_id = data._id == selectedContext.doc_id ? undefined : data._id;

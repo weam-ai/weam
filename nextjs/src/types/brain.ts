@@ -72,6 +72,7 @@ export type BrainAgentType = {
     }
     isShare: boolean;
     coverImg: FileType;
+    charimg?: string;
 }
 
 type BrainTeamType = {

@@ -125,7 +125,7 @@ const VoiceChat = React.memo(({ setText, text }) => {
                         <TooltipTrigger>
                             <div
                                 onClick={isListening ? stopListening : startListening}
-                                className={`transition ease-in-out duration-200 w-auto h-8 flex items-center px-[5px] bg-white rounded-md`}
+                                className={`transition ease-in-out duration-200 w-auto h-8 flex items-center px-[5px] rounded-md`}
                             >
                                 {isListening ? (
                                     <MuteMikeIcon width="14"

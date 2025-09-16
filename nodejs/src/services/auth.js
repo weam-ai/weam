@@ -61,6 +61,13 @@ const logIn = async (req) => {
         if (!checkPassword) {
             throw new Error('auth.password_wrong', req);
         }
+
+        // Auto-unblock user if they were blocked
+        if (existingUser.tempblocked) {
+            await User.findByIdAndUpdate(existingUser._id, { tempblocked: false });
+            existingUser.tempblocked = false;
+        }
+
         delete existingUser._doc.password
         const access_token = generateToken(existingUser);
         const refresh_token = generateToken(existingUser, AUTH.JWT_REFRESH_SECRET, AUTH.JWT_REFRESH_EXPIRE);
@@ -99,6 +106,13 @@ const mfaLogin = async (req) => {
 
         if (!authenticator.check(req.body.otp, user.mfaSecret)) 
             throw new Error(_localize('auth.otp_invalid', req));
+
+        // Auto-unblock user if they were blocked
+        if (user.tempblocked) {
+            await User.findByIdAndUpdate(user._id, { tempblocked: false });
+            user.tempblocked = false;
+        }
+
         return {
             ...user._doc,
             access_token: generateToken(user),

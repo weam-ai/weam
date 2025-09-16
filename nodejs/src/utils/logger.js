@@ -3,7 +3,7 @@ require('winston-daily-rotate-file');
 const config = require('../config/config');
 const { format, transports } = winston;
 
-console.log("🚀 ~  config.SERVER.LOCAL_LOG:",  config.SERVER.LOCAL_LOG)
+console.log("config.SERVER.LOCAL_LOG:",  config.SERVER.LOCAL_LOG)
 
 // Custom format to handle errors and stack traces
 const errorStackFormat = format((info) => {

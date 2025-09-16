@@ -11,7 +11,7 @@ const UserBot = require('../models/userBot');
 const sharp = require('sharp');
 const { storeVectorData } = require('./customgpt');
 const mongoose = require('mongoose');
-const { getFileNameWithoutExtension, getFileExtension, hasNotRestrictedExtension } = require('../utils/helper');
+const { getFileNameWithoutExtension, getFileExtension, hasNotRestrictedExtension, handleError } = require('../utils/helper');
 
 AWS.config.update({
     apiVersion: AWS_CONFIG.AWS_S3_API_VERSION,
@@ -432,6 +432,40 @@ function extractFileExtension(fileKey) {
     return fileExtensionMap[originalExtension];
 }
 
+const createFileRecord = async (req) => {
+    try {
+        const { name, type, uri, mime_type, file_size, module, isActive } = req.body;
+        
+        // Create file record in database with proper user data format
+        const fileRecord = await File.create({
+            name,
+            type,
+            uri,
+            mime_type,
+            file_size,
+            module,
+            isActive: isActive !== undefined ? isActive : true,
+            createdBy: {
+                email: req.user.email,
+                fname: req.user.fname,
+                lname: req.user.lname,
+                company: req.user.company
+            },
+            updatedBy: {
+                email: req.user.email,
+                fname: req.user.fname,
+                lname: req.user.lname,
+                company: req.user.company
+            }
+        });
+        
+        return fileRecord;
+    } catch (error) {
+        handleError(error, 'Error - createFileRecord');
+        return false;
+    }
+}
+
 module.exports = {
     uploadFileToS3,
     deleteFromS3,
@@ -445,5 +479,6 @@ module.exports = {
     deleteS3Media,
     removeExistingDocument,
     removeExistingImage,
-    generatePresignedUrl
+    generatePresignedUrl,
+    createFileRecord
 }

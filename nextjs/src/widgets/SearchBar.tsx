@@ -69,19 +69,28 @@ const SearchBar = ({ placeholder, btnname, searchValue, setSearchValue, setShowF
                 </span>
             </div>
 
-            <button
-                type="button"
-                    onClick={() => showFavoriteRecords(showFavorites ? false : true)}
-                    className={`-ms-px inline-block rounded-custom btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
-                        showFavorites ? 'active' : ''
-                    }`}
-                >
-                    {showFavorites ? (
-                        <ActiveBookMark width={14} height={14} className="w-[15px] h-auto fill-orange object-contain mx-auto" />
-                    ) : (
-                        <BookMarkIcon width={14} height={14} className="w-[15px] h-auto fill-b6 object-contain mx-auto" />
-                    )}
-                </button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            type="button"
+                            onClick={() => showFavoriteRecords(showFavorites ? false : true)}
+                            className={`-ms-px inline-block rounded-custom btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 ${
+                                showFavorites ? 'active' : ''
+                            }`}
+                        >
+                            {showFavorites ? (
+                                <ActiveBookMark width={14} height={14} className="w-[15px] h-auto fill-orange object-contain mx-auto" />
+                            ) : (
+                                <BookMarkIcon width={14} height={14} className="w-[15px] h-auto fill-b6 object-contain mx-auto" />
+                            )}
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="border-none">
+                        <p className="text-font-14">Favourite chats</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
             <button
                 className="btn btn-outline-gray font-medium"
                 onClick={handleNewChatClick}

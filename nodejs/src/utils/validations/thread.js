@@ -19,8 +19,9 @@ const createConversationKeys = joi.object({
 }).unknown(true);
 
 const editMsgKeys = joi.object({
-    message: joi.string().required(),
-});
+    message: joi.string().optional(),
+    ai: joi.string().optional(),
+}).min(1);
 
 const replyInThreadKeys = joi.object({
     chatId: joi

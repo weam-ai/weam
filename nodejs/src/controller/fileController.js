@@ -41,10 +41,20 @@ const generatePresignedUrl = catchAsync(async (req, res) => {
     return util.successResponse(result, res);
 })
 
+const createFileRecord = catchAsync(async (req, res) => {
+    const result = await uploadService.createFileRecord(req);
+    if (result) {
+        res.message = _localize('file.record_created', req);
+        return util.successResponse(result, res);
+    }
+    return util.failureResponse(_localize('file.record_creation_failed', req), res);
+})
+
 module.exports = {
     fileUpload,
     removeFile,
     allMediaUploadToBucket,
     deleteS3Media,
-    generatePresignedUrl
+    generatePresignedUrl,
+    createFileRecord
 }

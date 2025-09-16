@@ -31,7 +31,7 @@ const ForgotPasswordForm = () => {
                 <ValidationError errors={errors} field={'email'} />
                 <button
                     type="submit"
-                    className="btn btn-blue btn-lg mt-5 block w-full py-[14px]"
+                    className="btn btn-black btn-lg mt-5 block w-full py-[14px]"
                 >
                     Reset Password
                 </button>
