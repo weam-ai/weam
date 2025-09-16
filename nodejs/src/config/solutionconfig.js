@@ -9,18 +9,7 @@ const SOLUTION_CONFIGS = {
         installType: 'docker-compose', // docker or docker-compose
         envFile: 'env.example'
     },
-    // 'seo-content-gen': {
-    //     repoUrl: 'https://github.com/devweam-ai/seo-content-gen.git',
-    //     repoName: 'seo-content-gen',
-    //     imageName: 'seo-content-gen-img',
-    //     containerName: 'seo-content-gen-container',
-    //     port: '3003',
-    //     branchName: 'opensource-deployment',
-    //     installType: 'docker-compose', // docker or docker-compose
-    //     envFile: null, // No env file needed for docker-compose
-    //     additionalPorts: ['9001', '9002', '9003'] // Additional ports for docker-compose services
-    // },
-    'followup': {
+    'ai-recruiter': {
         repoUrl: 'https://github.com/devweam-ai/foloup.git',
         repoName: 'foloup',
         imageName: 'foloup-img',
@@ -41,7 +30,18 @@ const SOLUTION_CONFIGS = {
         installType: 'docker-compose', // docker or docker-compose
         envFile: 'example.env', // Has .env.example file that needs to be converted to .env
         additionalPorts: [] // No additional ports specified
-    }
+    },
+    'seo-content-gen': {
+        repoUrl: 'https://github.com/devweam-ai/seo-content-gen.git',
+        repoName: 'seo-content-gen',
+        imageName: 'seo-content-gen-img',
+        containerName: 'seo-content-gen-container',
+        port: '3001',
+        branchName: 'devops',
+        installType: 'docker-compose', // docker or docker-compose
+        envFile: '.env.example', // No env file needed for docker-compose
+        additionalPorts: ['3001', '9002', '3003'] // Additional ports for docker-compose services
+    },
 };
 
 module.exports = SOLUTION_CONFIGS;

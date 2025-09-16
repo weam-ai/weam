@@ -28,7 +28,17 @@ const getInstallationProgress = catchAsync(async (req, res) => {
     // Start the installation process
     try {
         // Get solution type from query parameter
-        let solutionType = req.query.solutionType || 'ai-doc-editor';
+        let solutionType = req.query.solutionType || '';
+        
+        // Add this check:
+        if (!solutionType) {
+            res.write(`data: ${JSON.stringify({ 
+                type: 'error', 
+                message: 'Solution type is required' 
+            })}\n\n`);
+            res.end();
+            return;
+        }
         console.log('Backend received solutionType:', solutionType);
         
         req.body = { solutionType }; // Pass solution type to service
@@ -47,7 +57,16 @@ const getInstallationProgress = catchAsync(async (req, res) => {
 
 const checkInstallationHealth = catchAsync(async (req, res) => {
     try {
-        const solutionType = req.query.solutionType || 'ai-doc-editor';
+        const solutionType = req.query.solutionType || '';
+
+        if (!solutionType) {
+            res.write(`data: ${JSON.stringify({ 
+                type: 'error', 
+                message: 'Solution type is required' 
+            })}\n\n`);
+            res.end();
+            return;
+        }
         
         // Check if installation process is still running
         const { exec } = require('child_process');

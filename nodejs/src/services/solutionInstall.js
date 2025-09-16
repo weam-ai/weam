@@ -207,7 +207,8 @@ async function installDockerService(config, repoPath) {
     
     // Setup environment - ensure .env is exactly like .env.example
     if (config.envFile) {
-        await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
+        // await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
+        await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
     }
     
     // Create merged temporary file for build (don't touch original .env)
@@ -231,7 +232,8 @@ async function installDockerService(config, repoPath) {
     await runCommand(`docker run -d --name ${config.containerName} --network ${networkName} -p ${config.port}:${config.port} ${config.imageName}`);
     
     // Restore original .env file (exactly like .env.example) and clean up
-    await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
+    // await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
+    await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
     await runCommand(`rm -f ${tempEnvPath}`);
 }
 
@@ -247,7 +249,8 @@ async function installDockerComposeService(config, repoPath) {
     // Setup environment files - convert env.example to .env based on config
     if (config.envFile) {
         console.log(`📝 Converting ${config.envFile} to .env...`);
-        await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
+        // await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
+        await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
     } else {
         // Fallback: search for any .env.example file
         await runCommand(`find ${repoPath} -name ".env.example" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);

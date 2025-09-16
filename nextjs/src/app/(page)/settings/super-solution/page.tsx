@@ -281,19 +281,19 @@ const SuperSolutionPage = () => {
     const getSolutionTypeFromAppName = (appName: string): string => {
         const mapping: { [key: string]: string } = {
             'AI Docs': 'ai-doc-editor',
-            'SEO Content Gen': 'seo-content-gen',
-            'Foloup': 'followup',
-            'AI Landing Page Generator': 'ai-landing-page-generator'
+            'AI Recruiter': 'ai-recruiter',
+            'AI Landing Page Generator': 'ai-landing-page-generator',
+            'SEO Content Gen': 'seo-content-gen'
         };
-        return mapping[appName] || 'ai-doc-editor';
+        return mapping[appName] || '';
     };
 
     const getInstallButtonText = (appName: string): string => {
         const mapping: { [key: string]: string } = {
             'AI Docs': 'Install AI Doc Editor',
-            'SEO Content Gen': 'Install SEO Content Gen',
-            'Foloup': 'Install Foloup Agent',
-            'AI Landing Page Generator': 'Install AI Landing Page Generator'
+            'AI Recruiter': 'Install AI Recruiter Agent',
+            'AI Landing Page Generator': 'Install AI Landing Page Generator',
+            'SEO Content Gen': 'Install SEO Content Gen'
         };
         return mapping[appName] || 'Install Solution';
     };
