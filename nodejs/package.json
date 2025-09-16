@@ -7,7 +7,11 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "node index.js",
         "dev": "nodemon index.js",
-        "dev:two": "NODE_ENV=two nodemon index.js"
+        "dev:two": "NODE_ENV=two nodemon index.js",
+        "setup-ollama": "bash setup-ollama.sh",
+        "setup-ollama-win": "setup-ollama.bat",
+        "test-ollama": "node test-local-ollama.js",
+        "test-ollama-integration": "node test-ollama-integration.js"
     },
     "keywords": [],
     "author": "",
@@ -16,6 +20,7 @@
         "@socket.io/redis-adapter": "^8.3.0",
         "agenda": "^5.0.0",
         "aws-sdk": "^2.1557.0",
+        "axios": "^1.11.0",
         "bcrypt": "^5.1.1",
         "bull": "^4.12.2",
         "bull-board": "^2.1.3",
@@ -44,6 +49,7 @@
         "multer-s3": "^2.10.0",
         "newrelic": "latest",
         "nodemailer": "^6.9.9",
+        "ollama": "^0.5.17",
         "otplib": "^12.0.1",
         "qrcode": "^1.5.3",
         "redis": "^4.7.0",

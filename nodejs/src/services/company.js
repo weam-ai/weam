@@ -370,7 +370,7 @@ async function createPinecornIndex(user, req) {
 
         //createFreeTierApiKey(user);
     } catch (error) {
-        console.log("🚀 ~ createPinecornIndex ~ error:", error)
+        console.log("createPinecornIndex error:", error)
         handleError(error, 'Error - createPinecornIndex'); 
     }
 }
@@ -1160,6 +1160,82 @@ async function openRouterApiChecker(req) {
     }
 }
 
+async function ollamaApiChecker(req) {
+    try {
+        const baseUrl = req.body.baseUrl || 'http://localhost:11434';
+        const apiKey = req.body.apiKey;
+        
+        // Test connection to Ollama instance
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+        
+        const response = await fetch(`${baseUrl}/api/tags`, {
+            method: 'GET',
+            headers
+        });
+        
+        if (!response.ok) return false;
+        
+        const data = await response.json();
+        const models = data.models || [];
+        
+        const companyId = getCompanyId(req.user);
+        const companydetails = req.user.company;
+
+        const [existingBots, ollamaBot] = await Promise.all([
+            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OLLAMA }),
+            Bot.findOne({ code: AI_MODAL_PROVIDER.OLLAMA }, { title: 1, code: 1 })
+        ]);
+
+        const updates = [];
+        const inserts = [];
+        const encryptedKey = apiKey ? encryptedData(apiKey) : null;
+        const encryptedBaseUrl = encryptedData(baseUrl);
+
+        // Create model configs for available Ollama models
+        models.forEach(model => {
+            const existingBot = existingBots.find(bot => bot.name === model.name);
+            const modelConfig = {
+                name: model.name,
+                bot: formatBot(ollamaBot),
+                company: companydetails,
+                config: { 
+                    baseUrl: encryptedBaseUrl,
+                    apikey: encryptedKey 
+                },
+                modelType: 'text',
+                extraConfig: {
+                    temperature: 0.7,
+                    top_p: 0.9,
+                    top_k: 40,
+                    repeat_penalty: 1.1
+                }
+            };
+            
+            if (existingBot) {
+                updates.push({
+                    updateOne: {
+                        filter: { name: model.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OLLAMA },
+                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                    }
+                });
+            } else {
+                inserts.push(modelConfig);
+            }
+        });
+
+        if (updates.length) await UserBot.bulkWrite(updates);
+        if (inserts.length) return UserBot.insertMany(inserts);
+
+        return existingBots[0]?.deletedAt ? existingBots : true;
+    } catch (error) {
+        handleError(error, 'Error - ollamaApiChecker');
+        return false;
+    }
+}
+
 module.exports = {
     addCompany,
     updateCompany,
@@ -1178,6 +1254,7 @@ module.exports = {
     createFreeTierApiKey,
     geminiApiKeyChecker,
     sendManualInviteEmail,
-    addBlockedDomain
+    addBlockedDomain,
+    ollamaApiChecker
 }
 

@@ -21,6 +21,7 @@ import OpenAiAPIKeysModelProvider from '@/components/AiModel/OpenAiAPIKeysModelP
 import AnyscaleModelProvider from '@/components/AiModel/AnyscaleModelProvider';
 import HuggingFaceModelProvider from '@/components/AiModel/HuggingFaceModelProvider';
 import GooglePalmAPIkeyModelProvider from '@/components/AiModel/GooglePalmAPIkeyModelProvider';
+import OllamaModelProvider from '@/components/AiModel/OllamaModelProvider';
 import SearchIcon from '@/icons/Search';
 import useAiModal from '@/hooks/aiModal/useAiModal';
 import { useSelector } from 'react-redux';
@@ -276,6 +277,9 @@ export const AddNewModel = ({ isAddAiModel }) => {
                             )}
                             {selected.code === AI_MODEL_CODE.GEMINI && (
                                 <GooglePalmAPIkeyModelProvider configs={configs} />
+                            )}
+                            {selected.code === AI_MODEL_CODE.OLLAMA && (
+                                <OllamaModelProvider configs={configs} />
                             )}
                             {selected && (
                                 <GetApiKey

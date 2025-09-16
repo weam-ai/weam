@@ -67,6 +67,15 @@ const addBlockedDomain = catchAsync(async (req, res) => {
     return util.successResponse(result, res);
 })
 
+const ollamaApiChecker = catchAsync(async (req, res) => {
+    const result = await companyService.ollamaApiChecker(req);
+    if (!result) {
+        res.message = 'Failed to connect to Ollama instance';
+        return util.failureResponse(null, res)
+    }
+    res.message = _localize('ai.api_config_success', req);
+    return util.successResponse(result, res);
+})
 
 module.exports = {
     registerCompany,
@@ -75,5 +84,6 @@ module.exports = {
     huggingFaceApiChecker,
     anthropicApiChecker,
     geminiApiKeyChecker,
-    addBlockedDomain
+    addBlockedDomain,
+    ollamaApiChecker
 };

@@ -12,6 +12,9 @@ services:
       timeout: 5s
       retries: 5
   app:
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile
     image: weamai-app:latest
     container_name: weam-frontend-container
     ports:

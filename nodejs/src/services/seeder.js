@@ -259,7 +259,6 @@ const seedSetting = async function () {
             await Setting.bulkWrite(bulkSetting);
         }
         logger.info('Setting seeded successfully 🔥🔥🔥🔥🔥');
-    } catch (error) {
         logger.error('Error in seedSetting', error);
     }
 }
@@ -288,22 +287,82 @@ const seedDefaultModel = async () => {
     }
 }
 
-const seedCustomGPT = async () => {
+const seedDefaultOllamaModels = async () => {
     try {
-        const gptJSON = require('../seeders/customGPT.json');
-        const getDefaults = await CustomGPT.find({ defaultgpt: true });
-        const bulkGPT = [];
-
-        for (const iterator of gptJSON) {
-            const check = getDefaults.find((element) => element.title === iterator.title);
-            if (check) bulkGPT.push({ updateOne: { filter: { title: iterator.title }, update: { $set: iterator } } })
-            else bulkGPT.push({ insertOne: { document: iterator } });
+        const UserBot = require('../models/userBot');
+        const Company = require('../models/company');
+        const ollamaModelsJSON = require('../seeders/userbot.json');
+        
+        // Get all companies
+        const companies = await Company.find({}).lean();
+        if (!companies.length) {
+            logger.info('No companies found, skipping Ollama model seeding');
+            return;
         }
-        if (bulkGPT.length) await CustomGPT.bulkWrite(bulkGPT);
 
-        logger.info('Default custom gpt seeded successfully 🤯🤯🤯')
+        // Get Ollama bot
+        const ollamaBot = await Bot.findOne({ code: 'OLLAMA' });
+        if (!ollamaBot) {
+            logger.error('Ollama bot not found, please run bot seeder first');
+            return;
+        }
+
+        const bulkOperations = [];
+
+        // Create Ollama models for each company
+        for (const company of companies) {
+            for (const modelTemplate of ollamaModelsJSON) {
+                const modelConfig = {
+                    ...modelTemplate,
+                    bot: {
+                        title: ollamaBot.title,
+                        code: ollamaBot.code,
+                        id: ollamaBot._id
+                    },
+                    company: {
+                        name: company.companyNm,
+                        slug: company.slug,
+                        id: company._id
+                    }
+                };
+
+                // Check if model already exists for this company
+                const existingModel = await UserBot.findOne({
+                    name: modelTemplate.name,
+                    'company.id': company._id,
+                    'bot.code': 'OLLAMA'
+                });
+
+                if (!existingModel) {
+                    bulkOperations.push({ insertOne: { document: modelConfig } });
+                } else {
+                    // Update existing model to ensure it's not deleted
+                    bulkOperations.push({
+                        updateOne: {
+                            filter: { 
+                                name: modelTemplate.name,
+                                'company.id': company._id,
+                                'bot.code': 'OLLAMA'
+                            },
+                            update: { 
+                                $set: modelConfig,
+                                $unset: { deletedAt: 1 }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        if (bulkOperations.length) {
+            await UserBot.bulkWrite(bulkOperations);
+            logger.info(`Ollama models seeded successfully for ${companies.length} companies! 🦙🦙🦙`);
+        } else {
+            logger.info('All Ollama models already exist');
+        }
+
     } catch (error) {
-        logger.error('Error - seedCustomGPT', error);
+        logger.error('Error - seedDefaultOllamaModels', error);
     }
 }
 
@@ -798,6 +857,7 @@ module.exports = {
     seedNotification,
     seedSetting,
     seedDefaultModel,
+    seedDefaultOllamaModels,
     seedCustomGPT,
     seedOtherRolePermission,
     seedPrompt,

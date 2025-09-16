@@ -8,6 +8,7 @@ async function initSeed () {
         await seedService.seedNotification();
         await seedService.seedSetting();
         await seedService.seedDefaultModel();
+        await seedService.seedDefaultOllamaModels();
         await seedService.seedCustomGPT();
         await seedService.seedPrompt();
         await seedService.seedOtherRolePermission();

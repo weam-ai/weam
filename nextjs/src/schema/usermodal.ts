@@ -41,4 +41,9 @@ export const geminiKeys = yup.object({
     key: yup.string().required('please enter your key')
 })
 
+export const ollamaKeys = yup.object({
+    baseUrl: yup.string().url('Please enter a valid URL').required('Base URL is required'),
+    key: yup.string().optional()
+})
+
 export type ModelKeysSchemaType = yup.InferType<typeof setModalAPIKeys>;
