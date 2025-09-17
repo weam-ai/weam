@@ -36,6 +36,7 @@ import {
     AI_MODEL_CODE,
     FREE_TIER_END_MESSAGE,
     getModelImageByName,
+    STREAMING_RESPONSE_STATUS,
 } from '@/utils/constant';
 import { useDispatch } from 'react-redux';
 import { setLastConversationDataAction, setUploadDataAction } from '@/lib/slices/aimodel/conversation';
@@ -89,7 +90,7 @@ import SeoProAgentResponse from '@/components/ProAgentAnswer/SeoProAgentResponse
 import routes from '@/utils/routes';
 import useChatMember from '@/hooks/chat/useChatMember';
 import { useThunderBoltPopup } from '@/hooks/conversation/useThunderBoltPopup';
-import ChatInputFileLoader from '@/components/Loader/ChatInputFileLoader';
+import ChatInputFileLoader, { ChatWebSearchLoader } from '@/components/Loader/ChatInputFileLoader';
 import useMCP from '@/hooks/mcp/useMCP';
 import ToolsConnected from './ToolsConnected';
 import SearchIcon from '@/icons/Search';
@@ -106,7 +107,7 @@ const defaultContext = {
     title: undefined,
 };
 
-let API_TYPE =  API_TYPE_OPTIONS.OPEN_AI;
+let API_TYPE = API_TYPE_OPTIONS.OPEN_AI;
 
 const ChatPage = memo(() => {
     const dispatch = useDispatch();
@@ -117,7 +118,7 @@ const ChatPage = memo(() => {
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
     const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
-    const [selectedContext, setSelectedContext] = useState(defaultContext); 
+    const [selectedContext, setSelectedContext] = useState(defaultContext);
     const [typingUsers, setTypingUsers] = useState([]);
     const [handlePrompts, setHandlePrompts] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -128,7 +129,11 @@ const ChatPage = memo(() => {
     const [showAgentList, setShowAgentList] = useState(false);
     const [showPromptList, setShowPromptList] = useState(false);
     const [searchValue, setSearchValue] = useState('');
-    
+    const [toolCallLoading, setToolCallLoading] = useState({
+        webSearch: false,
+        imageGeneration: false,
+    })
+
     // For the tab GPT prompts
     const { getTabPromptList, promptList: prompts, loading: promptLoader, setLoading: setPromptLoader, paginator: promptPaginator, setPromptList } = usePrompt();
     
@@ -145,10 +150,10 @@ const ChatPage = memo(() => {
     const params = useParams();
     const queryParams = useSearchParams();
 
-    const currentUser =  useMemo(() => getCurrentUser(), []);
+    const currentUser = useMemo(() => getCurrentUser(), []);
     const companyId = useMemo(() => getCompanyId(currentUser), [currentUser]);
 
-    const creditInfoSelector = useSelector((store: RootState) => store.chat.creditInfo);   
+    const creditInfoSelector = useSelector((store: RootState) => store.chat.creditInfo);
     const brainData = useSelector((store: RootState) => store.brain.combined);
     const globalUploadedFile = useSelector((store: RootState) => store.conversation.uploadData);
     const initialMessage = useSelector((store:RootState) => store.chat.initialMessage);
@@ -184,7 +189,13 @@ const ChatPage = memo(() => {
     const serializableProAgentData = useMemo(() => {
         return proAgentData?.code ? { ...proAgentData } : {};
     }, [proAgentData]);
-    
+    const defaultToolCallLoading = useMemo(() => {
+        return {
+            webSearch: false,
+            imageGeneration: false,
+        }
+    }, []);
+
     const handleApiKeyRequired = useCallback((data) => {
         if (data.message) {
             Toast(data.message, 'error');
@@ -210,7 +221,7 @@ const ChatPage = memo(() => {
         setText('');
     };
 
- 
+
 
     const {
         enterNewPrompt,
@@ -239,7 +250,6 @@ const ChatPage = memo(() => {
         isActivelyStreaming,
         generateSeoArticle,
         getSalesCallResponse,
-        stopStreaming
     } = useConversation();
     const { chatInfo, socketChatById, handleAIApiType } = useChat();
     const {
@@ -385,11 +395,11 @@ const ChatPage = memo(() => {
         }
         return images;
     }, []);
-   
+
 
     const handleSubmitPrompt = async (chatCanvas: boolean = false) => {
         setShouldScrollToBottom(true); // Enable auto-scroll for new messages
-        
+
         if (!userModal.length) {
             Toast(API_KEY_MESSAGE, 'error');
             setText('');
@@ -422,17 +432,17 @@ const ChatPage = memo(() => {
                 return brain._id === getDecodedObjectId()
             })
             if (!brain) return;
-            socket.emit(SOCKET_EVENTS.INITIALIZE_CHAT, { chatId: params.id, user: formatMessageUser(currentUser), brain: formatBrain(brain) });
+            // socket.emit(SOCKET_EVENTS.INITIALIZE_CHAT, { chatId: params.id, user: formatMessageUser(currentUser), brain: formatBrain(brain) });
             // manage proagent state to block chat message
             if (blockProAgentAction())
                 handleProAgentUrlState(selectedAIModal.name, proAgentData?.code);
             else
                 handleModelSelectionUrl(selectedAIModal.name);
         }
-        socket.emit(SOCKET_EVENTS.DISABLE_QUERY_INPUT, { chatId: params.id });
+        // socket.emit(SOCKET_EVENTS.DISABLE_QUERY_INPUT, { chatId: params.id });
         let query = chatCanvas ? store.getState().chat.canvasOptions?.question : (!isEmptyObject(serializableProAgentData)) ? proAgentData?.url : text || initialMessage.message;
         let img_url;
-    
+
         let cloneContext = selectedContext; // selected content by typing @
         const modalName = chatCanvas ? selectedAIModal?.name : persistTagData?.responseModel || selectedAIModal?.name;
         const messageId = generateObjectId();
@@ -478,6 +488,7 @@ const ChatPage = memo(() => {
                     id: messageId,
                     cloneMedia: globalUploadedFile || [],
                     proAgentData: serializableProAgentData,
+                    citations: []
                 },
             ]);
         }
@@ -496,30 +507,52 @@ const ChatPage = memo(() => {
             user: formatMessageUser(currentUser),
             isPaid: false
         };
-      
+
         img_url = handleImageConversation(globalUploadedFile);
         removeSelectedContext();
-        
+
         // Handle AI API Type
-        if (isWebSearchActive) API_TYPE = API_TYPE_OPTIONS.PERPLEXITY; 
+        if (isWebSearchActive) API_TYPE = API_TYPE_OPTIONS.PERPLEXITY;
         else API_TYPE = handleAIApiType(globalUploadedFile);
+
+        if (!isEmptyObject(proAgentData)) API_TYPE = API_TYPE_OPTIONS.PRO_AGENT;
 
         // if chat canvas then set api type open ai chat canvas
         if (chatCanvas) API_TYPE = API_TYPE_OPTIONS.OPEN_AI_CHAT_CANVAS;
         if (!isEmptyObject(proAgentData) && proAgentData?.code) API_TYPE = API_TYPE_OPTIONS.PRO_AGENT;
-        
+
         newPromptReqBody['responseAPI'] = API_TYPE;
         newPromptReqBody['proAgentData'] = serializableProAgentData;
         setConversations((prevConversations) => {
             const updatedConversations = [...prevConversations];
-            const lastConversation = {...updatedConversations[updatedConversations.length - 1]};
+            const lastConversation = { ...updatedConversations[updatedConversations.length - 1] };
             lastConversation.responseAPI = API_TYPE;
             updatedConversations[updatedConversations.length - 1] = lastConversation;
             return updatedConversations;
         });
-  
+
         //Insert in message table
-        enterNewPrompt(newPromptReqBody, socket);
+        // enterNewPrompt(newPromptReqBody, socket);
+        setLoading(true);
+        socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+            query: query,
+            chatId: params.id,
+            model: selectedAIModal.name,
+            code: selectedAIModal.bot.code,
+            promptId: cloneContext?.prompt_id,
+            customGptId: cloneContext?.custom_gpt_id || persistTagData?.custom_gpt_id,
+            media: Array.isArray(globalUploadedFile) ? globalUploadedFile : [],
+            cloneMedia: Array.isArray(globalUploadedFile) ? globalUploadedFile : [],
+            responseModel: modalName,
+            messageId: messageId,
+            companyId: companyId,
+            user: formatMessageUser(currentUser),
+            isPaid: subscriptionStatus,
+            responseAPI: API_TYPE,
+            proAgentData: serializableProAgentData,
+            apiKey: selectedAIModal.config.apikey
+        })
+        return;
 
 
         const payload = {
@@ -566,11 +599,11 @@ const ChatPage = memo(() => {
                 model_name: modalName,
                 provider: persistTagData?.provider,
                 code: persistTagData?.bot?.code,
-            
+
             }, socket);
         } else if (API_TYPE == API_TYPE_OPTIONS.OPEN_AI_CHAT_CANVAS) {
             API_TYPE = API_TYPE_OPTIONS.OPEN_AI; // reset to open ai code
-            await chatCanvasAiResponse(socket, { 
+            await chatCanvasAiResponse(socket, {
                 ...payload,
                 code: selectedAIModal.bot.code,
                 model_name: modalName,
@@ -580,17 +613,9 @@ const ChatPage = memo(() => {
                 startIndex: canvasOptions.startIndex,
                 endIndex: canvasOptions.endIndex,
             });
-        } else if(API_TYPE == API_TYPE_OPTIONS.PRO_AGENT) {
-            const brainId = decodedObjectId(queryParams.get('b'));
-            const payload = {
-                thread_id: messageId,
-                query: query,
-                chatId: params.id as string,
-                pro_agent_code: proAgentData?.code,
-                brain_id: brainId,
-                proAgentData: proAgentData            
-            }
-            
+        } else if (API_TYPE == API_TYPE_OPTIONS.PRO_AGENT) {
+            const brainId = getDecodedObjectId();
+
             if ([ProAgentCode.QA_SPECIALISTS, ProAgentCode.WEB_PROJECT_PROPOSAL].includes(proAgentData?.code)) {
                 const payload = {
                     thread_id: messageId,
@@ -617,9 +642,9 @@ const ChatPage = memo(() => {
                         userCompanyLocation: proAgentData.location,
                     };
                 }
-                await getAIProAgentChatResponse(payload, socket);  
+                await getAIProAgentChatResponse(payload, socket);
                 API_TYPE = API_TYPE_OPTIONS.OPEN_AI;
-            } else if(proAgentData?.code == ProAgentCode.SEO_OPTIMISED_ARTICLES) {
+            } else if (proAgentData?.code == ProAgentCode.SEO_OPTIMISED_ARTICLES) {
                 const payload = {
                     thread_id: messageId,
                     query: query,
@@ -627,10 +652,10 @@ const ChatPage = memo(() => {
                     pro_agent_code: proAgentData?.code,
                     brain_id: brainId,
                     proAgentData: proAgentData,
-                    msgCredit: getModelCredit(proAgentData?.code)                    
+                    msgCredit: getModelCredit(proAgentData?.code)
                 }
                 getSeoKeyWords(payload);
-            } else if(proAgentData?.code == ProAgentCode.VIDEO_CALL_ANALYZER) {
+            } else if (proAgentData?.code == ProAgentCode.VIDEO_CALL_ANALYZER) {
                 const payload = {
                     thread_id: messageId,
                     query: query,
@@ -644,7 +669,7 @@ const ChatPage = memo(() => {
                         user_prompt: proAgentData?.prompt
                     }
                 }
-                await getAIProAgentChatResponse(payload, socket);  
+                await getAIProAgentChatResponse(payload, socket);
                 API_TYPE = API_TYPE_OPTIONS.OPEN_AI;
             } else if (proAgentData?.code == ProAgentCode.SALES_CALL_ANALYZER) {
                 const payload = {
@@ -659,19 +684,19 @@ const ChatPage = memo(() => {
                 }
                 await getSalesCallResponse(payload, socket);
                 API_TYPE = API_TYPE_OPTIONS.OPEN_AI;
-            }                     
+            }
         }
 
-        if (chatTitle == '' || chatTitle === undefined)
-            await setChatTitleByAI({
-                modelId: selectedAIModal._id,
-                chatId: params.id,
-                code: selectedAIModal.bot.code,
-                messageId: messageId,
-                provider: selectedAIModal?.provider,
-                model_name: selectedAIModal.name,
-                company_id: companyId
-            });
+        // if (chatTitle == '' || chatTitle === undefined)
+        //     await setChatTitleByAI({
+        //         modelId: selectedAIModal._id,
+        //         chatId: params.id,
+        //         code: selectedAIModal.bot.code,
+        //         messageId: messageId,
+        //         provider: selectedAIModal?.provider,
+        //         model_name: selectedAIModal.name,
+        //         company_id: companyId
+        //     });
     };
 
     const handleKeyDown = useCallback(
@@ -681,7 +706,7 @@ const ChatPage = memo(() => {
                 e.preventDefault();
                 return;
             }
-            
+
             if (
                 text?.trim() !== '' &&
                 e.key === 'Enter' &&
@@ -717,32 +742,32 @@ const ChatPage = memo(() => {
 
     useEffect(() => {
         API_TYPE = API_TYPE_OPTIONS.OPEN_AI;
-        
+
         const handleCopy = (event: ClipboardEvent) => {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
-      
+
             const range = selection.getRangeAt(0);
             const documentFragment = range.cloneContents();
             const div = document.createElement('div');
             div.appendChild(documentFragment);
-      
+
             // Remove only background color styles from each element
             div.querySelectorAll('*').forEach((element: HTMLElement) => {
-              element.style.backgroundColor = 'transparent'; // Remove background color only
+                element.style.backgroundColor = 'transparent'; // Remove background color only
             });
-      
+
             // Copy content in both plain text and HTML formats for compatibility
             const plainText = selection.toString(); // Fallback for plain text
             event.clipboardData.setData('text/plain', plainText);
             event.clipboardData.setData('text/html', div.innerHTML);
             event.preventDefault(); // Prevent default copy behavior
         };
-      
+
         document.addEventListener('copy', handleCopy);
         return () => {
-          document.removeEventListener('copy', handleCopy); 
-          removeUploadedFile();
+            document.removeEventListener('copy', handleCopy);
+            removeUploadedFile();
         };
     }, []);
 
@@ -759,10 +784,10 @@ const ChatPage = memo(() => {
         const updatedFiles = globalUploadedFile.filter((_, i) => i !== index);
         const isClearAll = updatedFiles.length === 0;
 
-        if(isClearAll){
+        if (isClearAll) {
             // setUploadedFile([]);
             dispatch(setUploadDataAction([]));
-        }else{
+        } else {
             // setUploadedFile(updatedFiles);
             dispatch(setUploadDataAction(updatedFiles));
         }
@@ -790,20 +815,20 @@ const ChatPage = memo(() => {
 
         // Update shouldScrollToBottom based on scroll position
         setShouldScrollToBottom(isAtBottom);
-        
+
         // Handle pagination when scrolling to top
         if (scrollTop === 0 && !listLoader && conversationPagination?.hasNextPage) {
             const previousScrollHeight = scrollHeight;
-            
+
             const nextOffset = ((conversationPagination.next || 1) - 1) * (conversationPagination.perPage || 10);
-            
+
             // Emit socket event to load more messages
-            socket.emit(SOCKET_EVENTS.MESSAGE_LIST, { 
-                chatId: params.id, 
-                companyId, 
-                userId: currentUser._id, 
+            socket.emit(SOCKET_EVENTS.MESSAGE_LIST, {
+                chatId: params.id,
+                companyId,
+                userId: currentUser._id,
                 offset: nextOffset,
-                limit: conversationPagination.perPage 
+                limit: conversationPagination.perPage
             });
 
             // Adjust scroll position after new content loads
@@ -815,19 +840,7 @@ const ChatPage = memo(() => {
                 }
             });
         }
-    }, [ conversationPagination.next]);
-
-    // const handleContentScroll = () => {
-
-    //     const { scrollTop, clientHeight, scrollHeight } = contentRef.current;
-    //     const isAtBottom = scrollHeight - scrollTop === clientHeight;
-
-    //     // Update shouldScrollToBottom state based on scroll position
-    //     setShouldScrollToBottom(isAtBottom);
-    // };
-
-    
- 
+    }, [conversationPagination.next]);
 
     // Function to scroll to the bottom of the messages container
     const scrollToBottom = () => {
@@ -874,7 +887,7 @@ const ChatPage = memo(() => {
     };
 
     const mid = queryParams.get('mid');
- 
+
     useEffect(() => {
         if (mid != undefined && conversations.length > 0) {
             const message = conversations.find(conversion => conversion.id === mid);
@@ -974,7 +987,7 @@ const ChatPage = memo(() => {
                     model: payload.model
                 },
             ])
-            dispatch(setLastConversationDataAction({ 
+            dispatch(setLastConversationDataAction({
                 responseAPI: payload.responseAPI,
                 customGptId: {
                     _id: payload?.customGptId,
@@ -986,45 +999,56 @@ const ChatPage = memo(() => {
     }, [socket]);
 
     const handleSocketStreaming = useCallback((payload) => {
-        if (currentUser._id !== payload.userId) {
-            setLoading(false);
-            setAnswerMessage(prev => {
-                const newMessage = prev + payload.chunk;
-                
-                // Auto-scroll if shouldScrollToBottom is true
-                if (shouldScrollToBottom && contentRef.current) {
-                    requestAnimationFrame(() => {
-                        contentRef.current.scrollTop = contentRef.current.scrollHeight;
-                    });
-                }
-                
-                return newMessage;
-            });
+        if (payload?.event === STREAMING_RESPONSE_STATUS.WEB_SEARCH) {
+            setToolCallLoading({ ...defaultToolCallLoading, webSearch: true });
+            return;
         }
-    }, [shouldScrollToBottom,socket]);
-
-    const handleSocketStreamingStop = useCallback((chunk) => {
-        if (currentUser._id !== chunk.userId) {
-            setConversations(prevConversations => {
-                const updatedConversations = [...prevConversations];
-                const lastConversation = { ...updatedConversations[updatedConversations.length - 1] };
-                lastConversation.response = chunk.proccedMsg;
-                updatedConversations[updatedConversations.length - 1] = lastConversation;
-                
-                // Auto-scroll to bottom when streaming stops if shouldScrollToBottom is true
-                if (shouldScrollToBottom && contentRef.current) {
-                    requestAnimationFrame(() => {
-                        contentRef.current.scrollTop = contentRef.current.scrollHeight;
-                    });
-                }
-                
+        if (payload?.event === STREAMING_RESPONSE_STATUS.CITATION) {
+            setConversations(prev => {
+                const updatedConversations = [...prev];
+                updatedConversations[updatedConversations.length - 1].citations = payload.chunk;
                 return updatedConversations;
             });
-            setAnswerMessage('');
-            // if error throw then need to loading false to show error response
-            setLoading(false)
-            disabledInput.current = null
+            return;
         }
+        if (payload.chunk === STREAMING_RESPONSE_STATUS.DONE) {
+            handleSocketStreamingStop({ proccedMsg: payload.proccedMsg });
+            return;
+        }
+        setLoading(false);
+        setToolCallLoading(defaultToolCallLoading);
+        setAnswerMessage(prev => {
+            const newMessage = prev + payload.chunk;
+            if (shouldScrollToBottom && contentRef.current) {
+                requestAnimationFrame(() => {
+                    contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                });
+            }
+
+            return newMessage;
+        });
+    }, [shouldScrollToBottom, socket]);
+
+    const handleSocketStreamingStop = useCallback((chunk) => {
+        setConversations(prevConversations => {
+            const updatedConversations = [...prevConversations];
+            const lastConversation = { ...updatedConversations[updatedConversations.length - 1] };
+            lastConversation.response = chunk.proccedMsg;
+            updatedConversations[updatedConversations.length - 1] = lastConversation;
+
+            // Auto-scroll to bottom when streaming stops if shouldScrollToBottom is true
+            if (shouldScrollToBottom && contentRef.current) {
+                requestAnimationFrame(() => {
+                    contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                });
+            }
+
+            return updatedConversations;
+        });
+        setAnswerMessage('');
+        // if error throw then need to loading false to show error response
+        setLoading(false)
+        disabledInput.current = null
     }, [socket]);
 
     const emitQueryTyping = useCallback((user, typing) => {
@@ -1106,7 +1130,7 @@ const ChatPage = memo(() => {
         if (socket) {
             socket.emit(SOCKET_EVENTS.JOIN_CHAT_ROOM, {
                 chatId: params.id,
-                companyId:companyId
+                companyId: companyId
             });
             socket.emit(SOCKET_EVENTS.JOIN_COMPANY_ROOM, { companyId });
             threadReceiveFromSocket();
@@ -1121,19 +1145,24 @@ const ChatPage = memo(() => {
             socket.on(SOCKET_EVENTS.DISABLE_QUERY_INPUT, handleDisableInput);
 
             socket.on(SOCKET_EVENTS.USER_SUBSCRIPTION_UPDATE, handleUserSubscriptionUpdate);
+            socket.on(SOCKET_EVENTS.LLM_RESPONSE_SEND, (data) => {
+                if (data.chunk) {
+                    handleSocketStreaming(data);
+                }
+            });
 
-            socket.emit(SOCKET_EVENTS.MESSAGE_LIST, { chatId: params.id, companyId, userId: currentUser._id, offset:conversationPagination?.offset || 0, limit:conversationPagination?.perPage || 10 });
+            socket.emit(SOCKET_EVENTS.MESSAGE_LIST, { chatId: params.id, companyId, userId: currentUser._id, offset: conversationPagination?.offset || 0, limit: conversationPagination?.perPage || 10 });
 
             socket.on(SOCKET_EVENTS.MESSAGE_LIST, ({ messageList }) => {
                 // Store current scroll height before updating
                 const previousScrollHeight = contentRef.current?.scrollHeight || 0;
-                
-                
-                if(isEmptyObject(initialMessage)){
+
+
+                if (isEmptyObject(initialMessage)) {
                     socketAllConversation(messageList);
                 }
-                
-                
+
+
                 // After state update, adjust scroll position
                 requestAnimationFrame(() => {
                     if (contentRef.current) {
@@ -1174,28 +1203,28 @@ const ChatPage = memo(() => {
     // End Socket Connection and disconnection configuration
 
     useEffect(() => {
-        if(prompts?.length > 0){
-            if(text){
+        if (prompts?.length > 0) {
+            if (text) {
                 const updateIsActive = prompts.map((currPrompt) => {
-                    if(currPrompt.content){
-                        const summaries = currPrompt?.summaries 
+                    if (currPrompt.content) {
+                        const summaries = currPrompt?.summaries
                             ? Object.values(currPrompt.summaries)
-                                .map((currSummary:any) => `${currSummary.website} : ${currSummary.summary}`)
+                                .map((currSummary: any) => `${currSummary.website} : ${currSummary.summary}`)
                                 .join('\n')
                             : '';
-                
+
                         const isContentIncluded = text?.replace(/\s+/g, '')?.includes((currPrompt.content + (summaries ? '\n' + summaries : ''))?.replace(/\s+/g, ''));
-                        return {...currPrompt,isActive:isContentIncluded}
+                        return { ...currPrompt, isActive: isContentIncluded }
                     }
 
                     return currPrompt
                 })
 
                 setHandlePrompts(updateIsActive);
-            }else{
+            } else {
                 setHandlePrompts(prompts);
             }
-        }else{
+        } else {
             setHandlePrompts(prompts)
         }
     }, [prompts, text]);
@@ -1209,9 +1238,9 @@ const ChatPage = memo(() => {
         }
     }, [socket]);
 
-    useEffect(() => {       
-        if(!isUserNameComplete(currentUser)){
-            router.push(routes.onboard);   
+    useEffect(() => {
+        if (!isUserNameComplete(currentUser)) {
+            router.push(routes.onboard);
         }
     }, [currentUser]);
 
@@ -1311,7 +1340,7 @@ const ChatPage = memo(() => {
                                                         conversation={conversations}
                                                         sequence={m.seq}
                                                         onOpenThread={() =>
-                                                            handleOpenThreadModal(m,THREAD_MESSAGE_TYPE.QUESTION)
+                                                            handleOpenThreadModal(m, THREAD_MESSAGE_TYPE.QUESTION)
                                                         }
                                                         copyToClipboard={copyToClipboard}
                                                         getAgentContent={getAgentContent}
@@ -1339,7 +1368,7 @@ const ChatPage = memo(() => {
                                                     </div>
                                                     <div className="flex-col gap-1 md:gap-3">
                                                         <div className="flex flex-grow flex-col max-w-full">
-                                                            <div className="min-h-5 text-message flex flex-col items-start gap-2  break-words [.text-message+&]:mt-5 overflow-x-auto">                         
+                                                            <div className="min-h-5 text-message flex flex-col items-start gap-2  break-words [.text-message+&]:mt-5 overflow-x-auto">
                                                                 <ChatUploadedFiles
                                                                     media={m?.cloneMedia}
                                                                     customGptId={m?.customGptId}
@@ -1347,12 +1376,12 @@ const ChatPage = memo(() => {
                                                                     gptCoverImage={m?.coverImage}
                                                                 />
                                                                 <div className="chat-content max-w-none w-full break-words text-font-14 md:text-font-16 leading-7 tracking-[0.16px] whitespace-pre-wrap">
-                                                                { m?.responseAPI == API_TYPE_OPTIONS.PRO_AGENT &&
-                                                                    <ProAgentQuestion proAgentData={m?.proAgentData} />
-                                                                }
-                                                                { m?.responseAPI != API_TYPE_OPTIONS.PRO_AGENT &&
+                                                                    {m?.responseAPI == API_TYPE_OPTIONS.PRO_AGENT &&
+                                                                        <ProAgentQuestion proAgentData={m?.proAgentData} />
+                                                                    }
+                                                                    {m?.responseAPI != API_TYPE_OPTIONS.PRO_AGENT &&
                                                                         m.message
-                                                                }   
+                                                                    }
                                                                 </div>
                                                                 {/* Thread Replay Start */}
                                                                 <ThreadItem
@@ -1385,19 +1414,13 @@ const ChatPage = memo(() => {
                                                         conversation={conversations}
                                                         sequence={m.seq}
                                                         onOpenThread={() =>
-                                                            handleOpenThreadModal(m,THREAD_MESSAGE_TYPE.ANSWER)
+                                                            handleOpenThreadModal(m, THREAD_MESSAGE_TYPE.ANSWER)
                                                         }
                                                         copyToClipboard={copyToClipboard}
-                                                        getAgentContent={getAgentContent} 
+                                                        getAgentContent={getAgentContent}
                                                         index={i}
-                                                        chatId={params.id}
-                                                        socket={socket}
-                                                        setConversations={setConversations}
-                                                        getAINormatChatResponse={getAINormatChatResponse}
-                                                        getAICustomGPTResponse={getAICustomGPTResponse}
-                                                        getPerplexityResponse={getPerplexityResponse}
-                                                        getAIDocResponse={getAIDocResponse}
-                                                        custom_gpt_id={persistTagData?.custom_gpt_id}
+                                                        showCitations={true}
+                                                        citations={m?.citations}
                                                         onAddToPages={async (title: string) => {
                                                             await handleAddToPages(title, m);
                                                         }}
@@ -1406,7 +1429,7 @@ const ChatPage = memo(() => {
                                                     />
                                                 }
                                                 {/* Hover Icons End */}
-                                                { m?.responseAPI !== API_TYPE_OPTIONS.PRO_AGENT &&
+                                                {m?.responseAPI !== API_TYPE_OPTIONS.PRO_AGENT &&
                                                     <div className="relative flex flex-col flex-shrink-0">
                                                         <RenderAIModalImage
                                                             src={getModelImageByName(m.responseModel)}
@@ -1415,7 +1438,7 @@ const ChatPage = memo(() => {
                                                     </div>
                                                 }
                                                 <div className="relative flex w-full flex-col">
-                                                    { m?.responseAPI !== API_TYPE_OPTIONS.PRO_AGENT &&
+                                                    {m?.responseAPI !== API_TYPE_OPTIONS.PRO_AGENT &&
                                                         <div className="font-bold select-none mb-1 max-md:text-font-14">
                                                             {
                                                                 getDisplayModelName(m.responseModel)
@@ -1424,10 +1447,11 @@ const ChatPage = memo(() => {
                                                     }
                                                     <div className="flex-col gap-1 md:gap-3">
                                                         <div className="flex flex-grow flex-col max-w-full">
+                                                            {toolCallLoading.webSearch && <ChatWebSearchLoader/>}
                                                             {
                                                                 (m?.proAgentData?.code === ProAgentCode.SEO_OPTIMISED_ARTICLES && (m.response === '' && answerMessage === '')) ?
                                                                     <SeoProAgentResponse conversation={conversations} proAgentData={m?.proAgentData} leftList={leftList} rightList={rightList} setLeftList={setLeftList} setRightList={setRightList} isLoading={isLoading} socket={socket} generateSeoArticle={generateSeoArticle} loading={loading} />
-                                                                :                                                 
+                                                                    :
                                                                     <ChatResponse
                                                                         conversations={conversations}
                                                                         i={i}
@@ -1476,7 +1500,7 @@ const ChatPage = memo(() => {
                     </div>
                     {/* chat End */}
                 </div>
-                
+
                 <ScrollToBottomButton contentRef={contentRef} />
                 
                 { !chatInfo?.brain?.id?.deletedAt ?
@@ -1667,80 +1691,79 @@ const ChatPage = memo(() => {
                                             }
                                         }}
                                         >
-                                         <DialogTrigger
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault(); // Prevent Enter key from triggering the dialog
-                                                }
-                                        }}
-                                        >
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger disabled={isWebSearchActive}>
-                                                        <div className={`chat-btn cursor-pointer bg-white transition ease-in-out duration-200 hover:bg-b11 rounded-md w-auto h-8 flex items-center px-[5px] ${
-                                                            isWebSearchActive ? 'opacity-50 pointer-events-none' : ''
-                                                        }`}>
-                                                        <ThunderIcon width={'14'} height={'14'} className={'fill-b5 w-auto h-[17px]'} />
-                                                        </div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p className="text-font-14">
-                                                        {isWebSearchActive
-                                                            ? "This feature is unavailable in web search"
-                                                            : "Add Promps, Agents, or Docs to chat"}
-                                                        </p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </DialogTrigger>
-                                        <DialogContent className="xl:max-w-[670px] max-w-[calc(100%-30px)] block pt-7 max-md:max-h-[calc(100vh-70px)] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                            <DialogHeader className="rounded-t-10 px-[30px] pb-5 ">
-                                                {/* <DialogTitle className="font-semibold flex items-center">
+                                            <DialogTrigger
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault(); // Prevent Enter key from triggering the dialog
+                                                    }
+                                                }}
+                                            >
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger disabled={isWebSearchActive}>
+                                                            <div className={`chat-btn cursor-pointer bg-white transition ease-in-out duration-200 hover:bg-b11 rounded-md w-auto h-8 flex items-center px-[5px] ${isWebSearchActive ? 'opacity-50 pointer-events-none' : ''
+                                                                }`}>
+                                                                <ThunderIcon width={'14'} height={'14'} className={'fill-b5 w-auto h-[17px]'} />
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p className="text-font-14">
+                                                                {isWebSearchActive
+                                                                    ? "This feature is unavailable in web search"
+                                                                    : "Add Promps, Agents, or Docs to chat"}
+                                                            </p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </DialogTrigger>
+                                            <DialogContent className="xl:max-w-[670px] max-w-[calc(100%-30px)] block pt-7 max-md:max-h-[calc(100vh-70px)] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                                <DialogHeader className="rounded-t-10 px-[30px] pb-5 ">
+                                                    {/* <DialogTitle className="font-semibold flex items-center">
                                                     <h2 className='text-font-16'>Select Prompts, Agents, and Docs</h2>
                                                 </DialogTitle> */}
-                                            </DialogHeader>
-                                            <div className="dialog-body relative h-full w-full md:max-h-[650px] px-6 md:px-8 pt-6 flex min-h-[450px] top-[-36px]">
-                                                    <TabGptList 
-                                                    setDialogOpen={setDialogOpen}
-                                                    onSelect={onSelectMenu} 
-                                                    // setUploadedFile={setUploadedFile} 
-                                                    setText={setText} 
-                                                    handlePrompts={handlePrompts}
-                                                    setHandlePrompts={setHandlePrompts}
-                                                    getList={getTabPromptList}
-                                                    promptLoader={promptLoader}
-                                                    setPromptLoader={setPromptLoader}
-                                                    paginator={promptPaginator}
-                                                    setPromptList={setPromptList}
-                                                    promptList={prompts}
-                                                    handleSubmitPrompt={handleSubmitPrompt}
-                                                    />          
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
-                                     {/* Dialog End For tabGptList */}
-                                    <AttachMentToolTip
-                                        fileLoader={fileLoader}
-                                        isWebSearchActive={isWebSearchActive}
-                                        handleAttachButtonClick={handleAttachButtonClick}
-                                    />
+                                                </DialogHeader>
+                                                <div className="dialog-body relative h-full w-full md:max-h-[650px] px-6 md:px-8 pt-6 flex min-h-[450px] top-[-36px]">
+                                                    <TabGptList
+                                                        setDialogOpen={setDialogOpen}
+                                                        onSelect={onSelectMenu}
+                                                        // setUploadedFile={setUploadedFile} 
+                                                        setText={setText}
+                                                        handlePrompts={handlePrompts}
+                                                        setHandlePrompts={setHandlePrompts}
+                                                        getList={getTabPromptList}
+                                                        promptLoader={promptLoader}
+                                                        setPromptLoader={setPromptLoader}
+                                                        paginator={promptPaginator}
+                                                        setPromptList={setPromptList}
+                                                        promptList={prompts}
+                                                        handleSubmitPrompt={handleSubmitPrompt}
+                                                    />
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                        {/* Dialog End For tabGptList */}
+                                        <AttachMentToolTip
+                                            fileLoader={fileLoader}
+                                            isWebSearchActive={isWebSearchActive}
+                                            handleAttachButtonClick={handleAttachButtonClick}
+                                        />
 
-                                        <BookmarkDialog 
-                                            onSelect={onSelectMenu} 
+                                        <BookmarkDialog
+                                            onSelect={onSelectMenu}
                                             isWebSearchActive={isWebSearchActive}
                                             selectedAttachment={globalUploadedFile}
                                         />
-                                    <WebSearchToolTip
-                                        loading={loading}
-                                        isWebSearchActive={isWebSearchActive}
-                                        handleWebSearchClick={handleWebSearchClick}
-                                    />
-                                        
+                                        <WebSearchToolTip
+                                            loading={loading}
+                                            isWebSearchActive={isWebSearchActive}
+                                            handleWebSearchClick={handleWebSearchClick}
+                                        />
+
                                         {/* Prompt Enhance Component */}
-                                        <PromptEnhance 
-                                            isWebSearchActive={isWebSearchActive} 
-                                            text={text} 
-                                            setText={setText} 
+                                        <PromptEnhance
+                                            isWebSearchActive={isWebSearchActive}
+                                            text={text}
+                                            setText={setText}
                                             promptId={selectedContext.prompt_id}
                                             queryId={queryId}
                                             brainId={getDecodedObjectId()}
@@ -1791,9 +1814,9 @@ const ChatPage = memo(() => {
 });
 
 const ChatAccessControl = () => {
-    const chatAccess = useSelector((store:any) => store.chat.chatAccess);
+    const chatAccess = useSelector((store: any) => store.chat.chatAccess);
     return (
-        chatAccess ? <ChatPage/> : null
+        chatAccess ? <ChatPage /> : null
     )
 }
 

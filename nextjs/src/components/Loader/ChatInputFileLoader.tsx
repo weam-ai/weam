@@ -15,4 +15,15 @@ const ChatInputFileLoader = () => {
     );
 };
 
+export const ChatWebSearchLoader = () => {
+    return (
+        <div className="text-font-18 animate-pulse text-b5">Searching the web...</div>
+    )
+}
+
+export const ChatResponseInitRequestLoader = () => {
+    return (
+        <div className="text-font-18 animate-pulse text-b5">Give me a moment working on it...</div>
+    )
+}
 export default ChatInputFileLoader;

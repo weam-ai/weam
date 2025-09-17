@@ -14,9 +14,9 @@ import { getAccessToken } from '@/actions/serverApi';
 import { AgentChatPayloadType, ChatTitlePayloadType, DocumentChatPayloadType, NormalChatPayloadType, PerplexityPayloadType, SocketConversationType, ProAgentChatPayloadType, ProAgentPayloadType, UploadedFileType } from '@/types/chat';
 import { Socket } from 'socket.io-client';
 import { BrainListType } from '@/types/brain';
-import { useRouter, useSearchParams, usePathname, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import useConversationHelper from './useConversationHelper';
-import { ProAgentCode, ProAgentPythonCode } from '@/types/common';
+import { ProAgentCode } from '@/types/common';
 import { SalesCallPayloadType, SeoArticlePayloadType } from '@/types/proAgents';
 import useChatMember from '../chat/useChatMember';
 type CustomErrorPayloadType = {
@@ -1333,7 +1333,6 @@ const useConversation = () => {
         customErrorResponse,
         generateSeoArticle,
         getSalesCallResponse,
-        stopStreaming
     };
 };
 

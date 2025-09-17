@@ -3,7 +3,7 @@ import apiList from './list';
 import axios, { AxiosError, AxiosRequestHeaders, AxiosResponse } from 'axios';
 import { LINK, NODE_API_PREFIX, AUTH } from '@/config/config';
 import { getAccessToken } from '@/actions/serverApi';
-import { accessTokenViaRefresh, handleLogout } from '@/utils/handleAuth';
+import { handleLogout } from '@/utils/handleAuth';
 import { RESPONSE_STATUS, RESPONSE_STATUS_CODE } from '@/utils/constant';
 import { HAS_REFRESHED, SessionStorage } from '@/utils/localstorage';
 import { APIResponseType } from '@/types/common';

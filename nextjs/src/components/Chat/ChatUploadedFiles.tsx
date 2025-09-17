@@ -11,7 +11,7 @@ type RenderImageProps = {
 
 const RenderImage = ({ file }: RenderImageProps) => {
     return (
-        <div key={file._id} className="uploaded-item flex flex-row items-center gap-1 w-full">
+        <div key={file._id} >
             <div className="overflow-hidden rounded-10 w-full h-full max-h-40">
                 <div className="relative h-auto w-full">
                     <DynamicImage
