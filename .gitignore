@@ -55,3 +55,8 @@ uploads/*
 dump.rdb
 newrelic_agent.log
 
+ai-doc-editor/
+foloup/
+seo-content-gen/
+ai-chatbot/
+landing-page-content-generator/

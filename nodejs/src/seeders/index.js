@@ -11,7 +11,8 @@ async function initSeed () {
         await seedService.seedCustomGPT();
         await seedService.seedPrompt();
         await seedService.seedOtherRolePermission();
-        await seedService.seedCountry();        
+        await seedService.seedCountry();  
+        await seedService.seedSuperSolutionApps();      
     } catch (error) {
         logger.error('Error in initSeed function', error);
         

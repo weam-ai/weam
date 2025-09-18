@@ -45,6 +45,8 @@ services:
       - ./nodejs:/usr/src/app        
       - /usr/src/app/node_modules 
       - ./nodejs/storage:/usr/src/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${PWD}:/workspace
     networks:
       - app-network
     depends_on:

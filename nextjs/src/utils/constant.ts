@@ -147,10 +147,11 @@ export const MODULE_ACTIONS = {
     UPDATE_MCP_DATA: 'updateMcpData',
     GET_AI_ADOPTION: 'getAiAdoption',
     SUPER_SOLUTION: 'super-solution',
+    ADD: 'add',
     ADD_MEMBERS_TO_SOLUTION_APP: 'addMembersToSolutionApp',
-    ADD_TEAMS_TO_SOLUTION_APP: 'addTeamsToSolutionApp',
-    REMOVE_MEMBERS_FROM_SOLUTION_APP: 'removeMembersFromSolutionApp',
     GET_MEMBERS_TO_SOLUTION_APP: 'getMembersToSolutionApp',
+    REMOVE_MEMBERS_FROM_SOLUTION_APP: 'removeMembersFromSolutionApp',
+    ADD_TEAMS_TO_SOLUTION_APP: 'addTeamsToSolutionApp',
     GET_TEAMS_TO_SOLUTION_APP: 'getTeamsToSolutionApp',
     REMOVE_TEAMS_FROM_SOLUTION_APP: 'removeTeamsFromSolutionApp',
     GET_SOLUTION_APP_BY_USER_ID: 'getSolutionAppByUserId',
@@ -161,7 +162,8 @@ export const MODULE_ACTIONS = {
     PAGE_VIEW: 'getPageById',
     PAGE_UPDATE: 'pageUpdate',
     PAGE_DELETE: 'deletePage',
-    GET_ALL_PAGES: 'getAllPages'
+    GET_ALL_PAGES: 'getAllPages',
+    SOLUTION_INSTALL: 'solutionInstall'
 
 } as const;
 

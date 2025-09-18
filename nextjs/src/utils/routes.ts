@@ -35,7 +35,8 @@ const routes = {
     testSubscription: '/test-subscription',
     weeklyReport: '/settings/weekly-report',
     creditControl: '/settings/credit-control',
-    mcp: '/mcp'
+    mcp: '/mcp',
+    superSolution: '/settings/super-solution'
 };
 
 export default routes;

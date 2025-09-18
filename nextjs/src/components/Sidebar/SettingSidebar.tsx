@@ -5,16 +5,11 @@ import {
     SettingsIcon,
 } from '@/icons/SettingsIcon';
 import SuperSolutionIcon from '@/icons/SuperSolutionIcon';
-import Link from 'next/link';
 import React from 'react';
 import { LINK } from '@/config/config';
 import { getSessionUser } from '@/utils/handleAuth';
 import { ROLE_TYPE } from '@/utils/constant';
 import { hasPermission, PERMISSIONS, Role } from '@/utils/permission';
-import routes from '@/utils/routes';
-import Setting from '@/icons/Setting';
-import TemplateIcon from '@/icons/TemplateIcon';
-import ArrowBack from '@/icons/ArrowBack';
 import { TemplateLibrary } from './SettingSelection';
 import ReportIcon from '@/icons/ReportIcon';
 import PrivateVisible from '../Brains/PrivateVisible';
@@ -24,8 +19,7 @@ import StorageIcon from '@/icons/StorageIcon';
 import SupportIcon from '@/icons/SupportIcon';
 import SidebarFooter from './SidebarFooter';
 import SettingOptions from './SettingOptions';
-import CreditControlIcon from '@/icons/CreditControlIcon';
-import SolutionAppIcon from '@/icons/SolutionsIcons';
+import DashboardIcon from '@/icons/DashboardIcon';
 
 const BackButton = dynamic(() => import('./BackButton'), { ssr: false });
 const SettingsLink = dynamic(() => import('./SettingsLink'), { ssr: false });
@@ -53,7 +47,7 @@ const SettingSidebar = async () => {
                 <AppIcon
                     height={20}
                     width={20}
-                    className={'w-[18px] h-auto object-contain fill-b2'}
+                    className={'w-5 h-5 object-contain fill-b2'}
                 />
             ),
             hasAccess: true,
@@ -142,7 +136,7 @@ const SettingSidebar = async () => {
         {
             name: 'Apps',
             icon: (
-                <SolutionAppIcon
+                <DashboardIcon 
                     height={18}
                     width={18}
                     className={'w-[18px] h-auto object-contain fill-b2'}
@@ -164,7 +158,7 @@ const SettingSidebar = async () => {
             hasAccess: (userDetail?.roleCode == ROLE_TYPE.COMPANY) ? true : false,
             navigate: `${LINK.DOMAIN_URL}/settings/credit-control`,
             slug: '/settings/credit-control',
-        },
+        }
     ];
     return (
         <>
@@ -186,6 +180,3 @@ const SettingSidebar = async () => {
 };
 
 export default SettingSidebar;
-
-
-

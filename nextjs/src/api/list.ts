@@ -197,6 +197,10 @@ const apiList = {
         url: ()=> `${WEB}/user/favorite-list`,
         method: 'POST'
     },
+    solutionInstall: {
+        url: () => `${WEB}/solution-install`,
+        method: 'POST'
+    },
     globalSearch: {
         url: () => `${WEB}/message/global-search`,
         method: 'POST'
@@ -220,6 +224,34 @@ const apiList = {
     updateMcpData: {
         url: () => `common/update-mcp-data`,
         method: 'PUT'
+    },
+    getMembersToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/members/list`,
+        method: 'POST'
+    },
+    addMembersToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/members/add`,
+        method: 'POST'
+    },
+    removeMembersFromSolutionApp: {
+        url: () => `${ADMIN}/super-solution/members/remove`,
+        method: 'POST'
+    },
+    getTeamsToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/teams/list`,
+        method: 'POST'
+    },
+    addTeamsToSolutionApp: {
+        url: () => `${ADMIN}/super-solution/teams/add`,
+        method: 'POST'
+    },
+    removeTeamsFromSolutionApp: {
+        url: () => `${ADMIN}/super-solution/teams/remove`,
+        method: 'POST'
+    },
+    getSolutionAppByUserId: {
+        url: (id: string) => `${ADMIN}/super-solution/get-by-user-id/${id}`,
+        method: 'GET'
     },
         // Page operations
     createPage: {

@@ -30,7 +30,8 @@ const SidebarPages: React.FC<SidebarPagesProps> = ({ children, settingSidebar })
         [routes.profileSetting]: <ProfileSidebar />, 
         [routes.twoFactorAuthentication]: <ProfileSidebar />,
         [routes.changePassword]: <ProfileSidebar/>,
-        [routes.creditControl]: settingSidebar
+        [routes.creditControl]: settingSidebar,
+        [routes.superSolution]: settingSidebar
     };
 
     if (dynamicChatPath || dynamicCustomGptEditPath) return (

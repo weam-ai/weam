@@ -24,7 +24,7 @@ const Brain = require('../models/brains');
 const Workspace = require('../models/workspace');
 const WorkspaceUser = require('../models/workspaceuser');
 const { formatBrain,formatUser } = require('../utils/helper');
-
+const SolutionApp = require('../models/solutionApp');
 const seedRole = async function () {
     try {
         const roleJSON = require('../seeders/role.json');
@@ -745,6 +745,49 @@ const seedMigrateBlockedDomains = async () => {
     }
 }
 
+const seedSuperSolutionApps = async () => {
+    try {
+        const superSolutionJSON = require('../seeders/superSolution.json');
+        const existingApps = await SolutionApp.find();
+
+        const bulkApps = [];
+        const bulkUpdates = [];
+
+        for (const app of superSolutionJSON.solutionApps) {
+            const checkExistingApp = existingApps.find(existing => existing.name === app.name);
+            if (!checkExistingApp) {
+                bulkApps.push({ insertOne: { document: app } });
+            } else {
+                // Update existing app
+                bulkUpdates.push({
+                    updateOne: {
+                        filter: { name: app.name },
+                        update: { $set: app }
+                    }
+                });
+            }
+        }
+
+        // Insert new apps
+        if (bulkApps.length) {
+            await SolutionApp.bulkWrite(bulkApps);
+            logger.info(`Super Solution Apps seeded successfully! ${bulkApps.length} new apps added 🚀`);
+        }
+
+        // Update existing apps
+        if (bulkUpdates.length) {
+            await SolutionApp.bulkWrite(bulkUpdates);
+            logger.info(`Super Solution Apps updated successfully! ${bulkUpdates.length} existing apps updated 🔄`);
+        }
+
+        if (bulkApps.length === 0 && bulkUpdates.length === 0) {
+            logger.info('No Super Solution Apps to insert or update! ✅');
+        }
+    } catch (error) {
+        logger.error('Error in seedSuperSolutionApps function ', error);
+    }
+}
+
 module.exports = {
     seedRole,
     seedAdmin,
@@ -762,5 +805,6 @@ module.exports = {
     freeWeamApiMigration,
     botMigration,
     seedCompanyCountryCode,
-    seedMigrateBlockedDomains
+    seedMigrateBlockedDomains,
+    seedSuperSolutionApps
 }

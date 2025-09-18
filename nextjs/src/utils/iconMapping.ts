@@ -1,21 +1,21 @@
 import { 
-    MessageSquare, 
-    Users, 
-    Image as ImageIcon, 
-    FileText, 
-    Code, 
-    BarChart3, 
-    MessageCircle,
-    Calendar,
-    Globe,
-    Palette,
-    Database,
-    Bot,
-    Zap,
-    Shield,
-    Settings,
-    HelpCircle
-  } from 'lucide-react';
+  MessageSquare, 
+  Users, 
+  Image as ImageIcon, 
+  FileText, 
+  Code, 
+  BarChart3, 
+  MessageCircle,
+  Calendar,
+  Globe,
+  Palette,
+  Database,
+  Bot,
+  Zap,
+  Shield,
+  Settings,
+  HelpCircle
+} from 'lucide-react';
 import AIDocsIcon from '@/icons/AIDocsIcon';
 import FoloupIcon from '@/icons/FoloupIcon';
 import ChatBotIcon from '@/icons/ChatBotIcon';
@@ -67,3 +67,4 @@ import VideoGenIcon from '@/icons/VideoGenIcon';
   export const getIconWithFallback = (iconName: string, fallbackIcon = HelpCircle) => {
     return iconMapping[iconName] || fallbackIcon;
   };
+
