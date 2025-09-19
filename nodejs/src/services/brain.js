@@ -7,7 +7,7 @@ const { sendCommonNotification } = require('./notification');
 const { addBrainChatMember, removeBrainChatMember } = require('../services/chatmember');
 const { addShareBrainTeam, addWorkSpaceTeam } = require('./teamMember');
 const { addWorkSpaceUsers } = require('./workspace');
-const Workspace =require("../models/workspace");
+const Workspace =require("../models/workspaceuser");
 const { accessOfBrainToUser, accessOfWorkspaceToUser } = require('./common');
 
 const shareBrainFormat = async (req, brains, createBrain = false) => {
