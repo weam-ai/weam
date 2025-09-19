@@ -136,6 +136,7 @@ export type ConversationType = {
     _id?: string;
     customGptTitle?: string;
     coverImage?: string;
+    citations?: CitationResponseType[]
 }
 
 export type ForkChatType = {
@@ -152,10 +153,8 @@ export type ForkChatType = {
 }
 
 export type PromptEnhancePayloadType = {
-    prompt: string;
-    queryId: string;
-    brainId: string;
-    promptId: string;
+    query: string;
+    apiKey: string;
 }
 
 export type NormalChatPayloadType = {
@@ -172,7 +171,6 @@ export type NormalChatPayloadType = {
     media?: UploadedFileType[];
     // isregenerated: boolean;
     msgCredit: number;
-    // is_paid_user: boolean;
     mcp_tools?: Record<string, string[]>;
 }
 
@@ -349,3 +347,10 @@ export type EditResponseResponseType = {
         [key: string]: any;
     };
 };
+
+export type CitationResponseType = {
+    url: string;
+    title: string;
+    snippet: string;
+    domain: string
+}

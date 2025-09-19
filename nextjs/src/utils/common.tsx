@@ -378,7 +378,7 @@ export const getSelectedBrain = (brains: any[], getCurrentUser: any, isDefaultNe
             const brainData = retrieveBrainData();
             if (brainData) return brainData;
         }
-        
+
         const privateBrain = brains.find(
             brain => brain.slug === `${DEFAULT_CHAT_SLUG}${_id}`
         );

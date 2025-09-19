@@ -101,6 +101,12 @@ export type FormatBotType = {
     title: string;
     code: string;
 }
+export type BotType = {
+    title: string;
+    code: string;
+    id: string;
+  };
+
 
 export type FavoriteItemsType = {
     type: 'CustomGPT' | 'Docs' | 'Prompts';

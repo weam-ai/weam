@@ -28,7 +28,15 @@ AWS.config.update({
     region: AWS_CONFIG.REGION
 });
 
-const S3 = new AWS.S3({ useAccelerateEndpoint: true });
+const S3 = new AWS.S3({ accessKeyId: AWS_CONFIG.AWS_ACCESS_ID,
+    secretAccessKey: AWS_CONFIG.AWS_SECRET_KEY,
+    endpoint: AWS_CONFIG.ENDPOINT, // accessible from container
+    s3ForcePathStyle: true,
+    signatureVersion: 'v4',
+    sslEnabled: false,
+    useAccelerateEndpoint: false,
+    
+ });
 const textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: EMBEDDINGS.CHUNK_SIZE_CHARS,
     chunkOverlap: EMBEDDINGS.CHUNK_OVERLAP_CHARS,

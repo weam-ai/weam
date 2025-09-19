@@ -15,6 +15,7 @@
     "@material-ui/core": "^4.12.4",
     "@mui/material": "^5.15.21",
     "@radix-ui/react-accordion": "^1.2.0",
+    "@radix-ui/react-scroll-area": "^1.2.9",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-collapsible": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.1",

@@ -4,7 +4,7 @@ import {  setChatMessageAction, setLastConversationDataAction } from '@/lib/slic
 import store, { RootState } from '@/lib/store';
 import { DECENDING_SORT, MESSAGE_TYPE, MODULES, MODULE_ACTIONS, SOCKET_EVENTS, TOKEN_PREFIX, STATUS_CODE, AI_MODEL_CODE, API_TYPE_OPTIONS, AI_MODAL_NAME, WEB_RESOURCES_DATA } from '@/utils/constant';
 import { decryptedData } from '@/utils/helper';
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo ,useCallback} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import useSocket from '@/utils/socket';
 import Toast from '@/utils/toast';
@@ -14,9 +14,9 @@ import { getAccessToken } from '@/actions/serverApi';
 import { AgentChatPayloadType, ChatTitlePayloadType, DocumentChatPayloadType, NormalChatPayloadType, PerplexityPayloadType, SocketConversationType, ProAgentChatPayloadType, ProAgentPayloadType, UploadedFileType } from '@/types/chat';
 import { Socket } from 'socket.io-client';
 import { BrainListType } from '@/types/brain';
-import { useRouter, useSearchParams, usePathname, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import useConversationHelper from './useConversationHelper';
-import { ProAgentCode, ProAgentPythonCode } from '@/types/common';
+import { ProAgentCode } from '@/types/common';
 import { SalesCallPayloadType, SeoArticlePayloadType } from '@/types/proAgents';
 import useChatMember from '../chat/useChatMember';
 type CustomErrorPayloadType = {
@@ -27,15 +27,15 @@ type CustomErrorPayloadType = {
 export const PAGE_SPEED_RECORD_KEY = 'desktop_metrics';
 
 const useConversation = () => {
-    const [conversations, setConversations] = useState<any[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [listLoader, setListLoader] = useState<boolean>(true);
-    const [showTimer, setShowTimer] = useState<boolean>(false);
-    const [responseLoading, setResponseLoading] = useState<boolean>(false);
-    const [showHoverIcon, setShowHoverIcon] = useState<boolean>(true);
-    const [conversationPagination, setConversationPagination] = useState<any>({});
-    const [isStreamingLoading, setIsStreamingLoading] = useState<boolean>(false);
-    const [isActivelyStreaming, setIsActivelyStreaming] = useState<boolean>(false);
+    const [conversations, setConversations] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [listLoader, setListLoader] = useState(true);
+    const [showTimer, setShowTimer] = useState(false);
+    const [responseLoading, setResponseLoading] = useState(false);
+    const [showHoverIcon, setShowHoverIcon] = useState(true);
+    const [conversationPagination, setConversationPagination] = useState({});
+    const [isStreamingLoading, setIsStreamingLoading] = useState(false);
+    const [isActivelyStreaming, setIsActivelyStreaming] = useState(false);
     const dispatch = useDispatch();
     const [answerMessage, setAnswerMessage] = useState('');
     const disabledInput = useRef(null);
@@ -169,18 +169,18 @@ const useConversation = () => {
             
             try {
                 const { value, done } = await readerRef.current.read();
-                
-                if (done) {
-                    setConversations(prevConversations => {
-                        const updatedConversations = [...prevConversations];
-                        const lastConversation = { ...updatedConversations[updatedConversations.length - 1] };
-                        lastConversation.response = proccedMsg;
-                        updatedConversations[updatedConversations.length - 1] = lastConversation;
-                        return updatedConversations;
-                    });
-                    setAnswerMessage('');
-                    break;
-                }
+            
+            if (done) {
+                setConversations(prevConversations => {
+                    const updatedConversations = [...prevConversations];
+                    const lastConversation = { ...updatedConversations[updatedConversations.length - 1] };
+                    lastConversation.response = proccedMsg;
+                    updatedConversations[updatedConversations.length - 1] = lastConversation;
+                    return updatedConversations;
+                });
+                setAnswerMessage('');
+                break;
+            }
 
             const chunk = decoder.decode(value);
             
@@ -442,6 +442,7 @@ const useConversation = () => {
                         code: payload.code,
                         model_name: payload.model_name,
                         provider: payload.provider,
+                        // isregenerated: payload.isregenerated,
                         msgCredit: payload.msgCredit,
                         mcp_tools: payload.mcp_tools
                     }),
@@ -868,7 +869,8 @@ const useConversation = () => {
                     cloneMedia: m?.cloneMedia,
                     model:m?.model,
                     coverImage:gptCoverImage,
-                    responseAddKeywords: answer.data.additional_kwargs
+                    responseAddKeywords: answer.data.additional_kwargs,
+                    citations: m.citations
                 }
             });
            

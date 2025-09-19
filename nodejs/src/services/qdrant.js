@@ -3,7 +3,10 @@ const { QDRANT } = require('../config/config');
 const logger = require('../utils/logger');
 const { embedText } = require('./embeddings');
 
-const qdrant = new QdrantClient({ host: QDRANT.HOST, port: QDRANT.PORT });
+const qdrant = new QdrantClient({
+    url: QDRANT.LOCAL_QDRANT_URL,   
+    timeout: 10000 // 10 second timeout
+});
 
 // async function ensureCollection(vectorSize) {
 //     const collections = await qdrant.getCollections();
@@ -16,7 +19,10 @@ const qdrant = new QdrantClient({ host: QDRANT.HOST, port: QDRANT.PORT });
 // }
 
 async function ensureCollection(vectorSize) {
+
+    try{
     const list = await qdrant.getCollections();
+    console.log('qdrant collections', list);
     const exists = list?.collections?.some(c => c.name === QDRANT.COLLECTION);
     if (!exists) {
       try {
@@ -32,7 +38,10 @@ async function ensureCollection(vectorSize) {
         console.log('error: ensureCollection', error);
       }
     }
+}catch(error){
+    console.log('error: ensureCollection', error);
   }
+}
 
 async function upsertDocuments(points) {
     try {        

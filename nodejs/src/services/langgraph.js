@@ -3,7 +3,7 @@ const { StateGraph, END } = require('@langchain/langgraph');
 const { ToolMessage, HumanMessage, SystemMessage } = require('@langchain/core/messages');
 const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription } = require('../config/constants/llm');
 const { SOCKET_EVENTS } = require('../config/constants/socket');
-const { decryptedData } = require('../utils/helper');
+const { decryptedData, encodeImageToBase64 } = require('../utils/helper');
 const { LINK } = require('../config/config');
 const { AI_MODAL_PROVIDER, MODAL_NAME } = require('../config/constants/aimodal');
 const { ChatAnthropic } = require('@langchain/anthropic');
@@ -131,10 +131,19 @@ async function formatImagesForModel(imageUrls, provider) {
     
     const formattedImages = [];
     
-    for (const imageUrl of imageUrls) {
+    for (let imageUrl of imageUrls) {
+        console.log("==========ImageUrl=========",imageUrl)
         try {
-            const formattedImage = await config.formatImage(imageUrl);
+            // this is my regex ^https?://(?:localhost|minio):9000/ if imageurl has minio include replace it with localhost
+            // Ensure MINIO_ENDPOINT is properly replaced with localhost:9000
+            console.log("MINIO_ENDPOINT:", LINK.MINIO_ENDPOINT);
+            // imageUrl = imageUrl.replace(LINK.MINIO_ENDPOINT, "http://localhost:9000");
+            const encodedImageUrl = await encodeImageToBase64(imageUrl);
+            console.log("==========EncodedImageUrl=========",encodedImageUrl)
+            const formattedImage = await config.formatImage(encodedImageUrl);
+            console.log("==========FormattedImage=========",formattedImage)
             formattedImages.push(formattedImage);
+            console.log("==========FormattedImage=========",formattedImages)
         } catch (error) {
             logger.error(`Error formatting image ${imageUrl}:`, error);
             // Continue with other images even if one fails
@@ -157,6 +166,7 @@ async function createVisionMessage(query, imageUrls, provider) {
     
     try {
         const formattedImages = await formatImagesForModel(imageUrls, provider);
+        console.log("==========FormattedImages inside cretae vision=========",formattedImages)
         
         if (formattedImages.length === 0) {
             logger.warn('No images could be formatted for vision, falling back to text-only');
@@ -908,9 +918,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
             if (!companyId) {
                 throw new Error('Company ID is required for pinecone search');
             }
-            
-            // Use the brainId + filename approach for search
-            const { searchAcrossNamespaces, getIndexList } = require('./pinecone');
+        
             
             // Get unique tags and namespaces from uploaded files and agent documents
             const tagList = [];
@@ -1017,15 +1025,13 @@ async function streamAndLog(app, data, socket, threadId = null) {
                     logger.warn(`❌ Could not extract filename from file object:`, file);
                 }
             }
+
+                // Use the brainId + filename approach for search
+            // const { searchAcrossNamespaces, getIndexList } = require('./pinecone');
+            const { searchWithinFileByFileId } = require('./qdrant');
             
             // Search across all relevant namespaces
-            const searchResults = await searchAcrossNamespaces(
-                companyId, 
-                data.query, 
-                18, // topK
-                tagList,
-                namespaceList
-            );
+            const searchResults =  await searchWithinFileByFileId(allFiles[0]._id, data.query, 18);
             
             // Build enhanced context from search results
             let enhancedContext = '';
@@ -1039,9 +1045,9 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 // });
 
                 // Build RAG context from search results
-                const relevantTexts = searchResults.map(result => {
-                    const text = result.metadata?.text || '';
-                    const filename = result.metadata?.filename || 'unknown';
+               const relevantTexts = searchResults.map(result => {
+                    const text = result.payload?.text || '';
+                    const filename = result.payload?.filename || 'unknown';
                     return `[From ${filename}]: ${text}`;
                 }).filter(text => text.length > 0);
                 
@@ -1149,7 +1155,10 @@ async function streamAndLog(app, data, socket, threadId = null) {
         // Handle vision support for normal flow
         if (shouldEnableVision(data)) {
             const mappedProvider = mapProviderCode(data.code);
-            inputs = { messages: await createVisionMessage(normalQuery, data.imageUrls, mappedProvider) };
+
+            let a= await createVisionMessage(normalQuery, data.imageUrls, mappedProvider) 
+            console.log("==========createVisionMessage=========",a)
+            inputs = { messages:a };
         } else {
             inputs = { messages: [['user', normalQuery]] };
         }

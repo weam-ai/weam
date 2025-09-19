@@ -16,11 +16,12 @@ const checkPromptLimit = catchAsync(async (req, res, next) => {
       user
     );
 
-    if (
-      modelMessageCount.msgCreditUsed > modelMessageCount.msgCreditLimit
-    ) {
-      return handleCreditExpired(req, res);
-    }
+    // if (
+    //   modelMessageCount.msgCreditUsed > modelMessageCount.msgCreditLimit
+    // ) {
+    //   return true
+    //   return handleCreditExpired(req, res);
+    // }
 
     next();
   } catch (error) {

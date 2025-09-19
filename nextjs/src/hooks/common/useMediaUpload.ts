@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import Toast from '@/utils/toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUploadDataAction } from '@/lib/slices/aimodel/conversation';
-import { allowImageConversation, decodedObjectId, retrieveBrainData } from '@/utils/helper';
+import { allowImageConversation, decodedObjectId, generateObjectId, retrieveBrainData } from '@/utils/helper';
 import store, { RootState } from '@/lib/store';
 import { UploadedFileType } from '@/types/chat';
 import { useSearchParams } from 'next/navigation';
@@ -90,17 +90,20 @@ const useMediaUpload = ({ selectedAIModal = {} }:any) => {
             const selectedBrain = retrieveBrainData();
             const formData:any = new FormData();
             validFiles.forEach((file: File) => {
-                formData.append('files', file); // Using 'files[]' for array-like behavior                
+                // formData.append('files', file); // Using 'files[]' for array-like behavior                
+                // formData.append('fileId', generateObjectId());
+                const fileId = generateObjectId();
+                formData.append(`files[${fileId}]`, file, file.name);
             });        
             
             if (selectedBrain?._id) {
-                formData.append('brainId', selectedBrain._id);
                 formData.append('vectorApiCall', 'true');
             }
             const response = await commonApi({
                 action: MODULE_ACTIONS.MEDIA_UPLOAD,
                 config: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'x-brain-id': selectedBrain?._id
                 },
                 data: formData
             })
@@ -227,7 +230,8 @@ const useMediaUpload = ({ selectedAIModal = {} }:any) => {
             const response = await commonApi({
                 action: MODULE_ACTIONS.MEDIA_UPLOAD,
                 config: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'x-brain-id': brain?._id
                 },
                 data: formData
             });

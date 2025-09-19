@@ -11,8 +11,8 @@ import { BrainAgentType, BrainPromptType, BrainListType } from '@/types/brain';
 import {
     encodedObjectId,
     generateObjectId,
-    persistBrainData,
     retrieveBrainData,
+    persistBrainData,
 } from '@/utils/helper';
 import {
     AI_MODAL_NAME,
@@ -22,7 +22,9 @@ import {
     GENERAL_BRAIN_TITLE,
     GPTTypes,
 } from '@/utils/constant';
+import { getSelectedBrain } from '@/utils/common';
 import { UploadedFileType } from '@/types/chat';
+
 import {
     setChatAccessAction,
     setCreditInfoAction,
@@ -56,6 +58,7 @@ import ToolsConnected from './ToolsConnected';
 import useCustomGpt from '@/hooks/customgpt/useCustomGpt';
 import { LINK } from '@/config/config';
 import defaultCustomGptImage from '../../../public/defaultgpt.jpg';
+import { getDisplayModelName } from '@/utils/helper';
 import ThreeDotLoader from '@/components/Loader/ThreeDotLoader';
 import useIntersectionObserver from '@/hooks/common/useIntersectionObserver';
 import useDebounce from '@/hooks/common/useDebounce';
@@ -65,19 +68,19 @@ import ChatIcon from '@/icons/Chat';
 import PromptIcon from '@/icons/Prompt';
 import Customgpt from '@/icons/Customgpt';
 import DocumentIcon from '@/icons/DocumentIcon';
-import { getSelectedBrain, isEmptyObject, truncateText } from '@/utils/common';
+import { isEmptyObject, truncateText } from '@/utils/common';
 import AIPagesIcon from '@/icons/AIPagesIcon';
 import Link from 'next/link';
 import CustomPromptAction from '@/actions/CustomPromptAction';
 import PromptCardSkeleton from '@/components/Loader/PromptCardSkeleton';
 
-const defaultContext = {
+const defaultContext = {    
     type: null,
     prompt_id: undefined,
     custom_gpt_id: undefined,
     doc_id: undefined,
     textDisable: false,
-    attachDisable: false,
+    attachDisable: false,   
     title: undefined,
 };
 
@@ -188,8 +191,9 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     const [handlePrompts, setHandlePrompts] = useState([]);
     const [queryId, setQueryId] = useState<string>(''); //enhance prompt id
     const [isNavigating, setIsNavigating] = useState(false);
-    const [searchValue, setSearchValue] = useState('');
+    
     const { toolStates, setToolStates } = useMCP();
+    const [searchValue, setSearchValue] = useState('');
     const [randomPrompts, setRandomPrompts] = useState<BrainPromptType[]>([]);
     const [customPrompts, setCustomPrompts] = useState([]);
 
@@ -201,9 +205,9 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     const selectedAiModal = useSelector((state: RootState) => state.assignmodel.selectedModal);
     const brains= useSelector((state: RootState) => state.brain.combined);
     const isWebSearchActive = useSelector((store: RootState) => store.assignmodel.isWebSearchActive);
-    const selectedBrain = useSelector((store: RootState) => store.brain.selectedBrain);
     const creditInfoSelector = useSelector((store: RootState) => store.chat.creditInfo);
-
+    const selectedBrain = useSelector((store: RootState) => store.brain.selectedBrain);
+    
     const { assignServerActionModal } = useAssignModalList();
     const { getDecodedObjectId } = useConversationHelper();
     const {
@@ -303,6 +307,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         
         const handleNavigation = (href: string) => {
             if (!brain?._id) {
+                console.warn('Brain ID is undefined, cannot navigate');
                 return;
             }
             const brainId = encodedObjectId(brain._id);
@@ -632,6 +637,11 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         }
     }, [defaultModal]);
         
+
+    const handleToolStatesChange = (newToolStates: Record<string, string[]>) => {
+        setToolStates(newToolStates);
+        // The persistence is automatically handled in the Redux slice
+    };
     const [showAgentList, setShowAgentList] = useState(false);
     const [showPromptList, setShowPromptList] = useState(false);
     const agentPromptDropdownRef = useRef<HTMLDivElement>(null);
@@ -734,10 +744,6 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
             return systemPrompt.slice(0, availableLength - 3) + '...';
         }
         return systemPrompt;
-    };
-    const handleToolStatesChange = (newToolStates: Record<string, string[]>) => {
-        setToolStates(newToolStates);
-        // The persistence is automatically handled in the Redux slice
     };
 
     return (
@@ -907,16 +913,10 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                                                         <p className="text-font-12 font-medium text-b2 mr-2">
                                                             {currPrompt.title}
                                                         </p>
-                                                        {/* <span className='text-b6 ml-1 text-font-12 max-md:w-full'>
-                                                            - {currPrompt.isShare ? 'Shared' : 'Private'} / {currPrompt.brain.title}
-                                                        </span> */}
                                                         <p className='text-font-12 font-normal text-b6 mt-1'>
                                                             {getTruncatedSystemPrompt(currPrompt.title, currPrompt.content, 100)}
                                                         </p>
                                                     </div>
-                                                    {/* <p className='text-font-12 font-normal text-b6 mt-1'>
-                                                        {truncateText(currPrompt.content,100)}       
-                                                    </p> */}
                                                 </div>
                                             ))
                                             )
@@ -994,9 +994,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                                 isWebSearchActive={isWebSearchActive}
                                 text={message}
                                 setText={setMessage}
-                                promptId={selectedContext.prompt_id}
-                                queryId={queryId}
-                                brainId={getDecodedObjectId()}
+                                apiKey={selectedAiModal?.config?.apikey}
                             />                       
                             <VoiceChat setText={setMessage} text={message} />
                             <TextAreaFileInput

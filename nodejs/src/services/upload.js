@@ -659,7 +659,8 @@ async function uploadFileViaStreams(req) {
             Body: s3Pass,
             ContentType: mimetype,
             Metadata: { originalName, fieldname: String(fieldname) },
-            ServerSideEncryption: 'AES256'
+            // Removed ServerSideEncryption: 'AES256' as MinIO doesn't support KMS
+            encrypt: false // Explicitly disable encryption
         }, { queueSize: 6, partSize: 16 * 1024 * 1024 });
         
         logger.info('[uploadFileViaStreams] Started S3 upload for:', key);

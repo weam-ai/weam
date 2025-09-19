@@ -4,8 +4,7 @@ import { MCP_TOOLS_COOKIE_NAME } from './constant';
 const CryptoJS = require('crypto-js');
 const { AUTH, ENCRYPTION_KEY } = require('@/config/config');
 const { BRAIN, LocalStorage } = require('./localstorage');
-const { MODEL_CREDIT_INFO } = require('./constant');
-const { RESPONSE_STATUS_CODE, RESPONSE_STATUS } = require('./constant');
+const { MODEL_CREDIT_INFO, RESPONSE_STATUS_CODE, RESPONSE_STATUS } = require('./constant');
 const crypto = require('crypto');
 
 export const hourFormat = (duration) => {
@@ -218,6 +217,10 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         "o3-mini",
         "o3",
         "chatgpt-4o-latest",
+        "gpt-5",
+        "gpt-5-mini",
+        "gpt-5-nano",
+        "gpt-5-chat-latest",
         'claude-3-5-sonnet-latest',
         'claude-3-opus-latest',
         'claude-3-sonnet-20240229',
@@ -226,11 +229,10 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'claude-3-7-sonnet-latest',
         'gemini-1.5-pro',
         'gemini-2.0-flash',
-        'gemini-2.5-flash-preview-04-17',
+        'gemini-2.5-flash-preview-05-20',
         'gemini-2.5-pro-preview-05-06',
         'meta-llama/llama-4-scout',
         'meta-llama/llama-4-maverick',
-       'qwen/qwen3-30b-a3b:free',
        'claude-sonnet-4-20250514',
        'claude-opus-4-20250514',
     ];
@@ -360,7 +362,11 @@ export function allowImageGeneration(modelName: string) {
         "gpt-4.1-nano",
         "gpt-4.1-search-medium",
         "o4-mini",
-        "o3"
+        "o3",
+        "gpt-5",
+        "gpt-5-mini",
+        "gpt-5-nano",
+        "gpt-5-chat-latest"
     ];
     return allowedModels.includes(modelName);
 }
@@ -427,4 +433,26 @@ export function toSentenceCaseFromSnakeCase(str: string) {
     if (words.length === 0) return '';
     words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
     return words.join(' ');
+}
+
+// Generate a secure code_verifier (43-128 characters)
+export function generateCodeVerifier() {
+    const array = new Uint8Array(64);
+    window.crypto.getRandomValues(array);
+    return btoa(String.fromCharCode.apply(null, array))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+// Hash it into code_challenge using SHA-256 and base64url
+export async function generateCodeChallenge(codeVerifier: string) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const digest = await window.crypto.subtle.digest('SHA-256', data);
+    const base64String = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(digest))))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    return base64String;
 }

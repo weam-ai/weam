@@ -95,6 +95,7 @@ const UserModalPopOver = ({ open, setOpen, selectedAIModal, handleModelChange, u
                                                         {/* Enabled Models */}
                                                         {enabled.map(
                                                             (model: AiModalType) => {
+                                                                console.log("model", model)
                                                                 const matchedModel = MODEL_CREDIT_INFO.find((m) => m.model === model.name);
                                                                 return (
                                                                     <CommandItem
@@ -112,9 +113,9 @@ const UserModalPopOver = ({ open, setOpen, selectedAIModal, handleModelChange, u
                                                                         className="rounded-full w-[20px] h-[20px] object-cover mr-2.5"
                                                                     />
                                                                     <div className='mr-2 w-[56%] max-md:w-[calc(100%-40px)]'>
-                                                                        {matchedModel.displayName}
+                                                                        {matchedModel?.displayName || model?.name}
                                                                         <p className='text-font-12 text-b6'>
-                                                                            {matchedModel.snippet || 'Good for content generation tasks.'}
+                                                                            {matchedModel?.snippet || 'Good for content generation tasks.'}
                                                                         </p>
                                                                     </div>
                                                                     <ModelCapability matchedModel={matchedModel} />

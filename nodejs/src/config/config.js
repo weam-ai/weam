@@ -43,6 +43,7 @@ module.exports = {
         WEAM_QWEN_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
         OPEN_ROUTER_API_URL: process.env.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1',
         SEARXNG_API_URL: 'https://dev-searxng.weam.ai',
+       MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
     },
     AUTH: {
         JWT_SECRET: process.env.JWT_SECRET,
@@ -113,6 +114,7 @@ module.exports = {
         HOST: process.env.QDRANT_HOST,
         PORT: parseInt(process.env.QDRANT_PORT),
         COLLECTION: process.env.QDRANT_COLLECTION || 'documents',
+        LOCAL_QDRANT_URL: process.env.LOCAL_QDRANT_URL || 'http://localhost:6333',
     },
     EMBEDDINGS: {
         API_BASE: process.env.EMBEDDING_API_BASE || process.env.OPENAI_API_URL || 'http://localhost:11434',

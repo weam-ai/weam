@@ -14,7 +14,7 @@ const qrcode = require('qrcode');
 const { fileData, removeExistingImage } = require('./uploadFile');
 const { defaultCompanyBrain, createDefaultBrain, getDefaultBrain, getGeneralBrain, defaultGeneralBrainMember } = require('./brain');
 const { addWorkSpaceDefaultUser, addDefaultWorkSpace } = require('./workspace');
-const { createPinecornIndex, extractAuthToken } = require('./company');
+const { extractAuthToken } = require('./company');
 const Role = require('../models/role');
 const Subscription = require('../models/subscription');
 const Brain = require('../models/brains');
@@ -528,7 +528,7 @@ const inviteLogin = async (req) => {
                             await sendSESMail(existingUser.email, template.subject, template.body);
                         }
                     ),
-                        createPinecornIndex(existingUser, req)
+                        // createPinecornIndex(existingUser, req)
                     ])
                     const defaultWorkSpace = await addDefaultWorkSpace(companyObj, existingUser);
                     if (defaultWorkSpace) {

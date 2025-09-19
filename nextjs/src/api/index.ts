@@ -18,6 +18,7 @@ export type ConfigOptions = {
     handleCache?: boolean;
     csrfToken?: string;
     csrfTokenRaw?: string;
+    'x-brain-id'?: string;
 };
 
 type FetchConfig = {
@@ -30,6 +31,7 @@ type FetchConfig = {
     token?: string;
     csrfToken?: string;
     csrfTokenRaw?: string;
+    'x-brain-id'?: string;
 };
 
 type FetchUrl<T = unknown, U = FetchConfig> = {
@@ -149,6 +151,9 @@ export const getHeaders = async (config: ConfigOptions, fetchConfig: FetchConfig
     //     headers['x-csrf-token'] = config.csrfToken;
     //     headers['x-csrf-raw'] = config.csrfTokenRaw;
     // }
+    if (config?.['x-brain-id']) {
+        headers['x-brain-id'] = config['x-brain-id'];
+    }
     if (fetchConfig?.headers) {
         headers = {
             ...headers,
@@ -226,7 +231,7 @@ export const fetchUrl = ({ type = 'GET', url, data = {}, config = {} }: FetchUrl
         const handler = ACTION_HANDLERS[actionType];
         config.headers = await getHeaders(CONFIG, config) as AxiosRequestHeaders;
 
-        handler(url, data, config)
+        handler(url, data, config) 
             .then((response: AxiosResponse) => {
                 SessionStorage.removeItem(HAS_REFRESHED)
                 return resolve(response?.data);
@@ -263,7 +268,8 @@ const commonApi = async ({
                 onError: handleErrorToast(errorToast),
                 handleCache,
                 // csrfToken: decryptedCsrfToken,
-                // csrfTokenRaw: decryptedCsrfTokenRaw
+                // csrfTokenRaw: decryptedCsrfTokenRaw,
+                'x-brain-id': config?.['x-brain-id']
             });
             const response = await fetchUrl({
                 type: api.method,

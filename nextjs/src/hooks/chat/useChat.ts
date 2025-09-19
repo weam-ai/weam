@@ -283,32 +283,17 @@ const useChat = (b ?: string) => {
         }
     }
 
-    const pyPromptEnhance = async (promptPayload:PromptEnhancePayloadType) => {
+    const promptEnhanceByLLM = async (promptPayload: PromptEnhancePayloadType) => {
         try {
-
-            const { token,companyId } = await getCommonPythonPayload();
-
             const payload = {
-                query: promptPayload.prompt.toString(),
-                query_id: promptPayload.queryId.toString(), // current prompt id 
-                company_id: companyId.toString(),
-                brain_id: promptPayload.brainId.toString(),
-                user_id: user._id.toString(),
+                query: promptPayload.query,
+                apiKey: promptPayload.apiKey,
             }
-
-            const response = await fetch(
-                `${LINK.PYTHON_API_URL}${API_PREFIX}/query/enhance-query-generate`,
-                {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: {
-                        Authorization: `${TOKEN_PREFIX}${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-            const data = await response.json();
-            return data;
+            const response = await commonApi({
+                action: MODULE_ACTIONS.ENHANCE_PROMPT_BY_LLM,
+                data: payload,
+            })
+            return response.data;
         } catch (error) {
             console.error('error: ', error);
         }
@@ -340,7 +325,7 @@ const useChat = (b ?: string) => {
         setShowFavorites,
         setChatList,
         pyUploadImportChat,
-        pyPromptEnhance,
+        promptEnhanceByLLM,
         handleAIApiType
     }
 }

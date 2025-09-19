@@ -85,7 +85,8 @@ app.use(cors({
         'Authorization',
         'x-verification-signature',
         'x-csrf-token',
-        'x-csrf-raw'
+        'x-csrf-raw',
+        'x-brain-id'
     ],
     credentials: true,
     methods: ['POST', 'PUT', 'DELETE', 'GET', 'PATCH', 'OPTIONS']

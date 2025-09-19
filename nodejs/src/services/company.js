@@ -6,7 +6,7 @@ const { getTemplate } = require('../utils/renderTemplate');
 const { sendSESMail } = require('./email');
 const { EMAIL_TEMPLATE, MOMENT_FORMAT, EXPORT_TYPE, ROLE_TYPE, INVITATION_TYPE, JWT_STRING, MODEL_CODE, APPLICATION_ENVIRONMENT } = require('../config/constants/common');
 const moment = require('moment-timezone');
-const { randomPasswordGenerator, encryptedData, generateRandomToken, genHash, getCompanyId } = require('../utils/helper');
+const { randomPasswordGenerator, encryptedData, generateRandomToken, genHash, getCompanyId, formatBot } = require('../utils/helper');
 const bcrypt = require('bcrypt');
 const Role = require('../models/role');
 const UserBot = require('../models/userBot');
@@ -16,6 +16,8 @@ const mongoose = require('mongoose');
 const Bot = require('../models/bot');
 const { isBlockedDomain, isDisposableEmail } = require('../utils/validations/emailValidation');
 const BlockedDomain = require('../models/blockedDomain');
+const { addDefaultWorkSpace } = require('./workspace');
+const { defaultCompanyBrain } = require('./brain');
 
 const createUser = async(req) => {
     return User.create({
@@ -53,26 +55,23 @@ async function addCompany(req, flag = true) {
         req.body.roleCode = role.code;
         req.body.allowuser = 10 // add temp flag manually billing managment
         req.body.inviteSts = INVITATION_TYPE.ACCEPT;
-        const user = flag ? await inviteUser(req) : await createUser(req);
+        // const user = flag ? await inviteUser(req) : await createUser(req);
         
         const companyData = {
             slug: slugify(req.body.companyNm),
             ...req.body,
         }
         const company = await Company.create(companyData);
-        const inviteLink = await createVerifyLink(user, {
-            company: {
-                name: company.companyNm,
-                slug: company.slug,
-                id: company._id,
-            }
-        })
-        
-        getTemplate(EMAIL_TEMPLATE.VERIFICATION_LINK, { link: inviteLink, support: FRESHDESK_SUPPORT_URL }).then(
-            async(template) => {
-                await sendSESMail(req.body.email, template.subject, template.body);
-            }
-        )
+        const companyObj = {
+            name: company.companyNm, 
+            slug: company.slug, 
+            id: company._id
+        }
+        const user = await User.create({ ...req.body, company: companyObj, msgCredit: 1000 });
+        const defaultWorkSpace = await addDefaultWorkSpace(company, user);
+        if (defaultWorkSpace) {
+            await defaultCompanyBrain(defaultWorkSpace._id, user);
+        }
         
         return company;
     } catch (error) {
@@ -252,6 +251,7 @@ const openAIBillingChecker = async (req) => {
 }
 
 async function aiModalCreation(req) {
+    console.log("req body", req.body)
     try {
         let companyId, companydetails;
         if (req.roleCode === ROLE_TYPE.COMPANY) {
@@ -319,11 +319,10 @@ async function aiModalCreation(req) {
     }
 }
 
-const checkApiKey = async (req) => {
+async function openAIApiChecker(req) {
     try {
-
         const companyId = getCompanyId(req.user);
-       
+        
         const response = await fetch(LINK.OPEN_AI_MODAL, {
             method: 'GET',
             headers: {
@@ -331,20 +330,119 @@ const checkApiKey = async (req) => {
             }
         });
         
-        const data = await response.json();
+        const jsonData = await response.json();
         if (!response.ok) {
-            return data;
+            return jsonData;
+        }
+        const { data } = jsonData;
+        const companydetails = req.user.company;
+        const [openAiBot, existing] = await Promise.all([
+            Bot.findOne({ code: AI_MODAL_PROVIDER.OPEN_AI }, { title: 1, code: 1 }),
+            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OPEN_AI })
+        ]);
+        // diffrentiate between embedding and chat models
+        const modalMap = OPENAI_MODAL.reduce((map, val) => {
+            map[val.name] = val.type;
+            return map;
+        }, {});
+
+        const updates = [];
+        const inserts = [];
+        const encryptedKey = encryptedData(req.body.key);
+
+        for (const model of data) {
+            if (!modalMap.hasOwnProperty(model.id)) continue;
+            const existingEntry = existing.find(entry => entry.name === model.id);
+            const modelConfig = {
+                bot: formatBot(openAiBot),
+                company: companydetails,
+                name: model.id,
+                config: {
+                    apikey: encryptedKey,
+                }
+            }
+            if (modalMap[model.id] === 1) {
+                modelConfig['modelType'] = modalMap[model.id];
+                modelConfig['dimensions'] = 1536;
+            }
+            else {
+                if ([MODAL_NAME.GPT_4_1, MODAL_NAME.GPT_4_1_MINI, MODAL_NAME.GPT_4_1_NANO, MODAL_NAME.O4_MINI, MODAL_NAME.O3, MODAL_NAME.CHATGPT_4O_LATEST].includes(model.id)) {
+                    modelConfig['extraConfig'] = {
+                        temperature: 1
+                    }
+                }
+                modelConfig['modelType'] = modalMap[model.id];
+            }
+
+            if (existingEntry)
+                updates.push({
+                    updateOne: {
+                        filter: { name: model.id, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OPEN_AI },
+                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                    }
+                });
+            else inserts.push(modelConfig);
+            
+        }
+
+        if(updates.length){
+            await UserBot.bulkWrite(updates)
+        }
+
+        if(inserts.length){
+            return UserBot.insertMany(inserts)
         }
         
-        await Promise.all([
-            Company.updateOne({ _id: companyId }, { $unset: { [`queryLimit.${AI_MODAL_PROVIDER.OPEN_AI}`]: '' }}),
-            openAIBillingChecker(req),
-        ])
-
-        return aiModalCreation(req);
+        return existing;
     } catch (error) {
+        handleError(error, 'Error - openAIApiChecker');
+    }
+}
+
+
+const checkApiKey = async (req) => {
+     try {
+        const { code } = req.body;
+
+        const providerObj = {
+            [AI_MODAL_PROVIDER.OPEN_AI]: openAIApiChecker,
+            [AI_MODAL_PROVIDER.ANTHROPIC]: anthropicApiChecker,
+            [AI_MODAL_PROVIDER.GEMINI]: geminiApiKeyChecker,
+            // [AI_MODAL_PROVIDER.PERPLEXITY]: perplexityApiChecker,
+            // [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
+        }
+        const provider = await providerObj[code](req);
+        return provider;
+       
+    } catch (error) {
+        console.log(req.body);
         handleError(error, 'Error - checkApiKey');
     }
+    // try {
+
+    //     const companyId = getCompanyId(req.user);
+       
+    //     const response = await fetch(LINK.OPEN_AI_MODAL, {
+    //         method: 'GET',
+    //         headers: {
+    //             Authorization: `Bearer ${req.body.key}`
+    //         }
+    //     });
+        
+    //     const data = await response.json();
+    //     if (!response.ok) {
+    //         return data;
+    //     }
+        
+    //     await Promise.all([
+    //         Company.updateOne({ _id: companyId }, { $unset: { [`queryLimit.${AI_MODAL_PROVIDER.OPEN_AI}`]: '' }}),
+    //         openAIBillingChecker(req),
+    //     ])
+
+    //     return aiModalCreation(req);
+    // } catch (error) {
+    //     handleError(error, 'Error - checkApiKey');
+    // }
 };
 
 const resendVerification = async (req) => {
