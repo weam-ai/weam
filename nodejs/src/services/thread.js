@@ -1,6 +1,6 @@
 const Thread = require('../models/thread');
 const dbService = require('../utils/dbService');
-const { THREAD_MESSAGE_TYPE, SUBSCRIPTION_TYPE } = require('../config/constants/common');
+const { THREAD_MESSAGE_TYPE } = require('../config/constants/common');
 const User = require('../models/user');
 const {formatAIMessage, formatAIMessageResponse, formatUser, encryptedData, getCompanyId, decryptedData } = require('../utils/helper');
 const ReplyThread = require('../models/replythread');
@@ -136,6 +136,19 @@ const saveTime = async (req) => {
     }
 }
 
+const getRemainingMessageCount = async (req) => {
+    try {
+        const [planType] = await Promise.all([
+
+            checkSubscription(req),
+        ])
+        return {
+            planType
+        }
+    } catch (error) {
+        handleError(error, 'Error - saveTime');
+    }
+}
 
 async function socketMessageList(filter) {
     try {
@@ -280,6 +293,7 @@ async function getUserMsgCredit(req) {
         handleError(error, 'Error - getUserMsgCredit');
     }
 }
+
 
 const searchMessage3 = async (req) => {
     try {
@@ -997,6 +1011,7 @@ module.exports = {
     addReaction,
     sendMessage,
     saveTime,
+    getRemainingMessageCount,
     socketMessageList,
     getUsedCredit,
     getUserMsgCredit,

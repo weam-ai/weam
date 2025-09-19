@@ -8,6 +8,7 @@ import { FREE_TRIAL, STRIPE_SUBSCRIPTION_PRICE_ID, STRIPE_SUBSCRIPTION_PRICE_ID_
 import ExcelFileIcon from '@/icons/ExcelFileIcon';
 import TxtFileIcon from '@/icons/TXTFILEIcon';
 import CommonFileIcon from '@/icons/CommonFileIcon';
+
 export const isArray = (data) => data.constructor.name === 'Array';
 
 export const isObject = (data) => data.constructor.name === 'Object';

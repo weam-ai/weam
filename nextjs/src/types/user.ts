@@ -85,5 +85,4 @@ export type SessionUserType = {
 
 export type IronSessionData = {
     user?: SessionUserType;
-}
-           
+}                              

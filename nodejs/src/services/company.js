@@ -54,6 +54,7 @@ async function addCompany(req, flag = true) {
         req.body.roleId = role._id;
         req.body.roleCode = role.code;
         req.body.allowuser = 10 // add temp flag manually billing managment
+        req.body.allowuser = 10 // add temp flag manually billing managment
         req.body.inviteSts = INVITATION_TYPE.ACCEPT;
         // const user = flag ? await inviteUser(req) : await createUser(req);
         
@@ -415,7 +416,6 @@ const checkApiKey = async (req) => {
         return provider;
        
     } catch (error) {
-        console.log(req.body);
         handleError(error, 'Error - checkApiKey');
     }
     // try {

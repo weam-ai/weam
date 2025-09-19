@@ -19,7 +19,7 @@ import StorageIcon from '@/icons/StorageIcon';
 import SupportIcon from '@/icons/SupportIcon';
 import SidebarFooter from './SidebarFooter';
 import SettingOptions from './SettingOptions';
-import SolutionAppIcon from '@/icons/SolutionsIcons';
+import DashboardIcon from '@/icons/DashboardIcon';
 import CreditControlIcon from '@/icons/CreditControlIcon';
 
 const BackButton = dynamic(() => import('./BackButton'), { ssr: false });
@@ -48,7 +48,7 @@ const SettingSidebar = async () => {
                 <AppIcon
                     height={20}
                     width={20}
-                    className={'w-[18px] h-auto object-contain fill-b2'}
+                    className={'w-5 h-5 object-contain fill-b2'}
                 />
             ),
             hasAccess: true,
@@ -137,7 +137,7 @@ const SettingSidebar = async () => {
         {
             name: 'Apps',
             icon: (
-                <SolutionAppIcon
+                <DashboardIcon 
                     height={18}
                     width={18}
                     className={'w-[18px] h-auto object-contain fill-b2'}
@@ -181,6 +181,3 @@ const SettingSidebar = async () => {
 };
 
 export default SettingSidebar;
-
-
-

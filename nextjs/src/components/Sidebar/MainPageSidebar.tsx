@@ -18,10 +18,9 @@ import { PrivateVisibleProps } from '../Brains/PrivateVisible';
 import { WorkspaceNewChatButton } from '../Workspace/DropDownOptions';
 import dynamic from 'next/dynamic'; 
 import AddBrainButton from '../Brains/AddBrainButton';
-import AppIcon from '@/icons/AppsIcon';
-import SuperSolutionHover from './SuperSolutionHover';
 import SidebarFooter from './SidebarFooter';
 import ConnectionsLink from './ConnectionsLink';
+import SuperSolutionHover from './SuperSolutionHover';
 
 const SettingsLink = dynamic(() => import('./SettingsLink'), { ssr: false });
 const ShareBrainList = dynamic(() => import('../Brains/ShareBrainList'), { ssr: false });
