@@ -271,7 +271,7 @@ async function callModel(state, model, data, agentDetails = null) {
         
         // Add agent's system message if available (this will override or supplement the DB system message)
         if (agentDetails) {
-            let agentSystemContent = `${agentDetails.systemPrompt}\n\nGoals:\n${agentDetails.goals.join('\n')}\n\nInstructions:\n${agentDetails.instructions.join('\n')}`;
+            let agentSystemContent = `${agentDetails.systemPrompt}\n`;
             
             // If RAG context is available, add it to the system message (like Python implementation)
             if (global.currentRagContext) {
@@ -879,20 +879,6 @@ function buildAgentContext(agent) {
     
     if (agent.systemPrompt) {
         agentContext += `\nSystem Prompt: ${agent.systemPrompt}\n`;
-    }
-    
-    if (agent.goals && Array.isArray(agent.goals) && agent.goals.length > 0) {
-        agentContext += `\nGoals:\n`;
-        agent.goals.forEach((goal, index) => {
-            agentContext += `${index + 1}. ${goal}\n`;
-        });
-    }
-    
-    if (agent.instructions && Array.isArray(agent.instructions) && agent.instructions.length > 0) {
-        agentContext += `\nInstructions:\n`;
-        agent.instructions.forEach((instruction, index) => {
-            agentContext += `${index + 1}. ${instruction}\n`;
-        });
     }
     
     agentContext += '\nPlease follow these agent configurations in your response.\n';

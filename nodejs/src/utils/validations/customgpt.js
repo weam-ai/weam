@@ -33,12 +33,6 @@ const createCustomGptKeys = joi.object({
         .required(),
     maxItr: joi.number().optional().allow(null),
     itrTimeDuration: joi.string().allow('').optional(),
-    goals: joi
-        .string()
-        .required(),
-    instructions: joi
-        .string()
-        .optional(),
     brain: joi.object(brainSchemaKeys).required(),
     imageEnable: joi.boolean().optional()
 }).unknown(true);
@@ -67,12 +61,6 @@ const updateCustomGptKeys = joi.object({
         .required(),
     maxItr: joi.number().optional().allow(null),
     itrTimeDuration: joi.string().allow('').optional(),
-    goals: joi
-        .string()
-        .required(),
-    instructions: joi
-        .string()
-        .optional(),
     brain: joi.object(brainSchemaKeys).required(),
     imageEnable: joi.boolean().optional(),
     removeDoc: joi.string().optional(),
@@ -91,12 +79,6 @@ const assignDefaultGpt = joi.object({
         .required(),
     maxItr: joi.number().optional().allow(null),
     itrTimeDuration: joi.string().allow('').optional(),
-    goals: joi
-        .string()
-        .required(),
-    instructions: joi
-        .string()
-        .optional(),
     selectedBrain: joi.array()
         .items(brainSchemaKeys)
         .min(1)
