@@ -1,8 +1,0 @@
-FROM mcr.microsoft.com/playwright:v1.51.0-noble
-USER pwuser
-
-# Expose Playwright WebSocket server on 9222
-EXPOSE 9222
-
-# Run Playwright Server on port 9222
-CMD ["sh","-c", "npx -y playwright@1.51.0 run-server --port 9222 --host 0.0.0.0"]
