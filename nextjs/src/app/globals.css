@@ -12,43 +12,44 @@
       @apply transition delay-150;
   }
   .btn{
-      @apply inline-block cursor-pointer text-center rounded-custom md:px-6 px-3 py-[9px] text-font-15 leading-[20px] font-semibold border border-solid border-transparent transition duration-150 ease-in-out focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed [&>svg]:transition [&>svg]:ease-in-out;
+      @apply inline-block cursor-pointer text-center rounded-md md:px-6 px-3 py-2 text-font-14 font-medium border border-solid border-transparent transition duration-150 ease-in-out focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed [&>svg]:transition [&>svg]:ease-in-out;
   }
   .btn-blue{
       @apply bg-blue border-blue text-white hover:bg-bluehover active:bg-bluehover hover:border-bluehover active:border-bluehover disabled:hover:bg-blue;
   }
   .btn-lightblue{
     @apply bg-bluelight border-bluelight text-white hover:bg-bluehover active:bg-bluehover hover:border-bluehover active:border-bluehover disabled:hover:bg-bluelight [&>svg]:fill-blue [&:hover>svg]:fill-b15 [&:active>svg]:fill-b15;
-}
+  }
   .btn-outline-blue{
     @apply bg-transparent border-blue text-blue hover:bg-blue active:bg-blue hover:text-white hover:border-blue active:border-blue;
   }
+
   .btn-gray{
-    @apply font-semibold bg-b12 border-b12 text-b5 hover:bg-blue active:bg-blue hover:border-blue active:border-blue hover:text-b15 active:text-b15 [&>svg]:fill-b5 [&>i]:text-b5;
+    @apply bg-b12 border-b11 text-b5 hover:bg-b2 active:bg-b2 hover:border-b2 active:border-b2 hover:text-white active:text-white [&>svg]:fill-b5 [&>i]:text-b5;
   }
   .btn-black{
-    @apply font-semibold bg-black border-black text-white hover:bg-blue active:bg-blue hover:border-blue active:border-blue hover:text-b15 active:text-b15 [&>svg]:fill-white [&>i]:text-b5;
+    @apply bg-black border-black text-white hover:bg-b4 active:bg-b4 hover:border-b4 active:border-b4 hover:text-white active:text-white [&>svg]:fill-white [&>i]:text-white;
   }
   .btn-dark-gray{
-    @apply bg-b10 border-b10 text-white [&>svg]:fill-b2 [&>i]:text-b2 hover:bg-b7  active:bg-blue hover:border-b7  active:border-blue hover:text-white  active:text-white [&:hover>svg]:fill-white  [&:active>svg]:fill-white [&:hover>i]:fill-white [&:active>i]:fill-white;
+    @apply bg-b6 border-b6 text-white [&>svg]:fill-white [&>i]:text-white hover:bg-b7  active:bg-b7 hover:border-b7  active:border-b7 hover:text-white  active:text-white [&:hover>svg]:fill-white  [&:active>svg]:fill-white [&:hover>i]:fill-white [&:active>i]:fill-white;
   }
   .btn-green{
-    @apply bg-green border-green text-b15 hover:bg-success-600 active:bg-success-600 hover:border-success-600 active:border-success-600 hover:text-b15 active:text-b15;
+    @apply bg-green border-green text-white hover:bg-b4 active:bg-b4 hover:border-b4 active:border-b4 hover:text-white active:text-white;
   }
   .btn-white{
-    @apply bg-b15 border-b15 text-b2 hover:bg-b1 active:bg-b1 hover:border-b1 active:border-b1 hover:text-b15 active:text-b15;
+    @apply bg-white border-white text-b2 hover:bg-b4 active:bg-b4 hover:border-b4 active:border-b4 hover:text-white active:text-white;
   }
   .btn-outline-black{
-    @apply bg-transparent border-b2 text-b2 hover:bg-b2 hover:border-b2 hover:text-b15;
+    @apply bg-transparent border-b4 text-b2 hover:bg-b4 hover:border-b4 hover:text-white;
   }
   .btn-outline-white{
-    @apply bg-transparent border-white text-white hover:bg-white hover:border-white hover:text-blue;
+    @apply bg-transparent border-white text-white hover:bg-white hover:border-white hover:text-b2;
   }
   .btn-outline-gray{
-    @apply bg-transparent border-b10 text-b2 hover:bg-b2 hover:border-b2 hover:text-b15 [&>svg]:fill-b2 [&>i]:text-b2  [&:hover>svg]:fill-white [&:active>svg]:fill-white;
+    @apply bg-transparent border-b10 text-b2 hover:bg-b4 hover:border-b4 hover:text-white [&>svg]:fill-b2 [&>i]:text-b2  [&:hover>svg]:fill-white [&:active>svg]:fill-white;
   }
   .btn-red{
-    @apply bg-reddark border-reddark text-b15 hover:bg-reddarkhover active:bg-reddarkhover hover:border-reddarkhover active:border-reddarkhover hover:text-b15 active:text-b15;
+    @apply bg-reddark border-reddark text-white hover:bg-reddarkhover active:bg-reddarkhover hover:border-reddarkhover active:border-reddarkhover hover:text-white active:text-white;
   }
   .btn-lg{
       @apply px-6 py-1.5 lg:py-[12px] lg:px-6 text-font-16 font-bold leading-normal;

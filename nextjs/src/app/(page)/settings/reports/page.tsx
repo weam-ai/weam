@@ -119,8 +119,8 @@ export default function DashboardReport() {
         <div className="max-lg:h-[50px] max-lg:sticky max-lg:top-0 bg-white z-10"></div>
             <div className="flex flex-col flex-1 relative h-full overflow-hidden lg:pt-20 pb-10 px-2 ">
                 <div className="h-full overflow-y-auto w-full relative">
-                    <div className="mx-auto max-w-[950px]">
-                        <h5 className="text-font-18 font-bold text-b2 mb-1">
+                    <div className="mx-auto max-w-[1450px]">
+                        <h5 className="text-font-18 font-bold text-b2">
                             { 
                                 isCompanyAdminOrManager(user)
                                 ? 'Usage of ' + user?.company?.name
@@ -134,7 +134,7 @@ export default function DashboardReport() {
                                     : 'Detailed Report of usage ' + showNameOrEmail(user)
                             }                             
                             { isWeamAdminOrManager(user) &&
-                                <Link href="/settings/weekly-report" className="text-font-14 underline hover:text-blue text-b2 mb-2">
+                                <Link href="/settings/weekly-report" className="text-font-14 underline hover:text-b2 text-b4 mb-2">
                                     Companies Weekly Usage Report
                                 </Link>
                             }

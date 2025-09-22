@@ -33,7 +33,7 @@ const BrainButtons = ({ text, share, click, selectedOption, onChange }:any) => {
     return (
         <div className="relative">
             <label
-                className="group cursor-pointer btn btn-gray md:py-[13px] py-2 md:px-8 px-4 max-md:text-font-14 hover:bg-green hover:border-green active:bg-green active:border-green checked:bg-green checked:border-green has-[:checked]:text-b15 has-[:checked]:bg-green has-[:checked]:border-green"
+                className="group cursor-pointer btn btn-outline-gray max-md:text-font-14 hover:bg-green hover:border-green active:bg-green active:border-green checked:bg-green checked:border-green has-[:checked]:text-b15 has-[:checked]:bg-green has-[:checked]:border-green"
                 htmlFor={text}
             >
                 <input
@@ -48,13 +48,13 @@ const BrainButtons = ({ text, share, click, selectedOption, onChange }:any) => {
                 />
                 {share ? (
                     <ShareBrainIcon
-                        className="fill-b5 peer-checked:fill-b15 group-hover:fill-b15 group-active:fill-b15 transition duration-150 ease-in-out inline-block md:mr-2.5 mr-1 w-auto h-[18px] object-contain"
+                        className="fill-b5 peer-checked:fill-white group-hover:fill-white group-active:fill-white transition duration-150 ease-in-out inline-block md:mr-2.5 mr-1 w-auto h-[18px] object-contain"
                         width={'20'}
                         height={'18'}
                     />
                 ) : (
                     <LockIcon
-                        className="fill-b5 peer-checked:fill-b15 group-hover:fill-b15 group-active:fill-b15 transition duration-150 ease-in-out inline-block mr-2.5 w-auto h-[18px] object-contain"
+                        className="fill-b5 peer-checked:fill-white group-hover:fill-white group-active:fill-white transition duration-150 ease-in-out inline-block md:mr-2.5 mr-1 w-auto h-[18px] object-contain"
                         width={'14'}
                         height={'18'}
                     />

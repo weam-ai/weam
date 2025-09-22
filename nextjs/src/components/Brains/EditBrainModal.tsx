@@ -593,68 +593,62 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
                                             <SearchIcon className="w-4 h-[17px] fill-b7" />
                                         </span>
                                     </div>
-                                    {/* Add Member start */}
-                                    {((currentUser.roleCode ===
+                                    
+                                </div>
+                                {/* Add Member start */}
+                                {((currentUser.roleCode ===
                                         ROLE_TYPE.USER &&
                                         brain?.user?.id ===
                                             currentUser._id) ||
                                         currentUser.roleCode !==
                                             ROLE_TYPE.USER) && (
-                                
-                                        <Dialog>
-                                            <DialogTrigger asChild>
-                                                <div>
-                                                    <span
-                                                        className="inline-flex items-center cursor-pointer mr-1 px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150 md:mb-0 mb-1"
-                                                        onClick={() =>
-                                                            setAddMemberModal(
-                                                                true
-                                                            )
-                                                        }
-                                                    >
-                                                        <AddUser
-                                                            width={
-                                                                16
-                                                            }
-                                                            height={
-                                                                18
-                                                            }
-                                                            className="w-[26px] h-[18px] object-contain fill-b5 mr-1"
-                                                        />
-                                                        <span className="text-font-14 font-semibold text-b2">
-                                                            Add
-                                                            Member
-                                                        </span>
-                                                    </span>
-                                
-                                                    <span
-                                                        className="inline-flex items-center cursor-pointer mr-1 px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150 md:mb-0 mb-1"
-                                                        onClick={() =>
-                                                            setAddTeamModal(
-                                                                true
-                                                            )
-                                                        }
-                                                    >
-                                                        <AddTeam
-                                                            width={
-                                                                18
-                                                            }
-                                                            height={
-                                                                18
-                                                            }
-                                                            className="w-[26px] h-[18px] object-contain fill-b5 mr-1"
-                                                        />
-                                                        <span className="text-font-14 font-semibold text-b2">
-                                                            Add a Team
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                            </DialogTrigger>
-                                        </Dialog>
-                                        
+                                        <div className='flex items-center gap-x-1 mb-2'>
+                                            <span
+                                                className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
+                                                onClick={() =>
+                                                    setAddMemberModal(
+                                                        true
+                                                    )
+                                                }
+                                            >
+                                                <AddUser
+                                                    width={
+                                                        16
+                                                    }
+                                                    height={
+                                                        18
+                                                    }
+                                                    className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
+                                                />
+                                                <span>
+                                                    Add Member
+                                                </span>
+                                            </span>
+                        
+                                            <span
+                                                className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
+                                                onClick={() =>
+                                                    setAddTeamModal(
+                                                        true
+                                                    )
+                                                }
+                                            >
+                                                <AddTeam
+                                                    width={
+                                                        18
+                                                    }
+                                                    height={
+                                                        18
+                                                    }
+                                                    className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
+                                                />
+                                                <span>
+                                                    Add a Team
+                                                </span>
+                                            </span>
+                                        </div>
                                     )}
                                 {/* Add Member End */}
-                                </div>
 
                                 <div
                                     className="font-normal"

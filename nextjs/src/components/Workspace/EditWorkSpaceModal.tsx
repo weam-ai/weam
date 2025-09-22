@@ -397,7 +397,7 @@ const AboutBrainDetails = ({
                     {isEdit ? (
                         <span
                             ref={workSpaceNameButtonRef}
-                            className="text-blue hover:text-bluehover hover:underline cursor-pointer"
+                            className="text-b7 hover:text-b2 underline cursor-pointer"
                             onClick={onChange}
                         >
                             Change
@@ -405,7 +405,7 @@ const AboutBrainDetails = ({
                     ) : (
                         <span
                             ref={workSpaceNameButtonRef}
-                            className="text-blue hover:text-bluehover hover:underline cursor-pointer"
+                            className="text-b7 hover:text-b2 underline cursor-pointer"
                             onClick={() => setIsEdit(true)}
                         >
                             Edit
@@ -451,7 +451,7 @@ const AboutBrainDetails = ({
             {adminUser?.user?.email === userDetail?.email && (
                 <div className="group/item user-item flex justify-between py-2.5">
                    
-                    <button className="btn btn-blue" onClick={handleDelete} disabled={isDeletePending}>
+                    <button className="btn btn-black" onClick={handleDelete} disabled={isDeletePending}>
                         Archive
                     </button>
                 </div>
@@ -731,12 +731,12 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                         />
                                     </div>
                                     {/* Add Member start */}
-                                    <div className="mt-2.5 px-[30px]">
+                                    <div className="px-[30px]">
                                         <Dialog>
                                             <DialogTrigger asChild>
                                                 <div className="w-full gap-1 flex">
                                                     <span
-                                                        className="inline-flex items-center cursor-pointer md:px-3 px-2 py-2 rounded-md bg-b12 border border-b11 hover:bg-b11 hover:border-b11 transition ease-in-out duration-150"
+                                                        className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
                                                         onClick={() =>
                                                             setAddMemberModal(
                                                                 true
@@ -746,14 +746,14 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                                         <AddUser
                                                             width={16}
                                                             height={18}
-                                                            className="w-[26px] h-[18px] object-contain fill-b5 mr-1"
+                                                            className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
                                                         />
-                                                            <span className="text-font-14 font-semibold text-b2">
+                                                            <span>
                                                             Add a Member
                                                         </span>
                                                     </span>
                                                     <span
-                                                        className="inline-flex items-center cursor-pointer md:px-3 px-2 py-2 rounded-md bg-b12 border border-b11 hover:bg-b11 hover:border-b11 transition ease-in-out duration-150"
+                                                        className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
                                                         onClick={() =>
                                                             setAddTeamModal(
                                                                 true
@@ -763,9 +763,9 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                                         <AddTeam
                                                             width={18}
                                                             height={18}
-                                                            className="w-[26px] h-[18px] object-contain fill-b2 mr-1"
+                                                            className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
                                                         />
-                                                        <span className="text-font-14 font-semibold text-b2">
+                                                        <span>
                                                             Add a Team
                                                         </span>
                                                     </span>
