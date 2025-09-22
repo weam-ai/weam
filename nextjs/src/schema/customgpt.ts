@@ -3,13 +3,6 @@ import * as yup from 'yup';
 export const overviewValidationSchema = yup.object({
     title: yup.string().required('please enter name'),
     systemPrompt: yup.string().required('please enter system prompt'),
-    goals: yup.array()
-        .of(yup.string()
-            .required('enter your goals')
-        ),
-    instructions: yup.array()
-        .of(yup.string()
-        ),
 });
 
 export const modalSelectionKeys = yup.object({

@@ -59,8 +59,6 @@ export type BrainAgentType = {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
-    instructions?: string[];
-    goals: string[];
     maxItr: number;
     doc: FileType,
     owner: FormatUserType;

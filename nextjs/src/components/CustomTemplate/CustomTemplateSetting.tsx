@@ -89,8 +89,6 @@ const CustomTemplateSetting = memo(({bot, prompt, type, mykey, DialogTitle}) => 
                     }
                 },
                 maxItr: persistCustombot?.botdata?.maxItr || '0',
-                goals: JSON.stringify(persistCustombot?.botdata?.goals),
-                instructions: JSON.stringify(persistCustombot?.botdata?.instructions),
                 selectedBrain: selectedBrain
             };
 

@@ -59,8 +59,6 @@ export type SelectedContextData = {
     embedding_api_key?: string;
     userId?: FormatUserType;
     owner?: FormatUserType;
-    goals?: string[];
-    instructions?: string[];
     slug?: string;
     systemPrompt?: string;
     responseModel?: {
