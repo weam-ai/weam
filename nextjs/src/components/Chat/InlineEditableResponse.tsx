@@ -46,18 +46,7 @@ const InlineEditableResponse: React.FC<InlineEditableResponseProps> = ({
     setSegments(newSegments);
   }, [response, splitIntoSegments]);
 
-  // Handle segment click to start editing
-  const handleSegmentClick = (segmentId: string) => {
-    if (disabled) return;
-    
-    setSegments(prev => 
-      prev.map(segment => ({
-        ...segment,
-        isEditing: segment.id === segmentId
-      }))
-    );
-    setIsEditing(true);
-  };
+
 
   // Handle save for a specific segment
   const handleSegmentSave = (segmentId: string) => {
@@ -172,24 +161,15 @@ const InlineEditableResponse: React.FC<InlineEditableResponseProps> = ({
     return (
       <div
         key={segment.id}
-        onClick={() => handleSegmentClick(segment.id)}
         className={`
-          relative group cursor-pointer rounded-lg p-3 transition-all duration-200
-          hover:bg-gray-50 hover:shadow-sm border border-transparent hover:border-gray-200
-          ${disabled ? 'cursor-default hover:bg-transparent hover:shadow-none hover:border-transparent' : ''}
+          relative group rounded-lg p-3
         `}
       >
         <div className="prose prose-sm max-w-none">
           {MarkOutPut(segment.content)}
         </div>
         
-        {!disabled && (
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <div className="bg-white shadow-md rounded-md p-1 border">
-              <span className="h-4 w-4 text-gray-500">✏️</span>
-            </div>
-          </div>
-        )}
+
       </div>
     );
   };
@@ -204,14 +184,7 @@ const InlineEditableResponse: React.FC<InlineEditableResponseProps> = ({
         </div>
       )}
       
-      {isEditing && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-700">
-            💡 Tip: You can edit any part of the response by clicking on it. 
-            Use Cmd+Enter to save or Esc to cancel.
-          </p>
-        </div>
-      )}
+
     </div>
   );
 };
