@@ -11,11 +11,35 @@ const SOLUTION_CONFIGS = require('../config/solutionconfig');
 /**
  * Executes bash commands with console output
  * @param {string} command - The bash command to execute
+ * @param {string} repoName - Repository name for logging prefix (optional)
  * @returns {Promise<string>} - Command output
  */
-function runCommand(command) {
+function runCommand(command, repoName = null) {
     return new Promise((resolve, reject) => {
-        const child = spawn('sh', ['-c', command], { stdio: 'inherit' });
+        const child = spawn('sh', ['-c', command], { 
+            stdio: repoName ? 'pipe' : 'inherit' 
+        });
+        
+        if (repoName) {
+            // Capture and prefix output when repoName is provided
+            child.stdout.on('data', (data) => {
+                const lines = data.toString().split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        console.log(`[${repoName}] ${line}`);
+                    }
+                });
+            });
+            
+            child.stderr.on('data', (data) => {
+                const lines = data.toString().split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        console.log(`[${repoName}] ${line}`);
+                    }
+                });
+            });
+        }
         
         child.on('close', (code) => {
             if (code === 0) {
@@ -37,9 +61,10 @@ function runCommand(command) {
  * @param {string} rootEnvPath - Path to root .env file
  * @param {string} localEnvPath - Path to local .env file
  * @param {string} outputPath - Path where to write the merged .env file
+ * @param {string} repoName - Repository name for logging
  * @returns {Promise<object>} - Merged environment variables
  */
-async function mergeEnvironmentFiles(rootEnvPath, localEnvPath, outputPath) {
+async function mergeEnvironmentFiles(rootEnvPath, localEnvPath, outputPath, repoName) {
     try {
         const parseEnvFile = (filePath) => {
             if (!fs.existsSync(filePath)) return {};
@@ -93,10 +118,10 @@ async function mergeEnvironmentFiles(rootEnvPath, localEnvPath, outputPath) {
         fs.writeFileSync(tempFile, envContent);
         fs.renameSync(tempFile, outputPath);
 
-        console.log(`✅ Merge done. Total: ${Object.keys(mergedVars).length}`);
+        console.log(`[${repoName}] ✅ Merge done. Total: ${Object.keys(mergedVars).length}`);
         return mergedVars;
     } catch (err) {
-        console.error('❌ Merge failed:', err);
+        console.error(`[${repoName}] ❌ Merge failed:`, err);
         throw err;
     }
 }
@@ -178,64 +203,17 @@ async function detectRepoStructure(repoPath) {
  */
 async function cleanupExistingContainers(config) {
     try {
-        console.log('🧹 Cleaning up existing containers...');
+        console.log(`[${config.repoName}] 🧹 Cleaning up existing containers...`);
         
         // Stop and remove main container
-        await runCommand(`docker rm -f ${config.containerName} || true`);
+        await runCommand(`docker rm -f ${config.containerName} || true`, config.repoName);
         
-        // Stop containers using additional ports
-        if (config.additionalPorts) {
-            for (const port of config.additionalPorts) {
-                await runCommand(`docker ps -q --filter "publish=${port}" | xargs -r docker stop || true`);
-            }
-        }
-        
-        console.log('✅ Existing containers cleaned up');
+        console.log(`[${config.repoName}] ✅ Existing containers cleaned up`);
     } catch (error) {
-        console.log('⚠️ Error cleaning up containers:', error.message);
+        console.log(`[${config.repoName}] ⚠️ Error cleaning up containers:`, error.message);
     }
 }
 
-/**
- * Installs Docker service (single container)
- * @param {object} config - Solution configuration
- * @param {string} repoPath - Repository path
- * @returns {Promise<void>}
- */
-async function installDockerService(config, repoPath) {
-    console.log('🐳 Installing Docker service...');
-    
-    // Setup environment - ensure .env is exactly like .env.example
-    if (config.envFile) {
-        // await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
-        await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
-    }
-    
-    // Create merged temporary file for build (don't touch original .env)
-    const rootEnvPath = '/workspace/.env';
-    const localEnvPath = `${repoPath}/.env`;
-    const tempEnvPath = `${repoPath}/.env.temp`;
-    
-    // Create merged temporary file
-    await mergeEnvironmentFiles(rootEnvPath, localEnvPath, tempEnvPath);
-    
-    // Use temporary .env file for build
-    await runCommand(`cp ${tempEnvPath} ${localEnvPath}`);
-    
-    // Build Docker image
-    console.log('🔨 Building Docker image...');
-    await runCommand(`docker build -t ${config.imageName} ${repoPath}`);
-    
-    // Run container
-    console.log('🚀 Starting container...');
-    const networkName = 'weam_app-network';
-    await runCommand(`docker run -d --name ${config.containerName} --network ${networkName} -p ${config.port}:${config.port} ${config.imageName}`);
-    
-    // Restore original .env file (exactly like .env.example) and clean up
-    // await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
-    await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
-    await runCommand(`rm -f ${tempEnvPath}`);
-}
 
 /**
  * Installs Docker Compose service (multiple containers)
@@ -244,16 +222,17 @@ async function installDockerService(config, repoPath) {
  * @returns {Promise<void>}
  */
 async function installDockerComposeService(config, repoPath) {
-    console.log('🐳 Installing Docker Compose service...');
+    console.log(`[${config.repoName}] 🐳 Installing Docker Compose service...`);
     
     // Setup environment files - convert env.example to .env based on config
     if (config.envFile) {
-        console.log(`📝 Converting ${config.envFile} to .env...`);
+        console.log(`[${config.repoName}] 📝 Converting ${config.envFile} to .env...`);
         // await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
-        await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
+        await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`, config.repoName);
     } else {
         // Fallback: search for any .env.example file
-        await runCommand(`find ${repoPath} -name ".env.example" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`);
+        console.log(`[${config.repoName}] 📝 Searching for .env.example file...`);
+        await runCommand(`find ${repoPath} -name ".env.example" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`, config.repoName);
     }
     
     // Create merged temporary file for build (don't touch original .env)
@@ -262,38 +241,35 @@ async function installDockerComposeService(config, repoPath) {
     const tempEnvPath = `${repoPath}/.env.temp`;
     
     // Create merged temporary file
-    await mergeEnvironmentFiles(rootEnvPath, localEnvPath, tempEnvPath);
+    await mergeEnvironmentFiles(rootEnvPath, localEnvPath, tempEnvPath, config.repoName);
     
     // Detect repository structure
     const repoStructure = await detectRepoStructure(repoPath);
     
     if (repoStructure.hasDockerCompose) {
         // Use Docker Compose
-        console.log(`📦 Using Docker Compose (${repoStructure.composeFile})...`);
+        console.log(`[${config.repoName}] 📦 Using Docker Compose (${repoStructure.composeFile})...`);
         
         // Check if docker-compose is available
         const isComposeAvailable = await isDockerComposeAvailable();
         if (!isComposeAvailable) {
+            console.log(`[${config.repoName}] 📦 Installing Docker Compose...`);
             await installDockerCompose();
         }
         
         // Use temporary .env file for docker-compose
-        await runCommand(`cp ${tempEnvPath} ${localEnvPath}`);
+        await runCommand(`cp ${tempEnvPath} ${localEnvPath}`, config.repoName);
         
         // Build and start services
-        await runCommand(`cd ${repoPath} && docker-compose up -d --build`);
+        console.log(`[${config.repoName}] 🚀 Building and starting services...`);
+        await runCommand(`cd ${repoPath} && docker-compose up -d --build`, config.repoName);
         
         // Keep the merged .env file (don't restore original .env.example)
         // This ensures all merged variables are preserved for the running container
-        await runCommand(`rm -f ${tempEnvPath}`);
-        
-    } else if (repoStructure.hasDockerfile) {
-        // Fallback to Docker
-        console.log('📦 Using Dockerfile...');
-        await installDockerService(config, repoPath);
+        await runCommand(`rm -f ${tempEnvPath}`, config.repoName);
         
     } else {
-        throw new Error('No Docker configuration found in repository');
+        throw new Error(`[${config.repoName}] No Docker Compose configuration found in repository`);
     }
 }
 
@@ -314,36 +290,30 @@ const installWithProgress = async (req, res) => {
             throw new Error(`Unknown solution type: ${solutionType}`);
         }
         
-        console.log(`✅ Installing solution: ${solutionType} (${config.installType})`);
+        console.log(`[${config.repoName}] ✅ Installing solution: ${solutionType}`);
         
         const repoPath = `/workspace/${config.repoName}`;
         
         // Step 1: Clean up existing repository
-        console.log('🧹 Cleaning up existing repository...');
-        await runCommand(`rm -rf ${repoPath}`);
+        console.log(`[${config.repoName}] 🧹 Cleaning up existing repository...`);
+        await runCommand(`rm -rf ${repoPath}`, config.repoName);
         
         // Step 2: Clone repository
-        console.log('📥 Cloning repository...');
-        await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`);
+        console.log(`[${config.repoName}] 📥 Cloning repository...`);
+        await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
         
         // Step 3: Clean up existing containers
         await cleanupExistingContainers(config);
         
-        // Step 4: Install based on service type
-        if (config.installType === 'docker') {
-            await installDockerService(config, repoPath);
-        } else if (config.installType === 'docker-compose') {
-            await installDockerComposeService(config, repoPath);
-        } else {
-            throw new Error(`Unsupported installation type: ${config.installType}`);
-        }
+        // Step 4: Install using Docker Compose
+        await installDockerComposeService(config, repoPath);
         
-        console.log(`✅ Installation completed! Solution running at http://localhost:${config.port}`);
+        console.log(`[${config.repoName}] ✅ Installation completed successfully!`);
         
-        return { success: true, port: config.port, solutionType };
+        return { success: true, solutionType, repoName: config.repoName };
         
     } catch (error) {
-        console.error(`❌ Installation failed: ${error.message}`);
+        console.error(`[${config.repoName}] ❌ Installation failed: ${error.message}`);
         handleError(error, 'Error - solutionInstallWithProgress');
         throw error;
     }
