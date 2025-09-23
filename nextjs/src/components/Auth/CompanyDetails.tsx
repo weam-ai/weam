@@ -13,7 +13,6 @@ import Select from 'react-select';
 import Toast from '@/utils/toast';
 
 import { useRouter } from 'next/navigation';
-import TagManager from 'react-gtm-module';
 
 const BOT_CPS_THRESHOLD = 30; // Characters per second threshold for bot detection
 import useServerAction from '@/hooks/common/useServerActions';

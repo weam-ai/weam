@@ -486,7 +486,7 @@ const SuperSolutionPage = () => {
             {showAppDetails && selectedApp && (
                 <Dialog open={showAppDetails} onOpenChange={handleDialogClose}>
                     <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto p-5">
-                        <DialogHeader>
+                        <DialogHeader className="border-b pb-3 mb-4">
                             <DialogTitle className="flex items-center gap-3 font-bold">
                                 <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
                                     {(() => {
@@ -498,12 +498,14 @@ const SuperSolutionPage = () => {
                                         );
                                     })()}
                                 </div>
-                                {selectedApp.name} - Access Management
-                                <div className="flex gap-2">
-                                    <Button className="inline-flex items-center cursor-pointer px-2 py-1 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150" onClick={() => handleInstall()} disabled={loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] || false}>
+                                <div>
+                                    {selectedApp.name} - Access Management
+                                </div>
+                                <div className="flex gap-2 ml-auto">
+                                    <div className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" onClick={() => handleInstall()} disabled={loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] || false}>
                                         <DownloadIcon className="w-4 h-4 mr-2" />
                                         {loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] ? 'Installing...' : getInstallButtonText(selectedApp?.name || '')}
-                                    </Button>
+                                    </div>
                                 </div>
                             </DialogTitle>
                             <DialogDescription>
