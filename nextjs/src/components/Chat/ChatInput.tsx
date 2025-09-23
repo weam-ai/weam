@@ -968,7 +968,6 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                                 paginator={paginator}
                                 setPromptList={setPromptList}
                                 promptList={prompts}
-                                handleSubmitPrompt={handleInitialMessage}
                             />
                             <AttachMentToolTip
                                 fileLoader={fileLoader}

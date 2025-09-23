@@ -9,7 +9,6 @@ import PreviewImage from '../ui/PreviewImage';
 import AgentAnalyze from '../Loader/AgentAnalyze';
 import PageSpeedResponse from './PageSpeedResponse';
 import { PAGE_SPEED_RECORD_KEY } from '@/hooks/conversation/useConversation';
-import { ProAgentCode } from '@/types/common';
 import WebAgentLoader from '../Loader/WebAgentLoader';
 import VideoCallAgentLoader from '../Loader/VideoCallAgentLoader';
 import SalesCallLoader from '../Loader/SalesCallLoader';
@@ -73,12 +72,8 @@ const DallEImagePreview = ({
 const StreamingChatLoaderOption = ({ code, loading, proAgentCode }: ResponseLoaderProps) => {
     const loadingComponents = {
         [API_TYPE_OPTIONS.OPEN_AI_WITH_DOC]: <DocumentProcessing />,
-        [ProAgentCode.QA_SPECIALISTS]: <AgentAnalyze loading={loading} />,
-        [ProAgentCode.WEB_PROJECT_PROPOSAL]: <WebAgentLoader loading={loading} />,
-        [ProAgentCode.VIDEO_CALL_ANALYZER]: <VideoCallAgentLoader loading={loading} />,
-        [ProAgentCode.SALES_CALL_ANALYZER]: <SalesCallLoader loading={loading} />,
     };
-    return loadingComponents[code] || loadingComponents[proAgentCode] || <StreamLoader />;
+    return loadingComponents[code] || <StreamLoader />;
 };
 
 const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmitPrompt, privateChat = true, isStreamingLoading, proAgentCode, onResponseUpdate, onResponseEdited }) => {
