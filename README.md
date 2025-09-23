@@ -24,7 +24,7 @@
 
 ## What is Weam AI
 
-Weam is an open source platform that helps teams adopt AI systematically. It includes a complete, production-ready stack with Next.js frontend and Node.js/Python backend - ready to deploy and use immediately.
+Weam is an open source platform that helps teams adopt AI systematically. It includes a complete, production-ready stack with Next.js frontend and Node.js backend - ready to deploy and use immediately.
 
 **System Requirements:** CPU with 4+ cores, 8GB+ RAM. Professional installation support available for non-technical teams.  
 
@@ -111,27 +111,31 @@ Visit our comprehensive [**Documentation**](https://docs.weam.ai/).
 - **Usage Analytics:** Admin dashboard showing team member activity  
 - **Team Groups:** Organize users for efficient permission management  
 
-#### 🚀 Pro Agents (Pre-built Automations)
-Ready-to-use automation workflows powered by specialized APIs:
-- **QA Agent:** Comprehensive 70-point website analysis including Google PageSpeed Insights  
-- **Video Analyzer:** Process Loom recordings by analyzing both video frames and audio to generate actionable task lists  
-- **Sales Call Analyzer:** Transform Fathom recordings into detailed call insights with customizable analysis prompts  
-- **Proposal Generator:** Input project basics and receive professionally formatted, editable multi-page proposals  
-- **SEO Content Writer:** Advanced blog creation pipeline powered by DataforSEO:  
-  - Start with any URL for context  
-  - Auto-generates business summary  
-  - Suggests relevant keywords based on competition analysis  
-  - Researches top-ranking content for each topic  
-  - Checks sitemap to avoid duplicate content  
-  - Produces comprehensive, Google-optimized articles using sophisticated 2-page prompts  
-- **Build your own**  
+## 🎨 AI App Solutions  
 
-#### 🎨 AI App Solutions  
-**Coming Soon:**
-- **AI Presentation Maker:** Create stunning presentations like Gamma  
-- **AI Document Editor:** Intelligent document creation and editing  
-- **Voice Agent:** AI that makes calls on your behalf  
-- **Build Your Own:** Integrate custom AI apps built with modern tools directly into Weam, creating a unified AI workspace for your entire organization.
+Unlock powerful AI-driven tools to streamline your business operations and enhance productivity across various domains.  
+
+### 🚀 Available AI Apps:
+
+#### AI Document Editor  
+The AI Document Editor allows you to quickly create and edit documents using ready-made templates or by designing your own. With AI assistance built in, writing and formatting become faster and more intuitive.  
+👉 [Check out the repository](https://github.com/weam-ai/ai-doc-editor)
+
+#### AI Recruiter  
+The AI Recruiter enables you to build custom interviewers and generate interview links that can be shared with candidates. After completion, you receive detailed analytics on interview results to help with hiring decisions.  
+👉 [Check out the repository](https://github.com/weam-ai/ai-recruiter)
+
+#### Landing Page Generator  
+With the Landing Page Generator, you can automatically create high-converting landing page content by providing a website URL, Figma design, or a PDF. It extracts and structures content tailored for web use.  
+👉 [Check out the repository](https://github.com/weam-ai/landing-page-content-generator)
+
+#### SEO Content Generator  
+The SEO Content Generator helps you craft SEO-optimized blog posts and articles. It also supports sitemap audits and on-page SEO improvements to enhance your website’s visibility.  
+👉 [Check out the repository](https://github.com/weam-ai/seo-content-gen)
+
+#### AI Chatbot Builder  
+The AI Chatbot Builder lets you create RAG (Retrieval-Augmented Generation)-based AI chatbots that can be embedded directly into your website. It also provides conversation history and usage analytics for ongoing improvement.  
+👉 [Check out the repository](https://github.com/weam-ai/ai-chatbot)
 
 ---
 

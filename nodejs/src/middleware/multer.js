@@ -28,7 +28,8 @@ const AWS_storage = multerS3({
     bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
     acl: 'public-read',
     contentType: multerS3.AUTO_CONTENT_TYPE,
-    ...(AWS_CONFIG.ENDPOINT ? {} : { serverSideEncryption: 'AES256' }),
+    // Removed server-side encryption that was causing errors
+    // ...(AWS_CONFIG.ENDPOINT ? {} : { serverSideEncryption: 'AES256' }),
     cacheControl: 'max-age=1800',
     metadata: function (req, file, cb) {
         cb(null, { fieldname: file.fieldname });

@@ -15,8 +15,10 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { AgentChatPayloadType, ConversationType, DocumentChatPayloadType, NormalChatPayloadType, ProAgentDataType } from '@/types/chat';
+import { AgentChatPayloadType, CitationResponseType, ConversationType, DocumentChatPayloadType, NormalChatPayloadType, ProAgentDataType } from '@/types/chat';
 import { Socket } from 'socket.io-client';
+import CitationSourceSheet from '../Citations/CitationSourceSheet';
+import GlobeIcon from '@/icons/GlobalIcon';
 import commonApi from '@/api';
 import { MODULE_ACTIONS } from '@/utils/constant';
 import Toast from '@/utils/toast';
@@ -39,6 +41,8 @@ type HoverActionIconProps = {
     setConversations: (payload: ConversationType[]) => void,
     custom_gpt_id?: string,
     getAgentContent: (proAgentData: ProAgentDataType) => string,
+    showCitations: boolean,
+    citations: CitationResponseType[],
     onAddToPages?: (title: string) => Promise<void>,
     hasBeenEdited?: boolean,
     isAnswer?: boolean
@@ -71,11 +75,12 @@ const HoverActionTooltip = ({ children, content, onClick, className }: HoverActi
     )
 }
 
-const HoverActionIcon = React.memo(({ content, proAgentData, conversation, sequence, onOpenThread, copyToClipboard, getAgentContent, index, chatId, socket, getAINormatChatResponse, getAICustomGPTResponse, getPerplexityResponse, getAIDocResponse, setConversations, custom_gpt_id, onAddToPages, hasBeenEdited, isAnswer }: HoverActionIconProps) => {
+const HoverActionIcon = React.memo(({ content, proAgentData, conversation, sequence, onOpenThread, copyToClipboard, getAgentContent, index, showCitations, citations, onAddToPages, hasBeenEdited, isAnswer }: HoverActionIconProps) => {
     const { isOpen, openModal, closeModal } = useModal();
     const { isOpen: isForkOpen, openModal: openForkModal, closeModal: closeForkModal } = useModal();
     const { isOpen: isDownloadOpen, openModal: openDownloadModal, closeModal: closeDownloadModal } = useModal();
     const { isOpen: isAddPageOpen, openModal: openAddPageModal, closeModal: closeAddPageModal } = useModal();
+    const { isOpen: isCitationsOpen, openModal: openCitationsModal, closeModal: closeCitationsModal } = useModal();
     const [forkData, setForkData] = useState([]);
     const [isUploadingToMinIO, setIsUploadingToMinIO] = useState(false);
     const downloadDropdownRef = useRef<HTMLDivElement>(null);
@@ -329,18 +334,18 @@ const HoverActionIcon = React.memo(({ content, proAgentData, conversation, seque
 
                          {/* Download start - Only show for answers */}
              {isAnswer && (
-                 <HoverActionTooltip
+                <HoverActionTooltip
                      content='Download Response'
                      onClick={openDownloadModal}
                      className="cursor-pointer flex items-center justify-center lg:w-8 w-5 h-8 md:min-w-8 rounded-custom p-1 transition ease-in-out duration-150 [&>svg]:h-[18px] [&>svg]:w-auto [&>svg]:max-w-full [&>svg]:fill-b6 hover:bg-b12"
-                 >
+                >
                      <img 
                          src="/File-download-01.jpg" 
                          alt="Download" 
                          className="lg:h-[15px] h-[14px] w-auto object-contain"
                      />
-                 </HoverActionTooltip>
-             )}
+                </HoverActionTooltip>
+            )}
                          {isAnswer && isDownloadOpen && (
                 <div ref={downloadDropdownRef} className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[200px]">
                     <div className="py-1">
@@ -453,6 +458,26 @@ const HoverActionIcon = React.memo(({ content, proAgentData, conversation, seque
                  onSave={onAddToPages}
                  defaultTitle=""
              />
+            {
+                showCitations && citations?.length > 0 && (
+                    <HoverActionTooltip
+                        content='Sources'
+                        onClick={openCitationsModal}
+                        className="cursor-pointer flex items-center justify-center lg:w-8 w-5 h-8 min-w-8 rounded-custom p-1 transition ease-in-out duration-150 [&>svg]:h-[18px] [&>svg]:w-auto [&>svg]:max-w-full [&>svg]:fill-b6 hover:bg-b12"
+                    >
+                        <GlobeIcon className="lg:h-[15px] h-[15px] w-auto fill-b6 object-contain" height={15} width={15}/>
+                    </HoverActionTooltip>
+                )
+            }
+            {
+                isCitationsOpen && (
+                    <CitationSourceSheet
+                        citations={citations}
+                        isOpen={isCitationsOpen}
+                        onOpenChange={closeCitationsModal}
+                    />
+                )
+            }
         </div>
     );
 });

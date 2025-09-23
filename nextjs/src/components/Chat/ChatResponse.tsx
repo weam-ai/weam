@@ -6,8 +6,6 @@ import StreamLoader from '../Loader/StreamLoader';
 import { API_TYPE_OPTIONS, WEB_RESOURCES_DATA } from '@/utils/constant';
 import DocumentProcessing from '../Loader/DocumentProcess';
 import PreviewImage from '../ui/PreviewImage';
-import CanvasInput from './CanvasInput';
-import useCanvasInput from '@/hooks/chat/useCanvasInput';
 import AgentAnalyze from '../Loader/AgentAnalyze';
 import PageSpeedResponse from './PageSpeedResponse';
 import { PAGE_SPEED_RECORD_KEY } from '@/hooks/conversation/useConversation';
@@ -84,27 +82,12 @@ const StreamingChatLoaderOption = ({ code, loading, proAgentCode }: ResponseLoad
 };
 
 const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmitPrompt, privateChat = true, isStreamingLoading, proAgentCode, onResponseUpdate, onResponseEdited }) => {
-    const { 
-        showCanvasBox, 
-        handleSelectionChanges, 
-        handleDeSelectionChanges, 
-        selectedId, 
-        showCanvasButton,
-        handleAskWeam,
-        buttonPosition,
-        inputPosition,
-        containerRef,
-    } = useCanvasInput();
 
     // Inline editing state
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState('');
     const textareaRef = useRef(null);
 
-    const selectedMessage = selectedId === m?.id;
-    const openCanvasButton = showCanvasButton && privateChat && !loading;
-    const notProAgent = m?.responseAPI !== API_TYPE_OPTIONS.PRO_AGENT;
-    const showRefineButton = selectedMessage && openCanvasButton && notProAgent;
 
     // Initialize edit content when response changes
     useEffect(() => {
@@ -170,10 +153,6 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                 className={`chat-content relative ${
                     m?.responseAPI !== API_TYPE_OPTIONS.PRO_AGENT ? 'max-w-[calc(100vw-95px)] lg:max-w-none' : ''
                 } w-full break-words text-font-14 md:text-font-16 leading-7 tracking-[0.16px]`}
-                onMouseUp={() => {
-                    handleSelectionChanges(m?.id, m?.response)
-                }}
-                ref={containerRef}
             >
             {conversations.length - 1 === i ? (
                 <>
@@ -284,30 +263,30 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                                                     <p className="text-sm text-gray-500">Modify your AI response below</p>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={handleInlineCancel}
-                                                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100"
-                                                title="Close (Esc)"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
+                                                <button
+                                                    onClick={handleInlineCancel}
+                                                    className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100"
+                                                    title="Close (Esc)"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
                                         </div>
                                         
                                         {/* Content Area */}
                                         <div className="flex-1 overflow-hidden bg-gray-50">
                                             <div className="h-full p-6">
                                                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-full">
-                                                    <TextAreaBox
-                                                        message={editContent}
-                                                        handleChange={handleInlineChange}
-                                                        handleKeyDown={handleInlineKeyDown}
-                                                        isDisable={false}
+                                                            <TextAreaBox
+                                                                message={editContent}
+                                                                handleChange={handleInlineChange}
+                                                                handleKeyDown={handleInlineKeyDown}
+                                                                isDisable={false}
                                                         className="w-full h-full min-h-[500px] border-0 focus:ring-0 focus:outline-none rounded-lg p-6 text-sm leading-relaxed resize-none bg-transparent font-normal"
                                                         placeholder="Edit your response here..."
-                                                        ref={textareaRef}
-                                                    />
+                                                                ref={textareaRef}
+                                                            />
                                                 </div>
                                             </div>
                                         </div>
@@ -359,7 +338,7 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                                 ? <div className="mt-4">{MarkOutPut(m.responseAddKeywords.file_url)}</div> : ''
                             }
                             {
-                                m?.responseAddKeywords?.hasOwnProperty(WEB_RESOURCES_DATA) && <ShowResources response={m?.responseAddKeywords} />
+                                m?.responseAddKeywords?.hasOwnProperty(WEB_RESOURCES_DATA) && <ShowResources response={m?.responseAddKeywords as any} />
                             }
                         </>
                     )}
@@ -389,30 +368,30 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                                             <p className="text-sm text-gray-500">Modify your AI response below</p>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={handleInlineCancel}
-                                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100"
-                                        title="Close (Esc)"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+                                        <button
+                                            onClick={handleInlineCancel}
+                                            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100"
+                                            title="Close (Esc)"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
                                 </div>
                                 
                                 {/* Content Area */}
                                 <div className="flex-1 overflow-hidden bg-gray-50">
                                     <div className="h-full p-6">
                                         <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-full">
-                                            <TextAreaBox
-                                                message={editContent}
-                                                handleChange={handleInlineChange}
-                                                handleKeyDown={handleInlineKeyDown}
-                                                isDisable={false}
+                                                    <TextAreaBox
+                                                        message={editContent}
+                                                        handleChange={handleInlineChange}
+                                                        handleKeyDown={handleInlineKeyDown}
+                                                        isDisable={false}
                                                 className="w-full h-full min-h-[500px] border-0 focus:ring-0 focus:outline-none rounded-lg p-6 text-sm leading-relaxed resize-none bg-transparent font-normal"
                                                 placeholder="Edit your response here..."
-                                                ref={textareaRef}
-                                            />
+                                                        ref={textareaRef}
+                                                    />
                                         </div>
                                     </div>
                                 </div>
@@ -463,24 +442,9 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                         m?.responseAddKeywords?.hasOwnProperty(PAGE_SPEED_RECORD_KEY) && <PageSpeedResponse response={m?.responseAddKeywords} />
                     }
                     {
-                        m?.responseAddKeywords?.hasOwnProperty(WEB_RESOURCES_DATA) && <ShowResources response={m?.responseAddKeywords} />
+                        m?.responseAddKeywords?.hasOwnProperty(WEB_RESOURCES_DATA) && <ShowResources response={m?.responseAddKeywords as any} />
                     }
                 </>
-            )}
-            {showRefineButton && (
-                <button 
-                className='btn btn-black min-w-[100px] px-3 py-[5px]'
-                    style={{ ...buttonPosition }} 
-                    onMouseDown={(e) => e.preventDefault()} 
-                    onClick={handleAskWeam}
-                >
-                    Edit selected text
-                </button>
-            )}
-    
-            {/* Show the textbox if the button was clicked */}
-            { privateChat && showCanvasBox && selectedId === m?.id && (
-                <CanvasInput inputPosition={inputPosition} handleDeSelectionChanges={handleDeSelectionChanges} handleSubmitPrompt={handleSubmitPrompt}/>
             )}
         </div>
     </div>

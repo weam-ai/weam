@@ -5,7 +5,7 @@ const WEB = 'web';
 
 const apiList = {
     fileUpload: {
-        url: () => `upload/file`,
+        url: () => `upload/file-via-streams`,
         method: 'POST',
     },
     allMediaUpload: {
@@ -36,7 +36,7 @@ const apiList = {
         url: () => `${WEB}/company/weam/register`,
         method: 'POST' 
     },
-    workspaceUserCount: {
+        workspaceUserCount: {
         url: () => `${WEB}/workspace/user/list`,
         method: 'POST'
     },
@@ -253,6 +253,10 @@ const apiList = {
         url: (id: string) => `${ADMIN}/super-solution/get-by-user-id/${id}`,
         method: 'GET'
     },
+    getAiAdoption: {
+        url: () => `${ADMIN}/report/ai-adoption`,
+        method: 'POST'
+    },
         // Page operations
     createPage: {
         url: () => `${WEB}/page/create`,
@@ -273,6 +277,10 @@ const apiList = {
     deletePage: {
         url: (id: string) => `${WEB}/page/${id}`,
         method: 'DELETE'
+    },
+    enhancePromptByLLM: {
+        url: () => `${WEB}/chat/enhance-prompt`,
+        method: 'POST'
     },
     commonUrl: (prefix: string, module: string) => ({
         list: {

@@ -3,20 +3,38 @@
       {
         "name": "AI Docs",
         "description": "AI-powered document editor with dual editor modes (Rich Text & Markdown), smart templates, and OpenAI integration for document generation and formatting",
-        "icon": "document-edit-icon",
+        "icon": "ai-docs-icon",
         "category": "Productivity & Document Management",
         "isActive": true,
-        "pathToOpen": "/ai-doc",
+        "pathToOpen": "/ai-docs",
         "sequence": 1
       },
       {
-        "name": "Foloup",
-        "description": "AI-powered document editor with dual editor modes (Rich Text & Markdown), smart templates, and OpenAI integration for document generation and formatting",
-        "icon": "document-edit-icon",
+        "name": "AI Recruiter",
+          "description": "AI Recruiter  is a tool that helps you follow up with your interview candidates and prospects after the interview",
+          "icon": "foloup-icon",
+          "category": "Productivity",
+          "isActive": true,
+          "pathToOpen": "/ai-recruiter",
+          "sequence": 2
+      },
+      {
+        "name": "AI Landing Page Generator",
+        "description": "AI Landing Page Generator is an AI-powered service that streamlines the creation of high-converting landing pages. It intelligently extracts content from PDFs or other inputs, analyzes structure, and generates responsive, SEO-optimized landing pages in minutes—saving time, reducing manual effort, and enhancing marketing efficiency.",
+        "icon": "landing-page-icon",
         "category": "Productivity & Document Management",
         "isActive": true,
-        "pathToOpen": "/followup",
+        "pathToOpen": "/ai-landing-page-generator",
         "sequence": 3
+      },
+      {
+        "name" : "SEO Content Gen",
+        "description" : "AI-powered tool that helps you create high-quality, SEO-optimized articles in minutes. Whether you're a blogger, marketer, or business owner, generate keyword-rich content tailored for better search engine rankings — fast, easy, and effective.",
+        "icon" : "seo-article-icon",
+        "category" : "Productivity & Document Management",
+        "isActive" : true,
+        "pathToOpen" : "/seo-content-gen",
+        "sequence" : 4
       }
     ]
   }

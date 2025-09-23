@@ -45,7 +45,7 @@ const SettingSidebar = async () => {
                 <AppIcon
                     height={20}
                     width={20}
-                    className={'w-[18px] h-auto object-contain fill-b2'}
+                    className={'w-5 h-5 object-contain fill-b2'}
                 />
             ),
             hasAccess: true,
@@ -134,7 +134,7 @@ const SettingSidebar = async () => {
         {
             name: 'Apps',
             icon: (
-                <DashboardIcon
+                <DashboardIcon 
                     height={18}
                     width={18}
                     className={'w-[18px] h-auto object-contain fill-b2'}
@@ -178,6 +178,3 @@ const SettingSidebar = async () => {
 };
 
 export default SettingSidebar;
-
-
-

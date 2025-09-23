@@ -16,6 +16,8 @@ const { socketWorkSpaceList } = require("../services/workspace");
 const { socketChatMemberList } = require("../services/chatmember");
 const User = require('../models/user');
 const { fetchModalList } = require("../services/userBot");
+const { toolExecutor, generateTitleByLLM } = require("../services/langgraph");
+
 let sockets = global.io.sockets;
 
 const pubClient = createClient({ url: `redis://${REDIS.HOST}:${REDIS.PORT}`});
@@ -31,6 +33,7 @@ sockets.on('connection', function (socket) {
         
         if (!socket.adapter?.rooms?.get(roomName)?.has(socket.id)) {
             socket.join(roomName);
+            console.log(`Socket ${socket.id} joined room ${roomName}`);
             //sockets.to(roomName).emit(SOCKET_EVENTS.SUBSCRIPTION_STATUS);
         } else {
             logger.info(`Socket ${socket.id} already in room ${roomName}`);
@@ -158,6 +161,17 @@ sockets.on('connection', function (socket) {
        
 
     }));    
+    socket.on(SOCKET_EVENTS.LLM_RESPONSE_SEND, catchSocketAsync(async (data) => {
+        console.log("============LLM_RESPONSE_SEND============",data)
+        await toolExecutor(data, socket);
+    }));
+    
+    socket.on(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, catchSocketAsync(async (data) => {
+        const { chatId } = data;
+        const roomName = `${SOCKET_ROOM_PREFIX.CHAT}${chatId}`;
+        const title = await generateTitleByLLM(data);
+        sockets.to(roomName).emit(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, { title });
+    }));
 })
 
 module.exports = {

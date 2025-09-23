@@ -662,6 +662,38 @@ const formatBot = (bot) => {
     }
 }
 
+async function encodeImageToBase64(imagePathOrUrl) {
+    console.log("==========ImagePathOrUrl=========",imagePathOrUrl)
+  // Handle URLs (http/https)
+  if (imagePathOrUrl.startsWith('http://') || imagePathOrUrl.startsWith('https://')) {
+    const response = await fetch(imagePathOrUrl);
+    const contentType = response.headers.get('Content-Type');
+    if (!contentType || !contentType.startsWith('image/')) {
+      throw new Error('URL does not point to a valid image.');
+    }
+    // Get the buffer from the response
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    // Convert buffer to base64 and create a data URL
+    const base64 = buffer.toString('base64');
+    const mimeType = contentType || 'image/png';
+    return `data:${mimeType};base64,${base64}`;
+  } 
+  // Handle local files (Node.js)
+  else {
+    const fs = await import('fs');
+    const { lookup } = await import('mime-types');
+    const mimeType = lookup(imagePathOrUrl);
+    if (!mimeType) {
+      throw new Error('Unsupported image format or unknown MIME type.');
+    }
+    const data = fs.readFileSync(imagePathOrUrl);
+    const encodedString = Buffer.from(data).toString('base64');
+    return `data:${mimeType};base64,${encodedString}`;
+  }
+}
+
+
 module.exports = {
     catchAsync,
     localize,
@@ -709,5 +741,6 @@ module.exports = {
     validateFileUpload,
     getFileExtension,
     NOT_RESTRICTED_FILE_EXTENSIONS,
-    formatBot
+    formatBot,
+    encodeImageToBase64
 };

@@ -1,6 +1,6 @@
 const User = require('../models/user');
 const dbService = require('../utils/dbService');
-const { randomPasswordGenerator, handleError, getCompanyId, formatUser } = require('../utils/helper');
+const { randomPasswordGenerator, handleError, getCompanyId, formatUser, getRemainingDaysCredit } = require('../utils/helper');
 const { getTemplate } = require('../utils/renderTemplate');
 const { EMAIL_TEMPLATE, MOMENT_FORMAT, EXPORT_TYPE, ROLE_TYPE, STORAGE_REQUEST_STATUS, GPT_TYPES } = require('../config/constants/common');
 const { sendSESMail } = require('../services/email');
@@ -24,9 +24,6 @@ const { sendUserSubscriptionUpdate } = require('../socket/chat');
 const Prompt = require('../models/prompts');
 const CustomGpt = require('../models/customgpt');
 const Subscription = require('../models/subscription');
-const Message = require('../models/thread');
-const Role = require('../models/role');
-const { blockUser } = require('./userBlocking');
 
 const addUser = async (req) => {
     try {
@@ -71,6 +68,7 @@ const updateUser = async (req) => {
 const getUser = async (req) => {
     try {
 
+        const subscription = await Subscription.findOne({ 'company.id': req.user.company.id }, { status: 1,startDate:1,endDate:1 })
         const [result, company, credit] = await Promise.all([
             checkExisting(req),
             Company.findOne({ _id: req.user.company.id }, { freeCredit: 1,freeTrialStartDate: 1 }).lean(),
@@ -90,7 +88,7 @@ const getUser = async (req) => {
               : {}),
             msgCreditLimit: credit.msgCreditLimit,
             msgCreditUsed: credit.msgCreditUsed,
-            //subscriptionStatus: null,
+            subscriptionStatus: subscription?.status,
           },
         };
     } catch (error) {
@@ -111,37 +109,7 @@ const deleteUser = async (req) => {
 
 const getAllUser = async (req) => {
     try {
-        const query = req.body.query || {};
-        const options = req.body.options || {};
-        
-        if(req.body.needUsedCredits){
-            const finalQuery = { 'company.id': req.user.company.id, ...query };
-            
-            const result = await User.paginate(finalQuery, {
-                ...options,
-                select: '_id msgCredit fname lname email roleCode',
-                lean: true
-            });
-            
-            const userIds = result.data.map(user => user._id);
-            
-            const messageCredit = await Message.aggregate([
-                { $match: { 'user.id': { $in: userIds } } },
-                { $group: { _id: '$user.id', totalCredit: { $sum: '$usedCredit' } } }
-            ]);
-            
-            const userWithCredit = result.data.map(user => ({ 
-                ...user, 
-                usedCredits: messageCredit.find(credit => credit._id.toString() === user._id.toString())?.totalCredit || 0 
-            }));
-            
-            return {
-                data: userWithCredit,
-                paginator: result.paginator
-            };
-        }
-        
-        return dbService.getAllDocuments(User, query, options);
+        return dbService.getAllDocuments(User, req.body.query || {}, req.body.options || {});
     } catch (error) {
         handleError(error, 'Error in user service get all user function');
     }
@@ -419,10 +387,94 @@ const addUserMsgCredit = async (companyId, msgCredit) => {
             return;
         }
         const result = await User.updateMany({ 'company.id': companyId }, { $set: { msgCredit: msgCredit } });
-        sendUserSubscriptionUpdate(companyId, {});
+        // This is a major subscription change (adding credits), so trigger reload
+        sendUserSubscriptionUpdate(companyId, { forceReload: true, subscriptionChanged: true });
         return result;        
     } catch (error) {
         handleError(error, 'Error - updateUserMsgCredit');
+    }
+}
+
+const deductUserMsgCredit = async (companyId, creditsToDeduct = 1) => {
+    try {
+        if (!companyId) {
+            logger.error('Company id is required for credit deduction');
+            return { success: false, message: 'Company ID required' };
+        }
+
+        // Ensure credits is stored as double type
+        creditsToDeduct = Number((parseFloat(creditsToDeduct)).toFixed(1));
+        
+        if (!creditsToDeduct || creditsToDeduct <= 0) {
+            logger.warn('Invalid credit amount for deduction:', creditsToDeduct);
+            return { success: false, message: 'Invalid credit amount' };
+        }
+
+        // Deduct credits from all users in the company
+        const result = await User.updateMany(
+            { 'company.id': companyId, msgCredit: { $gte: creditsToDeduct } },
+            { $inc: { msgCredit: -creditsToDeduct } }
+        );
+
+        if (result.matchedCount === 0) {
+            logger.warn(`No users found with sufficient credits (${creditsToDeduct}) for company: ${companyId}`);
+            return { success: false, message: 'Insufficient credits' };
+        }
+
+        logger.info(`Deducted ${creditsToDeduct} credits from ${result.modifiedCount} users in company: ${companyId}`);
+        
+        // Note: Removed sendUserSubscriptionUpdate to prevent page reload on every message
+        // Credit updates will be reflected naturally when user checks their balance
+        // sendUserSubscriptionUpdate(companyId, {});
+        
+        return { 
+            success: true, 
+            message: `Deducted ${creditsToDeduct} credits`, 
+            modifiedCount: result.modifiedCount 
+        };
+        
+    } catch (error) {
+        logger.error('Error in deductUserMsgCredit:', error);
+        handleError(error, 'Error - deductUserMsgCredit');
+        return { success: false, message: error.message };
+    }
+};
+
+const updateUserMsgCredit = async (companyId, newPlanMsgLimit) => {
+    try {
+        // Get all users in the company
+        const companyUsers = await User.find({ 'company.id': companyId }).lean();
+        
+        const subscriptionRecord = await subscription.findOne({ 'company.id': companyId })
+            .select('startDate endDate')
+            .lean();
+
+        //Caculate per day credit
+        const remainingDaysCredit = await getRemainingDaysCredit(subscriptionRecord?.startDate, subscriptionRecord?.endDate, newPlanMsgLimit);
+        
+        // Prepare bulk operations
+        const bulkOps = await Promise.all(companyUsers.map(async user => {
+            const creditInfo = await getUsedCredit({ companyId, userId: user._id}, user, subscriptionRecord);
+            const oldPlanRemainingLimit = Number(creditInfo.msgCreditLimit) - Number(creditInfo.msgCreditUsed);
+            
+            const newCredit = Number(oldPlanRemainingLimit) + Number(remainingDaysCredit);
+             
+            return {
+                updateOne: {
+                    filter: { _id: user._id },
+                    update: { $set: { msgCredit: newCredit } }
+                }
+            };
+        }));
+        
+        // This is a major subscription change (updating plan credits), so trigger reload
+        sendUserSubscriptionUpdate(companyId, { forceReload: true, subscriptionChanged: true });
+        // Execute all updates in a single database call
+        return User.bulkWrite(bulkOps);
+        
+    } catch (error) {
+        handleError(error, 'Error - updateCompanyUsersCredit');
+        return false;
     }
 }
 
@@ -483,78 +535,6 @@ const userFavoriteList = async (req) => {
     }
 }
 
-const changeUserRole = async (req) => {
-    try {
-        const { userId, roleCode } = req.body;
-        
-        // Check if the requesting user is an admin (only admin users can change roles)
-        if (req.user.roleCode !== ROLE_TYPE.COMPANY) {
-            throw new Error('Only admin users can change user roles');
-        }
-        
-        // Get the user's current role before updating
-        const currentUser = await User.findById(userId).populate('roleId', 'name code');
-        if (!currentUser) {
-            throw new Error('User not found');
-        }
-        
-        // Find the role by roleCode using standard pattern
-        const newRole = await Role.findOne({ code: roleCode, isActive: true }, { _id: 1, code: 1, name: 1 });
-        if (!newRole) {
-            throw new Error('Invalid or inactive role code');
-        }
-        
-        // Store the previous role information for email
-        const previousRole = currentUser.roleId ? currentUser.roleId.name : 'No Role';
-        const previousRoleCode = currentUser.roleCode || 'No Role';
-        
-        // Update the user's role
-        const updatedUser = await User.findByIdAndUpdate(
-            userId, 
-            { 
-                roleId: newRole._id,
-                roleCode: roleCode,
-                updatedBy: req.user._id
-            },
-            { new: true }
-        );
-        
-        if (!updatedUser) {
-            throw new Error('Failed to update user role');
-        }
-        
-        // Send email notification to the user about role change
-        try {
-            const emailData = {
-                name: `${currentUser.fname || ''} ${currentUser.lname || ''}`.trim() || currentUser.email,
-                newRole: newRole.name,
-                previousRole: previousRole,
-                updatedBy: `${req.user.fname || ''} ${req.user.lname || ''}`.trim() || req.user.email,
-            };
-            
-            const template = await getTemplate(EMAIL_TEMPLATE.ROLE_CHANGE, emailData);
-            await sendSESMail(currentUser.email, template.subject, template.body);
-        } catch (emailError) {
-            // Don't fail the role change if email fails
-            logger.error('Error sending role change email:', emailError);
-        }
-        
-
-        
-        // Block the user account to force logout across all systems
-        try {
-            await blockUser(userId, req.user._id);
-        } catch (blockError) {
-            // Don't fail the role change if blocking fails
-        }
-        
-        return updatedUser;
-    } catch (error) {
-        logger.error('Error in user service changeUserRole function:', error);
-        throw error; // Re-throw the error so the controller can handle it
-    }
-}
-
 module.exports = {
     addUser,
     updateUser,
@@ -567,6 +547,7 @@ module.exports = {
     approveStorageRequest,
     toggleUserBrain,
     addUserMsgCredit,
-    userFavoriteList,
-    changeUserRole
+    updateUserMsgCredit,
+    deductUserMsgCredit,
+    userFavoriteList
 }

@@ -19,7 +19,10 @@ const SOCKET_EVENTS = {
     DISABLE_QUERY_INPUT: 'disableinput',
     NEW_CHAT_MESSAGE: 'newmessage',
     JOIN_COMPANY_ROOM: 'joincompanyroom',
+    USER_MESSAGE_COUNT: 'messagecount',
+    SUBSCRIPTION_STATUS: 'subscriptionstatus',
     AI_MODEL_KEY_REMOVE: 'aimodelkeyremove',
+    NOTIFY_MESSAGE_LIMIT: 'messageexceeded',
     API_KEY_REQUIRED: 'apikeyrequired',
     LOAD_CONVERSATION: 'loadconversation',
     FETCH_MODAL_LIST: 'fetchmodal',
@@ -31,7 +34,11 @@ const SOCKET_EVENTS = {
     SEND_MESSAGE: 'sendmessage',
     USER_SUBSCRIPTION_UPDATE: 'usersubscriptionupdate',
     PRIVATE_BRAIN_ON: 'privatebrainon',
-    FETCH_SUBSCRIPTION: 'fetchsubscription'
+    FETCH_SUBSCRIPTION: 'fetchsubscription',
+    LLM_RESPONSE_SEND: 'llmresponsesend',
+    FILE_UPLOAD_PROGRESS: 'fileuploadprogress',
+    FILE_EMBED_PROGRESS: 'fileembedprogress',
+    GENERATE_TITLE_BY_LLM: 'generatetitlebyllm',
 }
 
 module.exports = {

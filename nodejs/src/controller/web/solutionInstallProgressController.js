@@ -8,38 +8,7 @@ const Role = require('../../models/role');
 const Company = require('../../models/company');
 
 const getInstallationProgress = catchAsync(async (req, res) => {
-    // Handle token authentication from query parameter
-    const token = req.query.token;
-    if (!token) {
-        return res.status(401).json({ message: 'Token required' });
-    }
-
-    // Verify the token and get user data
-    try {
-        const decode = jwt.verify(token, AUTH.JWT_SECRET);
-        const existingUser = await User.findOne({ email: decode.email });
-
-        if (!existingUser) {
-            return res.status(401).json({ message: 'User not found' });
-        }
-
-        const [companyData, existingRole] = await Promise.all([
-            Company.findById({ _id: existingUser.company.id }, { countryName: 1 }),
-            Role.findById({ _id: existingUser.roleId, isActive: true })
-        ]);
-
-        if (!existingRole) {
-            return res.status(401).json({ message: 'Invalid role' });
-        }
-
-        req.user = existingUser;
-        req.userId = existingUser._id;
-        req.roleId = existingRole._id;
-        req.roleCode = existingRole.code;
-        req.countryName = companyData?.countryName;
-    } catch (error) {
-        return res.status(401).json({ message: 'Invalid token' });
-    }
+    // No token authentication required - simple approach
 
     // Set SSE headers
     res.writeHead(200, {
@@ -59,28 +28,83 @@ const getInstallationProgress = catchAsync(async (req, res) => {
     // Start the installation process
     try {
         // Get solution type from query parameter
-        let solutionType = req.query.solutionType;
-        console.log('Backend received solutionType:', solutionType, 'type:', typeof solutionType); // Debug log
-        console.log('Full query object:', req.query); // Debug log
+        let solutionType = req.query.solutionType || '';
         
-        // Handle case where solutionType might be string "undefined"
-        if (solutionType === 'undefined' || solutionType === 'null' || !solutionType) {
-            return res.status(400).json({ message: 'Solution type is required' });
+        // Add this check:
+        if (!solutionType) {
+            res.write(`data: ${JSON.stringify({ 
+                type: 'error', 
+                message: 'Solution type is required' 
+            })}\n\n`);
+            res.end();
+            return;
         }
+        console.log('Backend received solutionType:', solutionType);
         
         req.body = { solutionType }; // Pass solution type to service
         await solutionInstallService.installWithProgress(req, res);
+        
+        // Close the connection after installation completes
+        res.end();
     } catch (error) {
         res.write(`data: ${JSON.stringify({ 
             type: 'error', 
             message: error.message || 'Installation failed' 
         })}\n\n`);
+        res.end();
     }
+});
 
-    // Close the connection
-    res.end();
+const checkInstallationHealth = catchAsync(async (req, res) => {
+    try {
+        const solutionType = req.query.solutionType || '';
+
+        if (!solutionType) {
+            res.write(`data: ${JSON.stringify({ 
+                type: 'error', 
+                message: 'Solution type is required' 
+            })}\n\n`);
+            res.end();
+            return;
+        }
+        
+        // Check if installation process is still running
+        const { exec } = require('child_process');
+        
+        // First check if docker-compose processes are running (installation in progress)
+        exec('ps aux | grep -E "(docker-compose|docker build)" | grep -v grep', (error, stdout, stderr) => {
+            if (stdout.trim()) {
+                // Installation process is still running
+                return res.json({ status: 'installing', message: 'Installation in progress' });
+            }
+            
+            // Check if containers are running and healthy
+            exec('docker ps --format "{{.Names}} {{.Status}}"', (error, stdout, stderr) => {
+                if (error) {
+                    return res.json({ status: 'not_running', message: 'Docker not available' });
+                }
+                
+                const containerLines = stdout.trim().split('\n').filter(line => line.trim());
+                const solutionContainer = containerLines.find(line => {
+                    const [name, status] = line.split(' ', 2);
+                    return (name.includes(solutionType) || name.includes('foloup') || name.includes('ai-doc') || name.includes('landing-page')) 
+                           && status.includes('Up');
+                });
+                
+                if (solutionContainer) {
+                    res.json({ status: 'running', container: solutionContainer });
+                } else {
+                    res.json({ status: 'not_running', message: 'Container not found or not running' });
+                }
+            });
+        });
+        
+    } catch (error) {
+        res.json({ status: 'error', message: error.message });
+    }
 });
 
 module.exports = {
-    getInstallationProgress
+    getInstallationProgress,
+    checkInstallationHealth
 };

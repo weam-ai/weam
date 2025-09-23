@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useRef, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -10,20 +10,13 @@ import SearchIcon from '@/icons/Search';
 import Loader from '../ui/Loader';
 import AutoSelectChip from '../ui/AutoSelectChip';
 import { Controller } from 'react-hook-form';
-import { createHandleOutsideClick, dateDisplay, displayName, showNameOrEmail } from '@/utils/common';
+import { dateDisplay, displayName, showNameOrEmail } from '@/utils/common';
 import useMembers from '@/hooks/members/useMembers';
 import ChatThreadIcon from '@/icons/ChatThreadIcon';
 import useChatMember from '@/hooks/chat/useChatMember';
 import { formatBrain } from '@/utils/helper';
-import useChat from '@/hooks/chat/useChat';
 import { getCurrentUser } from '@/utils/handleAuth';
-import { useRouter } from 'next/navigation';
-import routes from '@/utils/routes';
-import { useDispatch } from 'react-redux';
-import { setAddMemberModalAction } from '@/lib/slices/chat/chatSlice';
-import useModal from '@/hooks/common/useModal';
 import ProfileImage from '../Profile/ProfileImage';
-import { useTeams } from '@/hooks/team/useTeams';
 import GroupIcon from '@/icons/GroupIcon';
 import AddUser from '@/icons/AddUser';
 
@@ -173,69 +166,11 @@ const AddNewMemberModal = ({ chatInfo, onClose, open, refetchMemebrs, memberList
         </Dialog>
     );
 };
-const AboutBrainDetails = ({
-    chatInfo,
-    adminUser,
-    managerUser,
-    isOwner,
-    onLeaveChat,
-    currentUser,
-    chatTitle
-}) => {
-    const [title, setTitle] = useState(chatTitle);
-    const [ isEdit, setIsEdit] = useState(false);
 
-    const { editChat } = useChat();
-
-    const onChange = () => {
-        if(chatTitle !== title){
-            editChat(chatInfo._id, {
-                title: title,
-            });
-        }
-        setIsEdit(false);
-    };
-
-    const chatNameInputRef=useRef()
-    const chatNameButtonRef=useRef()
-    useEffect(
-        () => {
-
-            if(!isEdit) return 
-
-            const handleClickOutside = createHandleOutsideClick(
-                chatNameInputRef,
-                chatNameButtonRef,
-                setIsEdit,
-                false,
-                setTitle,
-                chatTitle
-            );
-
-            document.addEventListener('mousedown', handleClickOutside);
-
-            return () =>
-                document.removeEventListener('mousedown', handleClickOutside);
-        },
-        [isEdit,setIsEdit]
-    );
-    
-    return (
-        <div className="h-full w-full">
-            <div className="group/item user-item flex justify-between py-2.5 border-b border-b11">
-                <div>
-                    
-                </div>
-            </div>
-           
-        </div>
-    );
-};
-
-const MemberItem = ({ member, handleRemoveMember, adminUser, isOwner }) => {
+const MemberItem = ({ member, adminUser, isOwner }) => {
     const isRemoval = member?.user?.id != adminUser?.user?.id && isOwner;
     const role = member?.user?.id == adminUser?.user?.id ? 'ADMIN' : undefined;
-    const { isOpen, openModal, closeModal } = useModal();
+    
     return (
         <div className="group/item user-item flex justify-between py-2.5 border-b">
             <div className="user-img-name flex items-center">
@@ -257,9 +192,7 @@ const MemberItem = ({ member, handleRemoveMember, adminUser, isOwner }) => {
         </div>
     );
 };
-const TeamItem = ({ team, handleRemoveTeam }) => {
-
-    const { isOpen, openModal, closeModal } = useModal();
+const TeamItem = ({ team }) => {
     return (
         <div className="group/item user-item flex justify-between py-2.5 border-b">
             <div className="user-img-name flex items-center">
@@ -277,24 +210,17 @@ const TeamItem = ({ team, handleRemoveTeam }) => {
         </div>
     );
 }
-
+ 
 const ShareChatModal = ({
     open,
     closeModal,
     chatmembers,
     chatInfo,
     chatTitle,
-    refetchMemebrs,
-    refetchTeams,
+    refetchMemebrs
 }) => {
-    const { removeChatMember } = useChatMember();
-    const router = useRouter();
-    const dispatch = useDispatch();
-
     const currentUser = getCurrentUser();
-
     const isOwner = currentUser?._id == chatInfo?.user?.id;
-
     const [addMemberModal, setAddMemberModal] = useState(false);
     const [memberList, setMemberList] = useState(chatmembers);
     const [teamList, setTeamList] = useState([]);
@@ -306,36 +232,50 @@ const ShareChatModal = ({
     });
     const [totalMemberCount, setTotalMemberCount] = useState(0);
 
-    const {  deleteShareTeamToChat } =useTeams();
+    const countMembers = () => {
+        let teamCount=0;
+        let chatUserCount=0;
 
-    const totalMembers = useCallback((teamList, memberList) => {
-        let total = 0;
-        
-        const individualMembers = memberList?.filter(member => !member?.teamName)?.length || 0;
-        total += individualMembers;
-
-        const teamMembers = teamList?.reduce((acc, curr) => {
-            if (curr?.teamName) {
-                acc += curr?.teamUsers?.length || 0;
+        const teamMembers = chatmembers?.reduce((acc, curr) => {
+            if (curr.teamName) {
+                teamCount++;
+                acc+=(curr.teamUsers.length || 0);
+            } else {
+                chatUserCount++;
             }
             return acc;
-        }, 0) || 0;
-        total += teamMembers;
+        }, 0);
 
-        return total;
+        const userCount = chatUserCount + teamMembers;
+        return userCount;
+    }
+
+    useEffect(() => {
+        setTotalMemberCount(countMembers());
     }, []);
 
     useEffect(() => {
-        const regex = new RegExp(filter.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-        setMemberList(chatmembers.filter((m) => regex.test(m?.user?.email) && !m?.teamId));
-        setTeamList(chatmembers?.filter((currTeam)=>regex.test(currTeam?.teamName)))
-        totalMembers(chatmembers, memberList)
-    }, [filter]);
+        if (filter.search !== '') {
+            const searchTerms = filter.search.split(' ').map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            const regexes = searchTerms.map(term => new RegExp(term, 'i'));
 
-    useEffect(() => {
-        const newTotal = totalMembers(teamList, memberList);
-        setTotalMemberCount(newTotal);
-    }, [filter, teamList, memberList]);
+            const searchedMembers = chatmembers.filter((m) => 
+                regexes.every(regex => regex.test(m?.user?.fname) || regex.test(m?.user?.lname)) && !m?.teamId
+            );
+
+            const searchedTeams = chatmembers?.filter((currTeam) => 
+                regexes.some(regex => regex.test(currTeam?.teamName))
+            );
+
+            setMemberList(searchedMembers);
+            setTeamList(searchedTeams);
+            setTotalMemberCount(searchedMembers.length + searchedTeams.length);
+        } else {
+            setMemberList(chatmembers);
+            setTeamList(chatmembers);
+            setTotalMemberCount(countMembers());
+        }
+    }, [filter]);
 
     useEffect(() => {
         const findAdmin = chatmembers.find(
@@ -344,38 +284,6 @@ const ShareChatModal = ({
         setAdminUser(findAdmin);
         setTeamList(chatmembers);
     }, [chatmembers]);
-
-    const handleRemoveMember = (value) => {
-        removeChatMember(value);
-        refetchMemebrs();
-    };
-
-    const handleRemoveTeam = async (value) => {
-      
-         deleteShareTeamToChat(
-            chatInfo.brain.id.companyId,
-            chatInfo.brain.id.workspaceId,
-            chatInfo.brain.id._id,
-            chatInfo._id,
-            value,
-
-        );
-        refetchTeams();
-    };
-
-    const onLeaveChat = () => {
-        const find_chat_id = memberList.find(
-            (member) => member.user.id == currentUser._id
-        );
-        removeChatMember(find_chat_id._id);
-        dispatch(setAddMemberModalAction(false));
-        setTimeout(
-            () => router.push(`${routes.chat}?${chatInfo?.brain?.slug}`),
-            1000
-        );
-    };
-
-
 
     return (
         <Dialog open={open} onOpenChange={closeModal}>
@@ -446,9 +354,6 @@ const ShareChatModal = ({
                                             !nm?.teamName && <MemberItem
                                                 key={nm._id}
                                                 member={nm}
-                                                handleRemoveMember={
-                                                    handleRemoveMember
-                                                }
                                                 adminUser={adminUser}
                                                 isOwner={isOwner}
                                             />
@@ -457,10 +362,7 @@ const ShareChatModal = ({
                                         {teamList?.map((el) => (
                                             el.teamName && <TeamItem
                                                 key={el._id}
-                                                team={el}
-                                                handleRemoveTeam={
-                                                    handleRemoveTeam
-                                                }
+                                                team={el}                                                
                                             />
                                         ))}
 

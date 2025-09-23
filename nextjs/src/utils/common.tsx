@@ -8,6 +8,7 @@ import { FREE_TRIAL, STRIPE_SUBSCRIPTION_PRICE_ID, STRIPE_SUBSCRIPTION_PRICE_ID_
 import ExcelFileIcon from '@/icons/ExcelFileIcon';
 import TxtFileIcon from '@/icons/TXTFILEIcon';
 import CommonFileIcon from '@/icons/CommonFileIcon';
+
 export const isArray = (data) => data.constructor.name === 'Array';
 
 export const isObject = (data) => data.constructor.name === 'Object';
@@ -378,7 +379,7 @@ export const getSelectedBrain = (brains: any[], getCurrentUser: any, isDefaultNe
             const brainData = retrieveBrainData();
             if (brainData) return brainData;
         }
-        
+
         const privateBrain = brains.find(
             brain => brain.slug === `${DEFAULT_CHAT_SLUG}${_id}`
         );

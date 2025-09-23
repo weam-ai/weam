@@ -13,26 +13,18 @@ type PromptEnhanceProps = {
     isWebSearchActive: boolean;
     text: string;
     setText: (text: string) => void;
-    promptId: string;
-    queryId: string;
-    brainId: string;
+    apiKey: string;
 };
 
-const PromptEnhance = ({ isWebSearchActive, text, setText, promptId, queryId, brainId }: PromptEnhanceProps) => {
+const PromptEnhance = ({ isWebSearchActive, text, setText, apiKey }: PromptEnhanceProps) => {
     const [localLoading, setLocalLoading] = useState(false);
-    const { pyPromptEnhance } = useChat();
+    const { promptEnhanceByLLM } = useChat();
     const handleEnhanceClick = async () => {
         if (isWebSearchActive) return;
-        
         setLocalLoading(true);
         try {
-            const response = await pyPromptEnhance({prompt:text, queryId, brainId, promptId});
-            if(response.status===200){
-                setText(response.data);
-            }else{
-                Toast(response.message, "error");
-            }
-           
+            const response = await promptEnhanceByLLM({ query: text, apiKey: apiKey });
+            setText(response);
         } catch (error) {
             console.error('Error enhancing prompt:', error);
         } finally {

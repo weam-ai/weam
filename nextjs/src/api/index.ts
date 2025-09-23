@@ -3,7 +3,7 @@ import apiList from './list';
 import axios, { AxiosError, AxiosRequestHeaders, AxiosResponse } from 'axios';
 import { LINK, NODE_API_PREFIX, AUTH } from '@/config/config';
 import { getAccessToken } from '@/actions/serverApi';
-import { accessTokenViaRefresh, handleLogout } from '@/utils/handleAuth';
+import { handleLogout } from '@/utils/handleAuth';
 import { RESPONSE_STATUS, RESPONSE_STATUS_CODE } from '@/utils/constant';
 import { HAS_REFRESHED, SessionStorage } from '@/utils/localstorage';
 import { APIResponseType } from '@/types/common';
@@ -18,6 +18,7 @@ export type ConfigOptions = {
     handleCache?: boolean;
     csrfToken?: string;
     csrfTokenRaw?: string;
+    'x-brain-id'?: string;
 };
 
 type FetchConfig = {
@@ -30,6 +31,7 @@ type FetchConfig = {
     token?: string;
     csrfToken?: string;
     csrfTokenRaw?: string;
+    'x-brain-id'?: string;
 };
 
 type FetchUrl<T = unknown, U = FetchConfig> = {
@@ -149,6 +151,9 @@ export const getHeaders = async (config: ConfigOptions, fetchConfig: FetchConfig
     //     headers['x-csrf-token'] = config.csrfToken;
     //     headers['x-csrf-raw'] = config.csrfTokenRaw;
     // }
+    if (config?.['x-brain-id']) {
+        headers['x-brain-id'] = config['x-brain-id'];
+    }
     if (fetchConfig?.headers) {
         headers = {
             ...headers,
@@ -226,7 +231,7 @@ export const fetchUrl = ({ type = 'GET', url, data = {}, config = {} }: FetchUrl
         const handler = ACTION_HANDLERS[actionType];
         config.headers = await getHeaders(CONFIG, config) as AxiosRequestHeaders;
 
-        handler(url, data, config)
+        handler(url, data, config) 
             .then((response: AxiosResponse) => {
                 SessionStorage.removeItem(HAS_REFRESHED)
                 return resolve(response?.data);
@@ -263,7 +268,8 @@ const commonApi = async ({
                 onError: handleErrorToast(errorToast),
                 handleCache,
                 // csrfToken: decryptedCsrfToken,
-                // csrfTokenRaw: decryptedCsrfTokenRaw
+                // csrfTokenRaw: decryptedCsrfTokenRaw,
+                'x-brain-id': config?.['x-brain-id']
             });
             const response = await fetchUrl({
                 type: api.method,
