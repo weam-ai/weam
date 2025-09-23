@@ -405,7 +405,8 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                         onLoad={(files: File[]) => {
                             if (files) {
                                 setFieldValue('doc', files);
-                                setCustomGptData({ ...customGptData, doc: files });
+                                // Don't call setCustomGptData here as it causes Formik reinitialization
+                                // Formik will handle the state through setFieldValue
                             } else {
                                 setFieldValue('doc', null);
                             }
@@ -414,12 +415,12 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                         maxFiles={10}
                         setFilesRemove={setFilesRemove}
                         filesRemove={filesRemove}
-                        existingFiles={customGptData.doc}
+                        existingFiles={values.doc || []}
                         maxFileSize={FILE.SIZE}
                     />
-                    {customGptData.doc.length > 0 ?
+                    {(values.doc && values.doc.length > 0) ?
                         <>{
-                            customGptData.doc.map((item, index) => (
+                            values.doc.map((item, index) => (
                                 <FormikError key={index} errors={errors} index={index} field={'doc'} />
                             ))
                         }
