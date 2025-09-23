@@ -41,7 +41,8 @@
             "solutionApp.member-remove",
             "solutionApp.team-add",
             "solutionApp.team-list",
-            "solutionApp.team-remove"
+            "solutionApp.team-remove",
+            "userbot.remove"
         ]
     },
     {
@@ -78,7 +79,8 @@
             "solutionApp.member-remove",
             "solutionApp.team-add",
             "solutionApp.team-list",
-            "solutionApp.team-remove"
+            "solutionApp.team-remove",
+            "userbot.remove"
         ]
     }
 ]
