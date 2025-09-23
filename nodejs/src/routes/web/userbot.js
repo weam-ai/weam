@@ -8,7 +8,7 @@ const { checkPromptLimit } = require('../../middleware/promptlimit');
 router.post('/create', validate(createUserBotKeys), userBotController.addUserBot);
 router.put('/update/:id', validate(updateUserBotKeys), authentication, userBotController.updateUserBot);
 router.get('/:id', authentication, userBotController.viewUserBot);
-router.delete('/remove', validate(removeUserBotKeys), authentication, checkPermission, userBotController.deleteUserBot).descriptor('remove.apikey');
+router.delete('/remove', validate(removeUserBotKeys), authentication, checkPermission, userBotController.deleteUserBot).descriptor('userbot.remove');
 router.patch('/partial/:id', authentication, validate(partialUpdateKeys), userBotController.partialUpdate);
 router.post('/list', authentication, checkPromptLimit, userBotController.getAll);
 router.post('/view-key', validate(viewApiKeys), authentication, userBotController.viewApiKey);
