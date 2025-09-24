@@ -68,7 +68,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { setIsWebSearchActive, setSelectedAIModal } from '@/lib/slices/aimodel/assignmodelslice';
-import { UploadedFileType } from '@/types/chat';
+import { UploadedFileType, GPTTypesOptions, SelectedContextType } from '@/types/chat';
 import { AiModalType } from '@/types/aimodels';
 import { BrainListType } from '@/types/brain';
 import BookmarkDialog from './BookMark';
@@ -97,7 +97,7 @@ import SearchIcon from '@/icons/Search';
 import ThreeDotLoader from '../Loader/ThreeDotLoader';
 import { useResponseUpdate } from '@/hooks/chat/useResponseUpdate';
 import { usePageOperations } from '@/hooks/chat/usePageOperations';
-const defaultContext = {
+const defaultContext: SelectedContextType = {
     type: null,
     prompt_id: undefined,
     custom_gpt_id: undefined,
@@ -105,8 +105,8 @@ const defaultContext = {
     textDisable: false,
     attachDisable: false,
     title: undefined,
+    isRemove: false,
 };
-
 let API_TYPE = API_TYPE_OPTIONS.OPEN_AI;
 
 const ChatPage = memo(() => {
@@ -215,8 +215,8 @@ const ChatPage = memo(() => {
         setSearchValue(e.target.value);
     };
 
-    const handleAgentSelection = (gpt) => {
-        onSelectMenu(GPTTypes.CustomGPT, gpt);
+    const handleAgentSelection = (gpt: BrainAgentType) => {
+        onSelectMenu(GPTTypes.CustomGPT as GPTTypesOptions, gpt);
         setShowAgentList(false);
         setText('');
     };
@@ -516,7 +516,9 @@ const ChatPage = memo(() => {
             messageId: messageId,
             companyId: companyId,
             user: formatMessageUser(currentUser),
-            isPaid: false
+            isPaid: false,
+            apiKey: selectedAIModal.config.apikey,
+            brainId: getDecodedObjectId()
         };
         console.log(newPromptReqBody)
         img_url = handleImageConversation(globalUploadedFile);

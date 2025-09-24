@@ -161,18 +161,18 @@ const BrainModal = ({ open, close, isPrivate }) => {
         getMembersList({});
     }, []);
 
-    const onSubmit = async ({ members, title,teamsInput }) => {
-        const payload = isShare ? { isShare, members, title, teamsInput } : { isShare, title };
+ const onSubmit = async ({ members, title, teamsInput, customInstruction }) => {
+        const payload = isShare ? { isShare, members, title, teamsInput, customInstruction } : { isShare, title, customInstruction };
         const response = await runAction({ ...payload, workspaceId: selectedWorkSpace._id });
         Toast(response.message);
         close();
     };
     
-    return (
+return (
         <>
             <Dialog open={open} onOpenChange={close}>
                 <DialogContent className="md:max-w-[550px] max-w-[calc(100%-30px)] py-7 md:max-h-[calc(100vh-60px)] max-h-[calc(100vh-100px)] overflow-y-auto">
-                    <DialogHeader className="rounded-t-10 px-[30px] pb-3 border-b">
+                    <DialogHeader className="rounded-t-10 px-[30px] py-6 border-b">
                         <DialogTitle className="font-semibold flex items-center">
                             <BrainIcon
                                 width={24}
@@ -187,21 +187,12 @@ const BrainModal = ({ open, close, isPrivate }) => {
                             Add a Private Brain
                             </>}
                         </DialogTitle>
-                        <DialogDescription>
-                        <div className="mt-3 text-font-14 max-md:text-font-12 text-b6 block">
+                        <DialogDescription className="small-description text-font-14 leading-[24px] text-b5 font-normal ml-9">
                             {isShare ? (
-                                <>
-                                    <p>
-                                    A Shared Brain is designed for team collaboration. It provides a space where members can work together on projects, share resources, and streamline communication, enhancing collective productivity.
-                                    </p>
-                                </>
-                            ): <>
-                            <p>
-                            A Private Brain is your personal workspace for organizing information and tasks. Use it to focus on individual projects or ideas without distraction, giving you the freedom to manage your work as you see fit.
-                            </p>
-                            </>}
-                            
-                        </div>
+                                "A Shared Brain is designed for team collaboration. It provides a space where members can work together on projects, share resources, and streamline communication, enhancing collective productivity."
+                            ) : (
+                                "A Private Brain is your personal workspace for organizing information and tasks. Use it to focus on individual projects or ideas without distraction, giving you the freedom to manage your work as you see fit."
+                            )}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
@@ -226,6 +217,24 @@ const BrainModal = ({ open, close, isPrivate }) => {
                                             <ValidationError
                                                 errors={errors}
                                                 field={'title'}
+                                            />
+                                        </div>
+                                        <div className="relative md:mb-5 mb-3 md:px-2.5 px-0">
+                                            <Label
+                                                htmlFor="custom-instruction"
+                                                title="Custom Instruction (Optional)"
+                                                required={false}
+                                            />
+                                            <textarea
+                                                className="default-form-input min-h-[100px] resize-vertical"
+                                                id="custom-instruction"
+                                                placeholder="Enter custom instructions for this brain..."
+                                                {...register('customInstruction')}
+                                                rows={4}
+                                            />
+                                            <ValidationError
+                                                errors={errors}
+                                                field={'customInstruction'}
                                             />
                                         </div>
                                         <div>

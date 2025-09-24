@@ -98,6 +98,7 @@ export type BrainCreateType = {
     workspaceId: string;
     title: string;
     teamsInput?: TeamType[];
+    customInstruction?: string;
 }
 
 export type AllBrainListType = {
@@ -109,4 +110,5 @@ export type UpdateBrainActionType = {
     title: string;
     isShare: boolean;
     workspaceId: string;
+    customInstruction?: string;
 }

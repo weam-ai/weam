@@ -5,7 +5,7 @@ const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription
 const { SOCKET_EVENTS } = require('../config/constants/socket');
 const { decryptedData, encodeImageToBase64 } = require('../utils/helper');
 const { LINK } = require('../config/config');
-const { AI_MODAL_PROVIDER, MODAL_NAME } = require('../config/constants/aimodal');
+const { AI_MODAL_PROVIDER, MODAL_NAME ,ANTHROPIC_MAX_TOKENS} = require('../config/constants/aimodal');
 const { ChatAnthropic } = require('@langchain/anthropic');
 const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
 const { SearxNGSearchTool } = require('./searchTool');
@@ -21,12 +21,29 @@ const logger = require('../utils/logger');
 const { deductUserMsgCredit } = require('./user');
 const Chat = require('../models/chat');
 const ChatMember = require('../models/chatmember');
+const Messages = require('../models/thread');
+const Brain = require('../models/brains');
 
 const webSearchTool = new SearxNGSearchTool({
     searxUrl: LINK.SEARXNG_API_URL,
     maxResults: 10,
 });
 
+/**
+ * Get model-specific max_tokens for Anthropic models
+ * @param {string} modelName - The name of the Anthropic model
+ * @returns {number} The max_tokens value for the model
+ */
+function getAnthropicMaxTokens(modelName) {
+    // Look up model-specific max_tokens
+    const modelMaxTokens = ANTHROPIC_MAX_TOKENS[modelName];
+    if (modelMaxTokens) {
+        return modelMaxTokens;
+    }
+
+    // Fallback to default
+    return ANTHROPIC_MAX_TOKENS['default'];
+}
 // set web search tool description
 webSearchTool.description = toolDescription.WEB_SEARCH_TOOL;
 // Import the custom DALL-E tool
@@ -217,10 +234,20 @@ async function callModel(state, model, data, agentDetails = null) {
     const { messages } = state;
     const lastMessageIndex = messages[messages.length - 1];
     let context = [];
-    
-    // Determine if we're using Gemini provider
+        // Fetch brain data and add SystemMessage with customInstruction if exists
+    let brainData = null;
+    if (data.brainId) {
+        try {
+            // Fetch the brain data using the brain ID from data
+            brainData = await Brain.findById(data.brainId);
+        } catch (error) {
+            console.error('Error fetching brain data:', error);
+        }
+    }
+    // Determine if we're using Gemini or Anthropic provider
     const isGeminiProvider = data.llmProvider === 'GEMINI' || (data.model && data.model.toLowerCase().includes('gemini'));
-    
+    const isAnthropicProvider = data.llmProvider === 'ANTHROPIC' || (data.model && data.model.toLowerCase().includes('claude'));
+
     if (Array.isArray(lastMessageIndex)) {
         // Use our new conversation history function (matches Python flow)
         const conversationHistory = await getConversationHistory(data.chatId);
@@ -228,10 +255,10 @@ async function callModel(state, model, data, agentDetails = null) {
         // Start with conversation history
         context = [...conversationHistory];
         
-        // For Gemini: collect all system messages and consolidate them
+        // For Gemini and Anthropic: collect all system messages and consolidate them
         let consolidatedSystemContent = '';
-        
-        if (isGeminiProvider) {
+
+        if (isGeminiProvider || isAnthropicProvider) {
             // Extract all system messages and remove them from context
             const systemMessages = context.filter(msg => msg.constructor.name === 'SystemMessage' || msg.type === 'system');
             context = context.filter(msg => msg.constructor.name !== 'SystemMessage' && msg.type !== 'system');
@@ -251,8 +278,8 @@ async function callModel(state, model, data, agentDetails = null) {
                 agentSystemContent += `\n\n----\nContext from uploaded documents:\n${global.currentRagContext}\n----\n\nUse the above document context when relevant to answer the user's question.`;
             }
             
-            if (isGeminiProvider) {
-                // For Gemini: consolidate with existing system content
+        if (isGeminiProvider || isAnthropicProvider) {
+                // For Gemini and Anthropic: consolidate with existing system content
                 if (consolidatedSystemContent) {
                     consolidatedSystemContent = agentSystemContent + '\n\n' + consolidatedSystemContent;
                 } else {
@@ -271,8 +298,8 @@ async function callModel(state, model, data, agentDetails = null) {
                     context.unshift(agentSystemMessage);
                 }
             }
-        } else if (isGeminiProvider && !consolidatedSystemContent) {
-            // For Gemini without agent: still need to consolidate any existing system messages
+         } else if ((isGeminiProvider || isAnthropicProvider) && !consolidatedSystemContent) {
+            // For Gemini and Anthropic without agent: still need to consolidate any existing system messages
             const systemMessages = context.filter(msg => msg.constructor.name === 'SystemMessage' || msg.type === 'system');
             if (systemMessages.length > 0) {
                 context = context.filter(msg => msg.constructor.name !== 'SystemMessage' && msg.type !== 'system');
@@ -280,8 +307,8 @@ async function callModel(state, model, data, agentDetails = null) {
             }
         }
         
-        // For Gemini: insert the consolidated system message at position 0
-        if (isGeminiProvider && consolidatedSystemContent) {
+      // For Gemini and Anthropic: insert the consolidated system message at position 0
+        if ((isGeminiProvider || isAnthropicProvider) && consolidatedSystemContent) {
             const finalSystemMessage = new SystemMessage({
                 content: consolidatedSystemContent
             });
@@ -299,7 +326,32 @@ async function callModel(state, model, data, agentDetails = null) {
         // Fallback for non-array messages
         context = messages;
     }
-    
+        // Add SystemMessage with customInstruction if brain has customInstruction
+   if (brainData && brainData.customInstruction && brainData.customInstruction.trim()) {
+        if (isAnthropicProvider) {
+            // For Anthropic: convert additional system prompt to human message to avoid multiple system prompts
+            // Check if there's already a system message in context
+            const hasSystemMessage = context.some(msg =>
+                (msg.constructor && msg.constructor.name === 'SystemMessage') ||
+                (Array.isArray(msg) && msg[0] === 'system') ||
+                (msg.type === 'system')
+            );
+
+            if (hasSystemMessage) {
+                // Convert customInstruction to human message format
+                const customInstructionAsHuman = `Please note these additional instructions: ${brainData.customInstruction}`;
+                context.push(['user', customInstructionAsHuman]);
+            } else {
+                // No existing system message, can add as system
+                const systemMessage = new SystemMessage(brainData.customInstruction);
+                context.unshift(['system', systemMessage.content]);
+            }
+        } else {
+            // For other providers: use original logic
+            const systemMessage = new SystemMessage(brainData.customInstruction);
+            context.unshift(['system', systemMessage.content]);
+        }
+    }
     // Log the context being sent to LLM for debugging
     context.forEach((msg, idx) => {
         let content = '';
@@ -507,6 +559,7 @@ async function llmFactory(modelName, opts = {}) {
         [AI_MODAL_PROVIDER.ANTHROPIC]: new ChatAnthropic({
             ...baseConfig,
             anthropicApiKey: opts.apiKey,
+            maxTokens: getAnthropicMaxTokens(modelName)
         }).bindTools([webSearchTool]),
         [AI_MODAL_PROVIDER.GEMINI]: (() => {
             try {
@@ -1550,5 +1603,6 @@ async function enhancePromptByLLM() {
 
 module.exports = {
     toolExecutor,
-    generateTitleByLLM
+    generateTitleByLLM,
+    llmFactory
 }

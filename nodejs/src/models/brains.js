@@ -49,7 +49,11 @@ const schema = new Schema(
                 ref: 'user'
             }            
         },
-        teams:[teamSchema]
+        teams:[teamSchema],
+        customInstruction: {
+            type: String,
+            required: false
+        }
      },
     { timestamps: true },
 );

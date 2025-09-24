@@ -235,8 +235,6 @@ function createCostCalcCallbackHandler(modelName, options = {}) {
                         promptTokens = usageMetadata.input_tokens || 0;
                         completionTokens = usageMetadata.output_tokens || 0;
                         tokenExtractionMethod = 'generations[0].message.kwargs.usage_metadata';
-                        console.log(`✅ [COST_TRACKING] Found token usage in generations[0].message.kwargs.usage_metadata`);
-                        console.log(`🔍 [COST_TRACKING] Full usage_metadata:`, JSON.stringify(usageMetadata, null, 2));
                     }
                     // Check for Gemini's usage_metadata structure in generationInfo.kwargs (alternative path)
                     else if (generation.generationInfo && generation.generationInfo.kwargs && generation.generationInfo.kwargs.usage_metadata) {
@@ -244,8 +242,6 @@ function createCostCalcCallbackHandler(modelName, options = {}) {
                         promptTokens = usageMetadata.input_tokens || 0;
                         completionTokens = usageMetadata.output_tokens || 0;
                         tokenExtractionMethod = 'generations[0].generationInfo.kwargs.usage_metadata';
-                        console.log(`✅ [COST_TRACKING] Found token usage in generations[0].generationInfo.kwargs.usage_metadata`);
-                        console.log(`🔍 [COST_TRACKING] Full usage_metadata:`, JSON.stringify(usageMetadata, null, 2));
                     }
                     // Check for Anthropic's usage_metadata structure
                     else if (generation.generationInfo && generation.generationInfo.usage_metadata) {
@@ -253,8 +249,6 @@ function createCostCalcCallbackHandler(modelName, options = {}) {
                         promptTokens = usageMetadata.input_tokens || 0;
                         completionTokens = usageMetadata.output_tokens || 0;
                         tokenExtractionMethod = 'generations[0].generationInfo.usage_metadata';
-                        console.log(`✅ [COST_TRACKING] Found token usage in generations[0].generationInfo.usage_metadata`);
-                        console.log(`🔍 [COST_TRACKING] Full usage_metadata:`, JSON.stringify(usageMetadata, null, 2));
                     }
                 }
                 

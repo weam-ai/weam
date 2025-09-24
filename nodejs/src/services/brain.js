@@ -353,7 +353,7 @@ const getAllBrainUser = async (req) => {
         const { options = {}, query = {} } = req.body || {};
         
         const assignBrain = await ShareBrain.find({ 'user.id': req.userId });
-        query['_id'] = { $in: assignBrain.map(w => w.brain.id) };
+        query['_id'] = { $in: assignBrain.filter(w => w?.brain?.id).map(w => w.brain.id) };
         
         const data = await dbService.getAllDocuments(Brain, query, options);
             const result = data.data.map((brain) => ({
@@ -479,7 +479,7 @@ const workspaceWiseList = async (req) => {
                 $match: {
                     companyId: companyId,
                     deletedAt: { $exists: false },
-                    _id: { $in: shareBrain.map(w => w.brain.id) }
+                    _id: { $in: shareBrain.filter(w => w?.brain?.id).map(w => w.brain.id) }
                 }
             },
             {
@@ -527,11 +527,11 @@ async function getGeneralBrain(user) {
 async function getShareBrains(req) {
     try {
         const shareBrains = await ShareBrain.find({ 'user.id': req.userId }, { brain: 1 });
-        const brains = await Brain.find({ _id: { $in: shareBrains.map(ele => ele.brain.id) }, deletedAt: { $exists: false }, workspaceId: req.body.query.workspaceId }, { _id: 1, user: 1, title: 1, slug: 1 });
+        const brains = await Brain.find({ _id: { $in: shareBrains.filter(ele => ele?.brain?.id).map(ele => ele.brain.id) }, deletedAt: { $exists: false }, workspaceId: req.body.query.workspaceId }, { _id: 1, user: 1, title: 1, slug: 1 });
         // ⚠️ WARNING: This loop is temporary. It will be removed once the frontend is updated.
         const result = [];
         shareBrains.forEach((ele) => {
-            const brain = brains.find((brain) => brain._id.toString() === ele.brain.id.toString());
+            const brain = brains.find((brain) => brain._id.toString() === ele?.brain?.id?.toString());
             if (brain) {
                 result.push({
                     brain: { title: brain.title, slug: brain.slug, id: brain._id },
@@ -548,7 +548,7 @@ async function getShareBrains(req) {
 
 async function getBrainStatus(brains) {
     try {
-        return Brain.find({ _id: { $in: brains.map(ele => ele.brain.id) } }, { _id: 1, isShare: 1 });
+        return Brain.find({ _id: { $in: brains.filter(ele => ele?.brain?.id).map(ele => ele.brain.id) } }, { _id: 1, isShare: 1 });
     } catch (error) {
         handleError(error, 'Error - getBrainStatus');
     }

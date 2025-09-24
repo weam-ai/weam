@@ -500,7 +500,7 @@ const addShareChatTeam = async (teams, existingChat, requestUser) => {
                         updateOne: {
                             filter: {
                                 "user.id": currUser.id,
-                                "brain.id": existingBrain.brain.id,
+                                "brain.id": existingChat?.brain?.id,
                                 teamId: currTeam.id,
                             },
                             update: { $set: chatObj },
