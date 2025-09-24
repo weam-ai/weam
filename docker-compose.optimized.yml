@@ -1,0 +1,191 @@
+# 🚀 Optimized Docker Compose Configuration
+# Features: Resource limits, health checks, and performance optimization
+
+version: '3.8'
+
+services:
+  # Optimized Next.js Frontend
+  weamai-app:
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile.optimized
+      args:
+        - NEXT_PUBLIC_APP_ENVIRONMENT=${NEXT_PUBLIC_APP_ENVIRONMENT:-production}
+        - NEXT_PUBLIC_SERVER_NODE_API_URL=${NEXT_PUBLIC_SERVER_NODE_API_URL}
+        - NEXT_PUBLIC_PYTHON_API_URL=${NEXT_PUBLIC_PYTHON_API_URL}
+        - NEXT_PUBLIC_DOMAIN_URL=${NEXT_PUBLIC_DOMAIN_URL}
+        - NEXT_PUBLIC_API_PREFIX=${NEXT_PUBLIC_API_PREFIX}
+        - NEXT_PUBLIC_COMMON_NODE_API_URL=${NEXT_PUBLIC_COMMON_NODE_API_URL}
+        - NEXT_PUBLIC_COOKIE_NAME=${NEXT_PUBLIC_COOKIE_NAME}
+        - NEXT_PUBLIC_COOKIE_PASSWORD=${NEXT_PUBLIC_COOKIE_PASSWORD}
+        - NEXT_PUBLIC_AWS_S3_URL=${NEXT_PUBLIC_AWS_S3_URL}
+        - NEXT_PUBLIC_HTTPS_PROTOCOL=${NEXT_PUBLIC_HTTPS_PROTOCOL}
+        - NEXT_PUBLIC_IMAGE_DOMAIN=${NEXT_PUBLIC_IMAGE_DOMAIN}
+        - NEXT_PUBLIC_SOCKET_CONNECTION_URL=${NEXT_PUBLIC_SOCKET_CONNECTION_URL}
+        - NEXT_PUBLIC_SECURITY_KEY=${NEXT_PUBLIC_SECURITY_KEY}
+        - NEXT_PUBLIC_MESSAGE_LIMIT=${NEXT_PUBLIC_MESSAGE_LIMIT}
+        - NEXT_PUBLIC_FREE_TRIAL_DAYS=${NEXT_PUBLIC_FREE_TRIAL_DAYS}
+        - NEXT_PUBLIC_OPENAI_PLATFORM_URL=${NEXT_PUBLIC_OPENAI_PLATFORM_URL}
+        - NEXT_PUBLIC_FRESHDESK_SUPPORT_URL=${NEXT_PUBLIC_FRESHDESK_SUPPORT_URL}
+        - CSRF_TOKEN_SECRET=${CSRF_TOKEN_SECRET}
+        - NEXT_PUBLIC_SLACK_CLIENT_ID=${NEXT_PUBLIC_SLACK_CLIENT_ID}
+        - NEXT_PUBLIC_SLACK_CLIENT_SECRET=${NEXT_PUBLIC_SLACK_CLIENT_SECRET}
+        - NEXT_PUBLIC_GITHUB_CLIENT_ID=${NEXT_PUBLIC_GITHUB_CLIENT_ID}
+        - NEXT_PUBLIC_GITHUB_CLIENT_SECRET=${NEXT_PUBLIC_GITHUB_CLIENT_SECRET}
+        - NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID}
+        - NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_SECRET=${NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_SECRET}
+      cache_from:
+        - weamai-app:cache
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    restart: unless-stopped
+    networks:
+      - weam-network
+
+  # Optimized Python Backend
+  pybase_docker:
+    build:
+      context: ./ai-python
+      dockerfile: Dockerfile.optimized
+      cache_from:
+        - pybase_docker:cache
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
+    restart: unless-stopped
+    networks:
+      - weam-network
+
+  # Optimized Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage:z
+      - ./config_files/qdrant/optimized_config.yml:/qdrant/config/production.yaml:ro
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    restart: unless-stopped
+    networks:
+      - weam-network
+
+  # Redis Cache (if needed)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    restart: unless-stopped
+    networks:
+      - weam-network
+
+  # MongoDB Database (if needed)
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-password}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE:-weam}
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    restart: unless-stopped
+    networks:
+      - weam-network
+
+# Named volumes for data persistence
+volumes:
+  qdrant_storage:
+    driver: local
+  redis_data:
+    driver: local
+  mongodb_data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  weam-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

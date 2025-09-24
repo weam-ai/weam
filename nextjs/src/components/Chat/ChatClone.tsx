@@ -42,6 +42,7 @@ import { useDispatch } from 'react-redux';
 import { setChatMessageAction, setLastConversationDataAction, setUploadDataAction } from '@/lib/slices/aimodel/conversation';
 import ChatThreadOffcanvas, { TypingTextSection } from '@/components/Chat/ChatThreadOffcanvas';
 import ThreadItem from '@/components/Chat/threadItem';
+import QuickActions from './QuickActions';
 import {
     setAddThreadAction,
     setChatAccessAction,
@@ -1725,6 +1726,16 @@ const ChatPage = memo(() => {
                 isBrainDeleted={chatInfo?.brain?.id?.deletedAt}
             />
             {/* Thread Modal End */}
+            
+            {/* Quick Actions */}
+            <QuickActions 
+                chatId={chatInfo?.id}
+                conversations={conversations}
+                onActionComplete={(result) => {
+                    // Handle the result - could add to conversation or show in modal
+                    console.log('Quick action result:', result);
+                }}
+            />
         </>
     );
 });

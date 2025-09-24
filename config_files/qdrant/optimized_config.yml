@@ -1,0 +1,77 @@
+# 🚀 Optimized Qdrant Configuration for Performance
+# Features: Memory optimization, parallel processing, and caching
+
+log_level: INFO
+
+storage:
+  # Optimized storage paths
+  storage_path: ./storage
+  snapshots_path: ./snapshots
+  temp_path: null
+
+  # Memory optimization - store payload on disk to save RAM
+  on_disk_payload: true
+
+  # Performance optimizations
+  update_concurrency: 4  # Allow concurrent updates
+  
+  # Write-ahead-log optimization
+  wal:
+    wal_capacity_mb: 64  # Increased for better performance
+    wal_segments_ahead: 2  # Pre-create segments
+
+  # Node type optimization
+  node_type: "Normal"
+
+  # Performance tuning
+  performance:
+    # Optimize search threads based on CPU cores
+    max_search_threads: 0  # Auto-detect
+    
+    # Optimize indexing threads
+    max_indexing_threads: 2
+    
+    # Limit optimization threads to prevent resource exhaustion
+    max_optimization_threads: 2
+    
+    # Rate limiting for distributed mode
+    update_rate_limit: 1000  # requests per second
+
+  # Optimizer configuration
+  optimizers:
+    # Optimize segments with more deleted vectors
+    deleted_threshold: 0.2
+    
+    # Vacuum optimization
+    vacuum_min_vector_number: 1000
+    
+    # Index optimization
+    default_segment_number: 0  # Auto-detect
+    
+    # Memmap threshold for large collections
+    memmap_threshold: 50000
+    
+    # Indexing threshold
+    indexing_threshold: 20000
+
+# Service configuration
+service:
+  # HTTP server optimization
+  http_port: 6333
+  grpc_port: 6334
+  
+  # Enable CORS for web applications
+  enable_cors: true
+  
+  # Request timeout
+  max_request_size_mb: 32
+  
+  # Connection limits
+  max_connections: 1000
+
+# Cluster configuration (for future scaling)
+cluster:
+  enabled: false
+  
+# Telemetry (disable for privacy)
+telemetry_disabled: true
