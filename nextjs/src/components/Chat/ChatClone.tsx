@@ -1654,7 +1654,6 @@ const ChatPage = memo(() => {
                                                         paginator={promptPaginator}
                                                         setPromptList={setPromptList}
                                                         promptList={prompts}
-                                                        handleSubmitPrompt={handleSubmitPrompt}
                                                     />
                                                 </div>
                                             </DialogContent>

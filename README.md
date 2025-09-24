@@ -151,7 +151,7 @@ bash winbuild.sh  (for windows)
 docker-compose up --build
 ```
 
-- Docs: [Quickstart Guide](https://docs.weam.ai/quickstart)
+- Docs: [Quickstart Guide](https://docs.weam.ai/setup/choose-your-setup/local-setup)
 - From Source / Cloud: Coming soon
 - Setup Video: Uploading soon
 

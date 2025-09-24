@@ -74,7 +74,6 @@ const ThunderBoltDialog = ({
     paginator,
     setPromptList,
     promptList,
-    handleSubmitPrompt,
 }: ThunderBoltDialogProps) => {
     const queryParams = useSearchParams();
     return (
@@ -127,7 +126,6 @@ const ThunderBoltDialog = ({
                         promptList={promptList}
                         setPromptList={setPromptList}
                         setDialogOpen={setDialogOpen}
-                        handleSubmitPrompt={handleSubmitPrompt}
                     />
                 </div>
             </DialogContent>

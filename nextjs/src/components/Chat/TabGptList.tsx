@@ -13,26 +13,18 @@ import SearchIcon from '@/icons/Search';
 import Image from 'next/image';
 import ImageFileIcon from '@/icons/ImageFileIcon';
 import useAssignModalList from '@/hooks/aiModal/useAssignModalList';
-import { GPTTypesOptions, ProAgentDataType, SelectedContextType, UploadedFileType } from '@/types/chat';
+import { GPTTypesOptions, SelectedContextType, UploadedFileType } from '@/types/chat';
 import { BrainAgentType, BrainDocType, BrainPromptType } from '@/types/brain';
 import useIntersectionObserver from '@/hooks/common/useIntersectionObserver';
-import { DefaultPaginationType, PaginatorType, ProAgentCode } from '@/types/common';
+import { DefaultPaginationType, PaginatorType } from '@/types/common';
 import ExcelFileIcon from '@/icons/ExcelFileIcon';
 import TxtFileIcon from '@/icons/TXTFILEIcon';
 import { getFileIconClassName } from '@/utils/common';
-import SeoArticle from '../ProAgents/SeoArticle';
-import SalesCall from '../ProAgents/SalesCall';
-import CVScreening from '../ProAgents/CVScreening';
-import ProjectProposal from '../ProAgents/ProjectProposal';
-import QAProAgent from '../ProAgents/QaSpecialist';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import ProAgentList from './ProAgentList';
 import routes from '@/utils/routes';
 import { getDisplayModelName } from '@/utils/helper';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
-import ProAgentBack from './ProAgentBack';
-import VideoCall from '../ProAgents/VideoCall';
 import CommonFileIcon from '@/icons/CommonFileIcon';
 import Toast from '@/utils/toast';
 
@@ -63,7 +55,6 @@ export type TabGptListProps = {
     paginator: PaginatorType;
     setPromptList: (prompts: BrainPromptType[]) => void;
     setDialogOpen: (open: boolean) => void;
-    handleSubmitPrompt?: (proAgentData?: ProAgentDataType) => void;
     uploadedFile: UploadedFileType [];
 }
 
@@ -89,8 +80,7 @@ const TabGptList: React.FC<TabGptListProps> = ({
     setPromptLoader,
     paginator: promptPaginator,
     setPromptList,
-    setDialogOpen,
-    handleSubmitPrompt
+    setDialogOpen
 }: TabGptListProps) => {
     const { getTabDocList, brainDocs, loading: brainDocLoader,setLoading: setBrainDocLoader, paginator: brainDocPaginator, setBrainDocs } = useBrainDocs();
     const {
@@ -185,42 +175,6 @@ const TabGptList: React.FC<TabGptListProps> = ({
         }
     }, [promptPaginator?.hasNextPage, !promptLoader]);
 
-    const [showAgentForm, setShowAgentForm] = useState<Record<string, boolean>>({
-        QA: false,
-        SEO: false,
-        SALES: false,
-        HR: false,
-        CALL: false,
-        PROJECT: false
-    });
-
-    const handleAgentFormClick = (form: keyof typeof showAgentForm) => {
-        const agentParam = `?b=${b}&model=${searchParams.get('model')}&agent=${String(form)}`;
-        if (pathname === routes.main) {
-            history.pushState(null, '', `${pathname}${agentParam}`);
-            setShowAgentForm((prev: Record<string, boolean>) => Object.fromEntries(
-                Object.keys(prev).map(key => [key, key === form])
-            ) as typeof showAgentForm);
-        } else {
-            if(pathname.includes(routes.chat)){
-                Toast("In a new chat, please select the PRO agent again.", "error")
-            }
-            router.push(routes.main);
-        }
-    };
-
-    const handleBackButtonClick = () => {
-        setShowAgentForm({
-            QA: false,
-            SEO: false,
-            SALES: false,
-            CALL: false,
-            HR: false,
-            PROJECT: false
-        });
-        history.pushState(null, '', `${pathname}?b=${b}`);
-    } 
-    const isAnyFormVisible = Object.values(showAgentForm).some(Boolean);
     
     // Handle document selection
     const handleDocSelection = (doc: BrainDocType) => {
@@ -262,7 +216,6 @@ const TabGptList: React.FC<TabGptListProps> = ({
                 className="w-full flex flex-col items-start"
             >
                 
-                {!isAnyFormVisible && (
                 <TabsList
                     className="flex rounded-md border-none gap-x-2 overflow-hidden px-1 py-1 bg-b12 mb-2"
                 >
@@ -285,7 +238,6 @@ const TabGptList: React.FC<TabGptListProps> = ({
                         Docs
                     </TabsTrigger>
                 </TabsList>
-                )}
 
                 <TabsContent
                     value={GPTTypes.Docs}
@@ -447,133 +399,86 @@ const TabGptList: React.FC<TabGptListProps> = ({
                     value={GPTTypes.CustomGPT}
                     className="p-0 w-full"
                 >
-                    
-                    {/* QA Form */}
-                    {showAgentForm.QA && (
-                        <>
-                        <ProAgentBack onBackHandler={handleBackButtonClick} code={ProAgentCode.QA_SPECIALISTS} />
-                        <QAProAgent setDialogOpen={setDialogOpen} handleSubmitPrompt={handleSubmitPrompt}/>
-                        </>
-                    )}
-                    {/* SEO Form */}
-                    {showAgentForm.SEO && (
-                        <>
-                        <ProAgentBack onBackHandler={handleBackButtonClick} code={ProAgentCode.SEO_OPTIMISED_ARTICLES} />
-                        <SeoArticle setDialogOpen={setDialogOpen} handleSubmitPrompt={handleSubmitPrompt} />
-                        </>                        
-                    )}
-                    {/* Sales Call Form */}
-                    {showAgentForm.SALES && (
-                        <>
-                        <ProAgentBack onBackHandler={handleBackButtonClick} code={ProAgentCode.SALES_CALL_ANALYZER} />
-                        <SalesCall setDialogOpen={setDialogOpen} handleSubmitPrompt={handleSubmitPrompt} />
-                        </>
-                    )}
-                    {/* CV Screening Form */}
-                    {showAgentForm.HR && (
-                        <CVScreening onBackHandler={handleBackButtonClick} />
-                    )}
-                    {/* Client Video Call Analyzer */}
-                    {showAgentForm.CALL && (
-                        <>
-                        <ProAgentBack onBackHandler={handleBackButtonClick} code={ProAgentCode.VIDEO_CALL_ANALYZER} />
-                        <VideoCall onBackHandler={handleBackButtonClick} setDialogOpen={setDialogOpen} handleSubmitPrompt={handleSubmitPrompt} />
-                        </>
-                    )}
-                    {/* Project Promposal Form */}
-                    {showAgentForm.PROJECT && (
-                        <>
-                        <ProAgentBack onBackHandler={handleBackButtonClick} code={ProAgentCode.WEB_PROJECT_PROPOSAL} />
-                        <ProjectProposal setDialogOpen={setDialogOpen} handleSubmitPrompt={handleSubmitPrompt} />
-                        </>
-                    )}
-
-                    {!isAnyFormVisible && (
-                        <div className='normal-agent'>
-                            <div className='flex mb-3'>
-                                <div className="relative w-full">
-                                    <input
-                                        type="text"
-                                        className="default-form-input default-form-input-md !border-b10 focus:!border-b2 !pl-[36px]"
-                                        id="searchBots"
-                                        placeholder="Search Agents"
-                                        onChange={handleInputChanges}
-                                        value={searchValue}
-                                    />
-                                    <span className="inline-block absolute left-[12px] top-1/2 -translate-y-1/2">
-                                        <SearchIcon className="w-4 h-auto fill-b6" />
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="pr-1 h-full overflow-y-auto max-md:overflow-x-hidden w-full max-h-[370px]">
-                                { searchValue === '' && !customgptLoading && (
-                                        <ProAgentList handleAgentFormClick={handleAgentFormClick} />
-                                    )
-                                }
-                                {
-                                    customgptList.length > 0 && (
-                                    customgptList.map((gpt: BrainAgentType, index: number, gptArray: BrainAgentType[]) => {
-                                        const isSelected = uploadedFile?.some((file: UploadedFileType) => file?._id === gpt._id);
-                                        
-                                        return (
-                                            <div
-                                                key={gpt._id}
-                                                className={`cursor-pointer border-b border-b10 py-4 px-2.5 transition-all ease-in-out hover:bg-b13 ${    
-                                                    isSelected
-                                                        ? 'bg-b12 border-b10'
-                                                        : 'bg-white border-b10'
-                                                } flex-wrap`}
-                                                onClick={() => handleAgentSelection(gpt)}
-                                                ref={gptArray.length - 1 === index ? gptListRef : null}
-                                            >
-                                                
-                                                <div className="flex items-center flex-wrap">
-                                                    <Image
-                                                        src={
-                                                            gpt?.coverImg?.uri
-                                                                ? `${LINK.AWS_S3_URL}${gpt.coverImg.uri}`
-                                                                : gpt?.charimg
-                                                                ? gpt.charimg
-                                                                : defaultCustomGptImage.src
-                                                        }
-                                                        height={60}
-                                                        width={60}
-                                                        className="w-6 h-6 object-contain rounded-custom inline-block me-[9px]"
-                                                        alt={
-                                                            gpt?.coverImg
-                                                                ?.name ||
-                                                            gpt?.charimg
-                                                                ? 'Character Image'
-                                                                : 'Default Image'
-                                                        }
-                                                    />
-                                                    <p className="text-font-12 font-medium text-b2">
-                                                        {gpt.title}
-                                                    </p>
-                                                    <span className='text-font-12 ml-2 px-2 py-[2px] bg-b13 border rounded-full'>
-                                                        {getDisplayModelName(gpt.responseModel.name)}
-                                                    </span>
-                                                    <div className='ml-1 text-b6 text-font-12 max-md:w-full'>
-                                                        - {gpt.isShare ? 'Shared' : 'Private'} / {gpt.brain.title}
-                                                    </div>
-                                                </div>
-                                                <p className='text-font-12 font-normal text-b6 mt-1'>
-                                                    {truncateText(gpt.systemPrompt,190)}                                                
-                                                </p>
-                                                
-                                            </div>
-                                        );
-                                    })
-                                    )
-                                }
-                                {
-                                    customgptLoading && (
-                                        <ThreeDotLoader className="justify-start ml-8 mt-3" />
-                                    )
-                                }
+                    <div className='normal-agent'>
+                        <div className='flex mb-3'>
+                            <div className="relative w-full">
+                                <input
+                                    type="text"
+                                    className="default-form-input default-form-input-md !border-b10 focus:!border-b2 !pl-[36px]"
+                                    id="searchBots"
+                                    placeholder="Search Agents"
+                                    onChange={handleInputChanges}
+                                    value={searchValue}
+                                />
+                                <span className="inline-block absolute left-[12px] top-1/2 -translate-y-1/2">
+                                    <SearchIcon className="w-4 h-auto fill-b6" />
+                                </span>
                             </div>
                         </div>
-                    )}
+                        <div className="pr-1 h-full overflow-y-auto max-md:overflow-x-hidden w-full max-h-[370px]">
+                            {
+                                customgptList.length > 0 && (
+                                customgptList.map((gpt: BrainAgentType, index: number, gptArray: BrainAgentType[]) => {
+                                    const isSelected = uploadedFile?.some((file: UploadedFileType) => file?._id === gpt._id);
+                                    
+                                    return (
+                                        <div
+                                            key={gpt._id}
+                                            className={`cursor-pointer border-b border-b10 py-4 px-2.5 transition-all ease-in-out hover:bg-b13 ${    
+                                                isSelected
+                                                    ? 'bg-b12 border-b10'
+                                                    : 'bg-white border-b10'
+                                            } flex-wrap`}
+                                            onClick={() => handleAgentSelection(gpt)}
+                                            ref={gptArray.length - 1 === index ? gptListRef : null}
+                                        >
+                                            
+                                            <div className="flex items-center flex-wrap">
+                                                <Image
+                                                    src={
+                                                        gpt?.coverImg?.uri
+                                                            ? `${LINK.AWS_S3_URL}${gpt.coverImg.uri}`
+                                                            : gpt?.charimg
+                                                            ? gpt.charimg
+                                                            : defaultCustomGptImage.src
+                                                    }
+                                                    height={60}
+                                                    width={60}
+                                                    className="w-6 h-6 object-contain rounded-custom inline-block me-[9px]"
+                                                    alt={
+                                                        gpt?.coverImg
+                                                            ?.name ||
+                                                        gpt?.charimg
+                                                            ? 'Character Image'
+                                                            : 'Default Image'
+                                                    }
+                                                />
+                                                <p className="text-font-12 font-medium text-b2">
+                                                    {gpt.title}
+                                                </p>
+                                                <span className='text-font-12 ml-2 px-2 py-[2px] bg-b13 border rounded-full'>
+                                                    {getDisplayModelName(gpt.responseModel.name)}
+                                                </span>
+                                                <div className='ml-1 text-b6 text-font-12 max-md:w-full'>
+                                                    - {gpt.isShare ? 'Shared' : 'Private'} / {gpt.brain.title}
+                                                </div>
+                                            </div>
+                                            <p className='text-font-12 font-normal text-b6 mt-1'>
+                                                {truncateText(gpt.systemPrompt,190)}                                                
+                                            </p>
+                                            
+                                        </div>
+                                    );
+                                })
+                                )
+                            }
+                            {
+                                customgptLoading && (
+                                    <ThreeDotLoader className="justify-start ml-8 mt-3" />
+                                )
+                            }
+                        </div>
+                    </div>
                 </TabsContent>
             </Tabs>
             {/* Tab GPT List End */}
