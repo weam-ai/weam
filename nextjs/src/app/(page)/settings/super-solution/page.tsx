@@ -502,10 +502,10 @@ const SuperSolutionPage = () => {
                                     {selectedApp.name} - Access Management
                                 </div>
                                 <div className="flex gap-2 ml-auto">
-                                    <div className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" onClick={() => handleInstall()} disabled={loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] || false}>
+                                    <Button className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" onClick={() => handleInstall()} disabled={loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] || false}>
                                         <DownloadIcon className="w-4 h-4 mr-2" />
                                         {loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] ? 'Installing...' : getInstallButtonText(selectedApp?.name || '')}
-                                    </div>
+                                    </Button>
                                 </div>
                             </DialogTitle>
                             <DialogDescription>
