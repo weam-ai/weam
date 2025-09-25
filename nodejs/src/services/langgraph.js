@@ -50,7 +50,7 @@ webSearchTool.description = toolDescription.WEB_SEARCH_TOOL;
 const { createDallEImageTool } = require('./imageTool');
 
 // Create the DALL-E image generation tool with default API key
-const imageGenerationTool = createDallEImageTool(LINK.WEAM_OPEN_AI_KEY);
+const imageGenerationTool = createDallEImageTool();
 
 // Vision support configuration
 const MODEL_CONFIGS = {

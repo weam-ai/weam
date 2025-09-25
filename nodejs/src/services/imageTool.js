@@ -13,11 +13,6 @@ class CustomDallETool extends Tool {
             quality = 'standard'
         } = config;
 
-        // Validate required parameters
-        if (!apiKey) {
-            throw new Error('OpenAI API key is required');
-        }
-
         super();
         
         this.n = n;
@@ -82,8 +77,12 @@ class CustomDallETool extends Tool {
             
             // Import OpenAI client
             const { OpenAI } = require('openai');
+            const key = input && typeof input === 'object' && input.apiKey ? input.apiKey : this.apiKey;
+            if (!key) {
+                throw new Error('OpenAI API key is required. Please provide it in the request payload.');
+            }
             const openaiClient = new OpenAI({
-                apiKey: this.apiKey
+                apiKey: key
             });
             
             // Generate image using OpenAI client
@@ -193,7 +192,7 @@ class CustomDallETool extends Tool {
  * @param {string} apiKey - OpenAI API key
  * @returns {CustomDallETool} - Configured DALL-E tool instance
  */
-function createDallEImageTool(apiKey) {
+function createDallEImageTool(apiKey = null) {
     return new CustomDallETool({
         n: 1,
         model: 'dall-e-3',
