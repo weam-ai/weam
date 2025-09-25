@@ -86,6 +86,14 @@ const favoriteCustomGpt = catchAsync(async (req, res) => {
     return util.failureResponse(_localize('module.favoriteError', req, CUSTOM_GPT), res);
 })
 
+const getAgents = catchAsync(async (req, res) => {
+    const result = await customGptService.getAgents(req);
+    if (result) {
+        return util.successResponse(result, res);
+    }
+    return util.failureResponse(_localize('module.getError', req, CUSTOM_GPT), res);
+})
+
 module.exports = {
     addCustomGpt,
     updateCustomGpt,
@@ -94,5 +102,6 @@ module.exports = {
     getAll,
     assignGpt,
     usersWiseGetAll,
-    favoriteCustomGpt
+    favoriteCustomGpt,
+    getAgents
 }

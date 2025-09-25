@@ -12,6 +12,12 @@ const wordCount = (value, helpers, maxWords) => {
 const createCustomGptKeys = joi.object({
     title: joi.string().required(),
     systemPrompt: joi.string().required(),
+    type: joi.string().valid('agent', 'supervisor').optional().default('agent'),
+    description: joi.string().optional(),
+    Agents: joi.alternatives().try(
+        joi.string(),
+        joi.array().items(joi.string())
+    ).optional(),
     coverImg: joi.alternatives().try(
         joi.array(),
         joi.valid(null),
@@ -34,11 +40,19 @@ const createCustomGptKeys = joi.object({
     maxItr: joi.number().optional().allow(null),
     itrTimeDuration: joi.string().allow('').optional(),
     brain: joi.object(brainSchemaKeys).required(),
-    imageEnable: joi.boolean().optional()
+    imageEnable: joi.boolean().optional(),
+    charimg: joi.string().optional(),
+    mcpTools: joi.array().items(joi.string()).optional()
 }).unknown(true);
 
 const updateCustomGptKeys = joi.object({
     title: joi.string().required(),
+    type: joi.string().valid('agent', 'supervisor').optional(),
+    description: joi.string().optional(),
+    Agents: joi.alternatives().try(
+        joi.string(),
+        joi.array().items(joi.string())
+    ).optional(),
     coverImg: joi.alternatives().try(
         joi.array(),
         joi.valid(null),
@@ -64,7 +78,8 @@ const updateCustomGptKeys = joi.object({
     brain: joi.object(brainSchemaKeys).required(),
     imageEnable: joi.boolean().optional(),
     removeDoc: joi.string().optional(),
-    charimg: joi.string().optional()
+    charimg: joi.string().optional(),
+    mcpTools: joi.array().items(joi.string()).optional()
 });
 
 const assignDefaultGpt = joi.object({

@@ -158,12 +158,54 @@ async function createChatDocs(payload) {
 const addCustomGpt = async (req) => {
     try {
         const { fileData } = require('./uploadFile');
-        const { title, brain, responseModel } = req.body;
+        const { title, brain, responseModel, type, description, Agents, systemPrompt, mcpTools } = req.body;
         const { id: brainId } = brain;
         const { company } = responseModel;
 
+        // Validate based on agent type
+        const agentType = type || 'agent';
+        
+        if (agentType === 'agent') {
+            if (!systemPrompt) {
+                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
+            }
+            if (!description) {
+                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
+            }
+        } else if (agentType === 'supervisor') {
+            if (!systemPrompt) {
+                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
+            }
+            if (!description) {
+                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
+            }
+            if (!Agents || !Array.isArray(Agents) || Agents.length === 0) {
+                throw new Error(_localize('AGENTS_REQUIRED', req));
+            }
+            
+            // Validate that all agents exist and are of type 'agent'
+            const agentDocs = await CustomGpt.find({ 
+                _id: { $in: Agents }, 
+                'brain.id': brainId,
+                type: 'agent'
+            });
+            
+            if (agentDocs.length !== Agents.length) {
+    throw new Error(_localize('INVALID_AGENTS', req));
+}
+        }
+
         const slug = slugify(title);
-        const createData = { ...req.body, slug, coverImg: {}, doc: [] }; 
+        const createData = { 
+            ...req.body, 
+            slug, 
+            coverImg: {}, 
+            doc: [],
+            type: agentType,
+            description: description || null,
+            Agents: agentType === 'supervisor' ? Agents : [],
+            mcpTools: mcpTools || []
+        }; 
 
         const existing = await CustomGpt.findOne({ slug, 'brain.id': brainId });
         if (existing) throw new Error(_localize('module.alreadyExists', req, 'custom gpt'));
@@ -224,16 +266,58 @@ const addCustomGpt = async (req) => {
 const updateCustomGpt = async (req) => {
     try {
         const { removeExistingDocument, removeExistingImage, fileData } = require('./uploadFile');
-        const existingBot = await CustomGpt.findById({ _id: req.params.id }, { doc: 1, coverImg: 1, brain: 1 });
+        const existingBot = await CustomGpt.findById({ _id: req.params.id }, { doc: 1, coverImg: 1, brain: 1, type: 1 });
         
         if (!existingBot) throw new Error(_localize('module.notFound', req, 'custom bot'));
 
-        const { title, responseModel, brain } = req.body;
+        const { title, responseModel, brain, type, description, Agents, systemPrompt, mcpTools } = req.body;
         const { company } = responseModel;
+
+        // Prevent type changes for existing agents
+        if (type && existingBot.type && type !== existingBot.type) {
+            throw new Error('Agent type cannot be changed after creation');
+        }
+
+        // Validate based on agent type
+        const agentType = type || existingBot.type || 'agent';
+        
+        if (agentType === 'agent') {
+            if (!systemPrompt) {
+                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
+            }
+            if (!description) {
+                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
+            }
+        } else if (agentType === 'supervisor') {
+            if (!systemPrompt) {
+                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
+            }
+            if (!description) {
+                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
+            }
+            if (!Agents || !Array.isArray(Agents) || Agents.length === 0) {
+    throw new Error(_localize('AGENTS_REQUIRED', req));
+}
+            
+            // Validate that all agents exist and are of type 'agent'
+            const agentDocs = await CustomGpt.find({ 
+                _id: { $in: Agents }, 
+                'brain.id': existingBot.brain.id,
+                type: 'agent' 
+            });
+            
+            if (agentDocs.length !== Agents.length) {
+    throw new Error(_localize('INVALID_AGENTS', req));
+}
+        }
 
         let updateBody = {
             ...req.body,
             slug: slugify(title),
+            type: agentType,
+            description: description || null,
+            Agents: agentType === 'supervisor' ? Agents : [],
+            mcpTools: mcpTools || []
         }
 
         if (req.files['coverImg']) {
@@ -341,7 +425,19 @@ const viewCustomGpt = async (req) => {
 }
 
 const deleteCustomGpt = async (req) => {
-    try {  
+    try {
+        // Check if this agent is used by any supervisor agents
+        const supervisorAgents = await CustomGpt.find({
+            type: 'supervisor',
+            Agents: req.params.id,
+            'brain.id': { $exists: true }
+        });
+
+        if (supervisorAgents.length > 0) {
+            const supervisorNames = supervisorAgents.map(agent => agent.title).join(', ');
+            throw new Error(`Cannot delete agent. It is currently being used by supervisor agent(s): ${supervisorNames}`);
+        }
+
         return CustomGpt.deleteOne({ _id: req.params.id });
     } catch (error) {
         handleError(error, 'Error - deleteCustomGpt');
@@ -584,6 +680,19 @@ const favoriteCustomGpt = async (req) => {
     }
 };
 
+const getAgents = async (req) => {
+    try {
+        const { brainId } = req.params;
+        const agents = await CustomGpt.find({
+            'brain.id': brainId,
+            type: 'agent'
+        });
+        return agents;
+    } catch (error) {
+        handleError(error, "Error - getAgents");
+    }
+};
+
 module.exports = {
     addCustomGpt,
     updateCustomGpt,
@@ -594,5 +703,6 @@ module.exports = {
     storeVectorData,
     assignDefaultGpt,
     usersWiseGetAll,
-    favoriteCustomGpt
+    favoriteCustomGpt,
+    getAgents
 }
