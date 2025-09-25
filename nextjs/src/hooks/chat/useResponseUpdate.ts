@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import commonApi from '@/api';
 import { MODULE_ACTIONS } from '@/utils/constant';
 import Toast from '@/utils/toast';
+import { encryptedData } from '@/utils/helper';
 
 interface UseResponseUpdateProps {
   onUpdateResponse?: (messageId: string, updatedResponse: string) => void;
@@ -20,7 +21,8 @@ export const useResponseUpdate = ({
         action: MODULE_ACTIONS.UPDATE_MESSAGE,
         parameters: [messageId],
         data: {
-          ai: updatedResponse
+          // Store AI response in encrypted form to match decryption expectations on read
+          ai: encryptedData(updatedResponse)
         }
       });
 
