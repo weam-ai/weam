@@ -4,15 +4,20 @@ import Overview from '@/components/CustomGpt/Overview';
 
 const AddGptForm = () => {
     const [customGptData, setCustomGptData] = useState({
+        id: null,
         coverImg: null,
         previewCoverImg: null,
         title: '',
         systemPrompt: '',
-        responseModel:null,
+        type: 'agent',
+        description: '',
+        Agents: [],
+        mcpTools: [],
+        responseModel: null,
         maxItr: 0,
-        itrTimeDuration: '',
+        itrTimeDuration: undefined,
         doc: [],
-        removeCoverImg: false,
+        imageEnable: false,
         charimg: ''
     });
 

@@ -459,6 +459,9 @@ const TabGptList: React.FC<TabGptListProps> = ({
                                                 <span className='text-font-12 ml-2 px-2 py-[2px] bg-b13 border rounded-full'>
                                                     {getDisplayModelName(gpt.responseModel.name)}
                                                 </span>
+                                                    <span className='text-font-12 ml-2 px-2 py-[2px] bg-b13 border rounded-full'>
+                                                        {gpt.type === 'agent' ? 'Agent' : 'Supervisor'}
+                                                    </span>
                                                 <div className='ml-1 text-b6 text-font-12 max-md:w-full'>
                                                     - {gpt.isShare ? 'Shared' : 'Private'} / {gpt.brain.title}
                                                 </div>

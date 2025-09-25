@@ -258,19 +258,27 @@ export default function AgentList() {
                                             <div className="prompts-item-heading relative flex justify-between gap-2.5 w-full md:-order-none order-3 mt-2 md:mt-0">
                                                 {/* Prompt Title End */}
                                                 <div className="title-content w-full">
-                                                    <h5
-                                                        className={`text-font-14 font-semibold text-b2 md:group-hover/item:text-b15 transition duration-150 ease-in-out  ${isGridView
-                                                                ? 'mb-1.5'
-                                                                : ''
-                                                            } ${!isGridView
-                                                                ? 'w-[calc(100%-35px)] mb-0.5'
-                                                                : ''
-                                                            }`}
-                                                    >
-                                                        {gpt.title}
-                                                    </h5>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h5
+                                                            className={`text-font-14 font-semibold text-b2 md:group-hover/item:text-b15 transition duration-150 ease-in-out ${isGridView
+                                                                    ? 'mb-0'
+                                                                    : ''
+                                                                } ${!isGridView
+                                                                    ? 'mb-0'
+                                                                    : ''
+                                                                }`}
+                                                        >
+                                                            {gpt.title}
+                                                        </h5>
+                                                        <span className='text-font-12 ml-2 px-2 py-[2px] bg-b13 border rounded-full'>
+                                                            {gpt.type === 'agent' ? 'Agent' : 'Supervisor'}
+                                                        </span>
+                                                    </div>
                                                     <p className="text-font-12 text-b5 md:group-hover/item:text-b15 mt-0.5 transition duration-150 ease-in-out">
-                                                        {truncateText(gpt.systemPrompt,850)}
+                                                        {gpt.type === 'supervisor' && gpt.description ? 
+                                                            truncateText(gpt.description, 850) : 
+                                                            truncateText(gpt.systemPrompt, 850)
+                                                        }
                                                     </p>
                                                 </div>
                                                 {/* Prompt Title End */}                                               
