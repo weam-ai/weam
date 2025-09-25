@@ -384,6 +384,10 @@ async function socketFetchChatById(filter) {
  */
 async function initializeChat(payload) {
     try {
+        if (!payload?.brain?.id) {
+            console.warn('initializeChat called without valid brain.id');
+            return;
+        }
         const [brains, shareBrains] = await Promise.all([
             Brain.findById({ _id: payload.brain.id }, { teams: 1 }),
             shareBrain.find({ 'brain.id': payload.brain.id, user:{$exists:true} })

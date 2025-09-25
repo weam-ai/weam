@@ -62,7 +62,7 @@ async function usersWiseGetAll(req) {
         if (!brains.length) return { data: [], paginator: {} };
         const brainStatus = await getBrainStatus(brains);
         const query ={
-            brainId: { $in: brains.map(ele => ele.brain.id) },
+            brainId: { $in: brains.filter(ele => ele?.brain?.id).map(ele => ele.brain.id) },
             ...req.body.query
         }
         delete query.workspaceId;

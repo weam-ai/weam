@@ -26,6 +26,7 @@ const createBrainKeys = joi.object({
         .optional()
     )
     .optional(),
+    customInstruction: joi.string().optional().allow(''),
 });
 
 const updateBrainKeys = joi.object({
@@ -44,6 +45,7 @@ const updateBrainKeys = joi.object({
                 .required(),
         )
         .optional(),
+        customInstruction: joi.string().optional().allow(''),
 });
 
 const deleteBrainKeys = joi.object({

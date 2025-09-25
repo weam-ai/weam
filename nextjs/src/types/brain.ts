@@ -59,8 +59,6 @@ export type BrainAgentType = {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
-    instructions?: string[];
-    goals: string[];
     maxItr: number;
     doc: FileType,
     owner: FormatUserType;
@@ -98,6 +96,7 @@ export type BrainCreateType = {
     workspaceId: string;
     title: string;
     teamsInput?: TeamType[];
+    customInstruction?: string;
 }
 
 export type AllBrainListType = {
@@ -109,4 +108,5 @@ export type UpdateBrainActionType = {
     title: string;
     isShare: boolean;
     workspaceId: string;
+    customInstruction?: string;
 }

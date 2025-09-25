@@ -32,7 +32,25 @@ const ANTHROPIC_MODAL = [
     { name: 'claude-sonnet-4-20250514', type: 2 },
     { name: 'claude-opus-4-20250514', type: 2 },
 ]
+const ANTHROPIC_MAX_TOKENS = {
+    // Claude 3.5 Haiku
+    'claude-3-5-haiku-latest': 8192,
+    'claude-3-haiku-20240307': 4096,
 
+    // Claude 3 Opus
+    'claude-3-opus-latest': 4096,
+
+    // Claude 3 Sonnet
+    'claude-3-sonnet-20240229': 4096,
+    'claude-3-7-sonnet-latest': 64000, // Claude Sonnet 3.7
+
+    // Claude 4 models
+    'claude-sonnet-4-20250514': 64000,  // Claude Sonnet 4
+    'claude-opus-4-20250514': 32000,    // Claude Opus 4
+
+    // Default fallback for any new models
+    'default': 4096
+}
 const GEMINI_MODAL = [
     { name: 'gemini-2.0-flash', type: 2 },
     { name: 'gemini-2.5-flash-preview-05-20', type: 2 },
@@ -141,6 +159,7 @@ module.exports = {
     PINECORN_STATIC_KEY,
     MODAL_NAME,
     ANTHROPIC_MODAL,
+    ANTHROPIC_MAX_TOKENS,
     INVITE_SUBSCRIPTION_ERROR,
     GEMINI_MODAL,
     PERPLEXITY_MODAL,

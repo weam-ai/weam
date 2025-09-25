@@ -27,7 +27,7 @@ import { useTeams } from '@/hooks/team/useTeams';
 import GroupIcon from '@/icons/GroupIcon';
 import RemoveIcon from '@/icons/RemoveIcon';
 import useServerAction from '@/hooks/common/useServerActions';
-import { addBrainMemberAction, deleteBrainAction, deleteShareTeamToBrainAction, removeBrainMemberAction, shareTeamToBrainAction } from '@/actions/brains';
+import { addBrainMemberAction, deleteBrainAction, deleteShareTeamToBrainAction, removeBrainMemberAction, shareTeamToBrainAction, updateBrainAction } from '@/actions/brains';
 import Toast from '@/utils/toast';
 import ExitIcon from '@/icons/ExitIcon';
 
@@ -37,7 +37,7 @@ const AddNewMemberModal = ({
     open,
     refetchMemebrs,
     memberList,
-}) => {
+}): any => {
     const { handleSubmit, errors, control, setFormValue } = useBrains({
         isShare: false,
         addMember: true,
@@ -296,7 +296,7 @@ const AddTeamMemberModal = ({
     );
 };
 
-const AboutBrainDetails = ({ brain, isOwner, onLeaveBrain, onDeleteBrain }) => {
+const AboutBrainDetails = ({ brain, isOwner, onLeaveBrain, onDeleteBrain }: any) => {
     return (
         <div className="h-full w-full">
             {/* Leave Chat Start*/}
@@ -332,7 +332,7 @@ const MemberItem = ({
     isOwner,
     currentUser,
     brain,
-}) => {
+}): any => {
     const isRemoval =
         (currentUser.roleCode === ROLE_TYPE.USER &&
             brain?.user?.id === currentUser._id) ||
@@ -380,7 +380,7 @@ const MemberItem = ({
     );
 };
 
-const TeamItem = ({ team, handleRemoveTeam, brain }) => {
+const TeamItem = ({ team, handleRemoveTeam, brain }): any => {
 
     return (
         <div className="group/item user-item flex justify-between py-1.5 px-0 border-b border-b11">
@@ -408,7 +408,7 @@ const TeamItem = ({ team, handleRemoveTeam, brain }) => {
     );
 };
 
-const EditBrainModal = ({ open, closeModal, brain }) => {
+const EditBrainModal = ({ open, closeModal, brain }):any => {
     const currentUser = getCurrentUser();
     const isOwner = currentUser?._id == brain?.user?.id;
 
@@ -418,6 +418,7 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
     const { brainAddedTeam, sharedTeamBrainList } =
         useTeams();
     const [deleteBrain, isDeletePending] = useServerAction(deleteBrainAction);
+    const [updateBrain] = useServerAction(updateBrainAction);
 
     const [memberList, setMemberList] = useState([]);
     const [teamList, setTeamList] = useState([]);
@@ -427,6 +428,8 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
     const [addMemberModal, setAddMemberModal] = useState(false);
     const [addTeamModal, setAddTeamModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [customInstruction, setCustomInstruction] = useState(brain?.customInstruction || '');
+    const [isEditingInstruction, setIsEditingInstruction] = useState(false);
 
     useEffect(() => {
         const adminUser = {
@@ -506,6 +509,24 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
         Toast(response?.message);
         closeModal();
     };
+    
+  const handleUpdateCustomInstruction = async () => {
+        const data = {
+            title: brain.title,
+            customInstruction,
+            isShare: brain.isShare,
+            workspaceId: brain.workspaceId,
+        };
+
+        const response = await updateBrain(data, brain?._id);
+        Toast(response?.message);
+        setIsEditingInstruction(false);
+    };
+
+    const handleCancelEdit = () => {
+        setCustomInstruction(brain?.customInstruction || '');
+        setIsEditingInstruction(false);
+    };
 
     const totalMembers = (brainAddedTeam,  memberList ) => {
     
@@ -534,12 +555,12 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
 
     return (
         <Dialog open={open} onOpenChange={closeModal}>
-            <DialogContent className="md:max-w-[700px] max-w-[calc(100%-30px)] py-7">
+            <DialogContent className="md:max-w-[1000px] max-w-[calc(100%-30px)] py-7">
                 {isLoading ? (
                     <Loader />
                 ) : (
                     <>
-                        <DialogHeader className="rounded-t-10 px-[30px] pb-5 border-b">
+                        <DialogHeader className="rounded-t-10 px-8 pb-3 border-b">
                             <DialogTitle className="font-semibold flex items-center">
                                 <BrainIcon
                                     width={'24'}
@@ -548,27 +569,71 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
                                 />
                                 {brain.title}
                             </DialogTitle>
-                            <DialogDescription>
-                                <div className='flex items-center'>
-                                    <div className="small-description text-font-14 max-md:text-font-12 leading-[24px] text-b5 font-normal ml-9">
+                          <div className='flex items-center'>
+                          <DialogDescription className="small-description text-font-14 max-md:text-font-12 leading-[24px] text-b5 font-normal ml-9">
                                         <span className='mr-0.5'>Created By: </span>
                                         {`${displayName(brain?.user)} on ${dateDisplay(
                                             brain?.createdAt
                                         )}`}
-                                   </div>
-                                   <div className="ml-auto">
-                                        <AboutBrainDetails
-                                            brain={brain}
-                                            isOwner={isOwner}
-                                            onLeaveBrain={onLeaveBrain}
-                                            onDeleteBrain={onDeleteBrain}
-                                        />
-                                    </div>
-                                </div>
                             </DialogDescription>
+                            <div className="ml-auto">
+                                <AboutBrainDetails
+                                    brain={brain}
+                                    isOwner={isOwner}
+                                    onLeaveBrain={onLeaveBrain}
+                                    onDeleteBrain={onDeleteBrain}
+                                />
+                            </div>
+                            </div>
                         </DialogHeader>
 
                         <div className="dialog-body h-full pb-6 px-8 max-h-[70vh] overflow-y-auto">
+                            {/* Custom Instruction Section */}
+                            <div className="space-y-2 my-3">
+                                <label className="text-sm font-medium text-gray-700">
+                                    Custom Instruction
+                                </label>
+                                {isEditingInstruction ? (
+                                    <div className="space-y-2">
+                                        <textarea
+                                            value={customInstruction}
+                                            onChange={(e) => setCustomInstruction(e.target.value)}
+                                            placeholder="Enter custom instruction for this brain..."
+                                            className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleUpdateCustomInstruction}
+                                                className="btn btn-black text-sm"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={handleCancelEdit}
+                                                className="btn btn-outline-gray text-sm"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-start justify-between p-3 border border-gray-200 rounded-md bg-gray-50">
+                                        <div className="flex-1">
+                                            {customInstruction ? (
+                                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{customInstruction}</p>
+                                            ) : (
+                                                <p className="text-sm text-gray-500 italic">No custom instruction set</p>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={() => setIsEditingInstruction(true)}
+                                            className="ml-2 btn btn-outline-gray text-xs"
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                                     
                             {brain.isShare && (
                                 <>                                

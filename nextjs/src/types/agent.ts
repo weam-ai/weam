@@ -4,8 +4,6 @@ export type AgentRecordType = {
     _id: string;
     brain: FormatBrainType;
     createdAt: string;
-    goals: string[];
-    instructions?: string[];
     isActive: boolean;
     itrTimeDuration?: string;
     maxItr?: number;

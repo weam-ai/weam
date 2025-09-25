@@ -68,7 +68,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { setIsWebSearchActive, setSelectedAIModal } from '@/lib/slices/aimodel/assignmodelslice';
-import { UploadedFileType } from '@/types/chat';
+import { UploadedFileType, GPTTypesOptions, SelectedContextType } from '@/types/chat';
 import { AiModalType } from '@/types/aimodels';
 import { BrainListType } from '@/types/brain';
 import BookmarkDialog from './BookMark';
@@ -97,7 +97,7 @@ import SearchIcon from '@/icons/Search';
 import ThreeDotLoader from '../Loader/ThreeDotLoader';
 import { useResponseUpdate } from '@/hooks/chat/useResponseUpdate';
 import { usePageOperations } from '@/hooks/chat/usePageOperations';
-const defaultContext = {
+const defaultContext: SelectedContextType = {
     type: null,
     prompt_id: undefined,
     custom_gpt_id: undefined,
@@ -105,8 +105,8 @@ const defaultContext = {
     textDisable: false,
     attachDisable: false,
     title: undefined,
+    isRemove: false,
 };
-
 let API_TYPE = API_TYPE_OPTIONS.OPEN_AI;
 
 const ChatPage = memo(() => {
@@ -215,8 +215,8 @@ const ChatPage = memo(() => {
         setSearchValue(e.target.value);
     };
 
-    const handleAgentSelection = (gpt) => {
-        onSelectMenu(GPTTypes.CustomGPT, gpt);
+    const handleAgentSelection = (gpt: BrainAgentType) => {
+        onSelectMenu(GPTTypes.CustomGPT as GPTTypesOptions, gpt);
         setShowAgentList(false);
         setText('');
     };
@@ -459,13 +459,17 @@ const ChatPage = memo(() => {
         const messageId = generateObjectId();
         setText('');
         dispatch(setChatAccessAction(true));
+         // Calculate model credit before sending request
+        //  const modelCredit = getModelCredit(modalName);
         if (!chatHasConversation(conversations) && Object.keys(initialMessage).length > 0) {
             const newMessage = {
                 ...initialMessage,
                 id: messageId,
                 media: globalUploadedFile || [], // due to async state update due to that files are not show proper in ui
                 cloneMedia: globalUploadedFile || [],
-                proAgentData: JSON.parse(JSON.stringify(serializableProAgentData)) // Deep clone to break circular references
+                proAgentData: JSON.parse(JSON.stringify(serializableProAgentData)), // Deep clone to break circular references
+                isPaid: true,
+                usedCredit: modelCredit,
             };
             setConversations([newMessage]);
             dispatch(setInitialMessageAction({}));
@@ -499,7 +503,9 @@ const ChatPage = memo(() => {
                     id: messageId,
                     cloneMedia: globalUploadedFile || [],
                     proAgentData: serializableProAgentData,
-                    citations: []
+                    citations: [],
+                    isPaid: true,
+                    usedCredit: modelCredit,
                 },
             ]);
         }
@@ -516,7 +522,9 @@ const ChatPage = memo(() => {
             messageId: messageId,
             companyId: companyId,
             user: formatMessageUser(currentUser),
-            isPaid: false
+            isPaid: true,
+            apiKey: selectedAIModal.config.apikey,
+            usedCredit: modelCredit
         };
         console.log(newPromptReqBody)
         img_url = handleImageConversation(globalUploadedFile);
@@ -570,13 +578,15 @@ const ChatPage = memo(() => {
             proAgentData: serializableProAgentData,
             apiKey: matchedModel.config.apikey,
             brainId: getDecodedObjectId(),
+            usedCredit: modelCredit
         })
         console.log("LLM_RESPONSE_SEND============",{
             query: query,
             chatId: params.id,
             model: matchedModel.name,
             code: selectedAIModal.bot.code,
-            apiKey: selectedAIModal.config.apikey
+            apiKey: selectedAIModal.config.apikey,
+            usedCredit: modelCredit
         })
         if (chatTitle == '' || chatTitle === undefined) {
             socket.emit(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, {

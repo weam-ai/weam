@@ -181,12 +181,14 @@ const addCustomGpt = async (req) => {
           );
 
           // Create chat docs in bulk instead of individual operations
-            ChatDocs.insertMany(docFile.map(dfile => ({
-              userId: req.userId,
-              fileId: dfile._id,
-              brainId,
-              doc: chatDocsFileFormat(dfile),
-            })));
+            if (existingBot?.brain?.id) {
+                ChatDocs.insertMany(docFile.map(dfile => ({
+                    userId: req.userId,
+                    fileId: dfile._id,
+                    brainId: existingBot.brain.id,
+                    doc: chatDocsFileFormat(dfile),
+                })));
+            }
 
             const vectorData = docFile.map(file => ({
             type: file.type,
@@ -325,19 +327,21 @@ const updateCustomGpt = async (req) => {
                 id: defaultEmbedding._id,
             };
             
-            const vectorData = docFile.map(file => ({
-                type: file.type,
-                companyId: company.id,
-                fileId: file.id,
-                api_key_id: defaultEmbedding._id.toString(),
-                tag: file.uri.split('/')[2], // Extract filename from URI: /documents/fileId.extension
-                uri: file.uri,
-                brainId: existingBot.brain.id.toString(),
-                file_name: file.name
-            }));
+            if (existingBot?.brain?.id) {
+                const vectorData = docFile.map(file => ({
+                    type: file.type,
+                    companyId: company.id,
+                    fileId: file.id,
+                    api_key_id: defaultEmbedding._id.toString(),
+                    tag: file.uri.split('/')[2],
+                    uri: file.uri,
+                    brainId: existingBot.brain.id.toString(),
+                    file_name: file.name
+                }));
  
             // Store vector data
             storeVectorData(req, vectorData);
+            }
             const newDocs = docFile.map(file => formatDBFileData(file));
             Object.assign(updateBody, { doc: [...filteredPreviousDocs, ...newDocs] });            
         } else {
@@ -588,7 +592,7 @@ async function usersWiseGetAll(req) {
         if (!brains.length) return { data: [], paginator: {} };
         const brainStatus = await getBrainStatus(brains);
         const query ={
-            'brain.id': { $in: brains.map(ele => ele.brain.id) },
+            'brain.id': { $in: brains.filter(ele => ele?.brain?.id).map(ele => ele.brain.id) },
             ...req.body.query
         }
         delete query.workspaceId;

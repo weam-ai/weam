@@ -79,7 +79,9 @@ const ListHeaderLayout = ({ heading, icons }) => {
             {pathname !== routes.customGPTAdd && (
                 <>
                     <span className="inline-block mx-2.5">/</span>
-                    <p className='text-font-14'>{data?.title}</p>
+                    <p className='text-font-14'>
+                        {pathname.includes('/custom-gpt/edit/') ? 'Edit Agent' : data?.title}
+                    </p>
                 </>
             )}
         </header>
@@ -113,6 +115,12 @@ const Header = () => {
         // Match paths like '/chat-list/id', '/chat-list/id', etc.
         const chatListRegex = /^\/chat\/[a-fA-F0-9]{24}$/;
         return chatListRegex.test(path);
+    };
+
+    const isCustomGptEditPath = (path) => {
+        // Match paths like '/custom-gpt/edit/id'
+        const customGptEditRegex = /^\/custom-gpt\/edit\/[a-fA-F0-9]{24}$/;
+        return customGptEditRegex.test(path);
     };
 
     const headerComponents = {
@@ -164,6 +172,18 @@ const Header = () => {
                 }
             />
         ),
+        'custom-gpt-edit': (
+            <ListHeaderLayout
+                heading={'Agents'}
+                icons={
+                    <Customgpt
+                        width={'18'}
+                        height={'18'}
+                        className={'fill-b2 object-contain'}
+                    />
+                }
+            />
+        ),
         [routes.docs]: (
             <ListHeaderLayout
                 heading={'Docs'}
@@ -179,6 +199,7 @@ const Header = () => {
     };
 
     if (isDynamicChatPath(pathname)) return <HeaderLayout />;
+    if (isCustomGptEditPath(pathname)) return headerComponents['custom-gpt-edit'];
 
     return headerComponents[pathname];
 };

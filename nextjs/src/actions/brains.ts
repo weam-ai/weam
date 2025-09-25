@@ -14,6 +14,7 @@ type TeamsInput = {
 type CreateBrainActionData = {
     title: string;
     isShare: boolean;
+    customInstruction?: string;
     workspaceId: string;
     shareWith?: MemberType[];
     teams?: TeamsInput[];
@@ -34,6 +35,7 @@ export async function createBrainAction(obj: BrainCreateType) {
         title: obj.title,
         isShare: obj.isShare,
         workspaceId: obj.workspaceId,
+        customInstruction: obj.customInstruction,
     };
     if (obj.isShare) {
         data.shareWith = obj.members.map((user) => {

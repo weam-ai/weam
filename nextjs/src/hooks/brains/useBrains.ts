@@ -38,12 +38,14 @@ const sharedDefaultValue = {
     title: '',
     members: [],
     teamsInput: [],
+    customInstruction: '',
 };
 const addMemberDefaultValue:any = {
     members: [],
 };
 const personalDefaultValue:any = {
     title: '',
+    customInstruction: '',
 };
 
 const addTeamDefaultValue:any = {

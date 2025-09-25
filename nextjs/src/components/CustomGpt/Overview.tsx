@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WorkspacePlaceholder from '../../../public/wokspace-placeholder.svg';
 import CloseIcon from '../../../public/black-close-icon.svg';
 import Image from 'next/image';
 import FileUploadCustom from '../FileUploadCustom';
+import FileUpload from '../FileUploadDropZone';
 import ArrowNext from '@/icons/ArrowNext';
+import ArrowBack from '@/icons/ArrowBack';
 import Label from '@/widgets/Label';
 import PlusRound from '@/icons/PlusRound';
-import { overviewValidationSchema } from '@/schema/customgpt';
+import { overviewValidationSchema, modalSelectionKeys, docsSelectionSchema } from '@/schema/customgpt';
 import { useFormik } from "formik";
 import FormikError from '@/widgets/FormikError';
 import {
@@ -17,18 +19,36 @@ import {
 } from '@/components/ui/tooltip';
 import TooltipIcon from '@/icons/TooltipIcon';
 import CharacterSelectionDialog from './CharacterSelectionDialog';
+import Select from 'react-select';
+import useAssignModalList from '@/hooks/aiModal/useAssignModalList';
+import { AI_MODAL_NAME, API_TYPE_OPTIONS, MODULES, MODULE_ACTIONS, FILE } from '@/utils/constant';
+import { getDisplayModelName } from '@/utils/helper';
+import commonApi from '@/api';
+import Toast from '@/utils/toast';
+import { useRouter, useSearchParams } from 'next/navigation';
+import routes from '@/utils/routes';
+import { retrieveBrainData } from '@/utils/helper';
 
 // Import the character data to access all characters for random selection
 import { DEFAULT_CHARACTERS } from './CharacterSelectionDialog';
 
 interface OverviewProps {
-    onNext: () => void;
     customGptData: any;
     setCustomGptData: (data: any) => void;
 }
 
-const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGptData }) => {
+const CUSTOM_BOT_IGNORE_MODAL = [
+    AI_MODAL_NAME.SONAR,
+    AI_MODAL_NAME.SONAR_REASONING_PRO
+];
+
+const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) => {
     const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [filesRemove, setFilesRemove] = useState([]);
+    const router = useRouter();
+    const b = useSearchParams().get('b');
+    const { userModalList, userModals } = useAssignModalList();
 
     // Function to get a random character from all tabs
     const getRandomCharacter = () => {
@@ -70,7 +90,7 @@ const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGpt
     const formik = useFormik({
         enableReinitialize: true,
         initialValues: customGptData,
-        validationSchema: overviewValidationSchema,
+        validationSchema: modalSelectionKeys.concat(docsSelectionSchema),
         onSubmit: async (values) => {
             try {
                 let submissionData = { ...customGptData, ...values };
@@ -81,11 +101,70 @@ const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGpt
                     const randomCharacterData = autoAssignRandomCharacter();
                     submissionData = { ...submissionData, ...randomCharacterData };
                 }
-                
-                setCustomGptData(submissionData);
-                onNext();
+
+                // Complete form submission logic from Docs component
+                const brainData = retrieveBrainData();
+
+                const formData = new FormData();
+                formData.append('title', submissionData.title);
+                formData.append('systemPrompt', submissionData.systemPrompt);
+                if (submissionData.charimg) {
+                    formData.append('charimg', submissionData.charimg);
+                }
+                formData.append('responseModel[name]', submissionData.responseModel.name);
+                formData.append('responseModel[id]', submissionData.responseModel.id);
+                formData.append('responseModel[company][name]', submissionData.responseModel.company.name);
+                formData.append('responseModel[company][slug]', submissionData.responseModel.company.slug);
+                formData.append('responseModel[company][id]', submissionData.responseModel.company.id);
+                formData.append('responseModel[bot][id]', submissionData.responseModel.bot.id);
+                formData.append('responseModel[bot][title]', submissionData.responseModel.bot.title);
+                formData.append('responseModel[bot][code]', submissionData.responseModel.bot.code);
+                formData.append('responseModel[provider]', submissionData.responseModel.provider);
+                formData.append('maxItr', submissionData.maxItr);
+                formData.append('itrTimeDuration', submissionData.itrTimeDuration);
+
+                if(submissionData.coverImg instanceof File || submissionData.removeCoverImg){
+                    formData.append('coverImg', submissionData.coverImg instanceof File ? submissionData.coverImg : null);
+                }
+
+                if(Array.isArray(submissionData.doc)){
+                    submissionData.doc.forEach((file:any) => {
+                        if(!file.id){
+                            formData.append('doc', file);
+                        }
+                    });
+                } 
+
+                if(filesRemove.length){
+                    formData.append('removeDoc', JSON.stringify(filesRemove));
+                }
+
+                formData.append('brain[id]', brainData?._id);
+                formData.append('brain[title]', brainData?.title);
+                formData.append('brain[slug]', brainData?.slug);
+                formData.append('imageEnable', submissionData.responseModel.bot.code === API_TYPE_OPTIONS.OPEN_AI ? submissionData?.imageEnable || false : false);
+           
+                setLoading(true);
+                const reqObject = {
+                    action: MODULE_ACTIONS.CREATE,
+                    prefix: MODULE_ACTIONS.WEB_PREFIX,
+                    module: MODULES.CUSTOM_GPT,
+                    common: true,
+                    data: formData,
+                    config: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+                if(submissionData.id){
+                    Object.assign(reqObject,{action: MODULE_ACTIONS.UPDATE, parameters:[submissionData.id]})
+                }
+                const response = await commonApi(reqObject);
+                Toast(response.message);
+                router.push(`${routes.customGPT}?b=${b}`);
             } catch (error) {
-                console.error('Error in Overview form submission:', error);
+                console.error('Error in form submission:', error);
+            } finally {
+                setLoading(false);
             }
         }
     });
@@ -100,25 +179,10 @@ const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGpt
         setFieldValue,
     } = formik;
 
-    const addNewTextInput = () => {
-        setFieldValue('goals', [...values.goals, '']);
-    };
+    useEffect(() => {
+        userModalList();
+    }, []);
 
-    const removeInput = (index: number) => {
-        const newItems = [...values.goals];
-        newItems.splice(index, 1);
-        setFieldValue('goals', newItems);
-    };
-
-    const addNewInstructionInput = () => {
-        setFieldValue('instructions', [...values.instructions, '']);
-    };
-
-    const removeNewInstructionInput = (index: number) => {
-        const newItems = [...values.instructions];
-        newItems.splice(index, 1);
-        setFieldValue('instructions', newItems);
-    };
 
     const handleImageSelect = (imageUrl: string, file?: File) => {
         if (file && (file as any).isCharacter) {
@@ -159,50 +223,37 @@ const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGpt
     return (
         <div>
             <form onSubmit={handleSubmit}>
+                
                 {/* Character Selection Trigger */}
-                <div
-                    className="mb-4 flex items-center gap-2 cursor-pointer group"
-                    onClick={() => setIsCharacterDialogOpen(true)}
-                >
-                    <div className="w-14 h-14 bg-b12 rounded overflow-hidden p-1 flex items-center justify-center">
-                        {values.previewCoverImg ? (
-                            <Image
-                                src={values.previewCoverImg}
-                                alt="selected image"
-                                width={56}
-                                height={56}
-                                className="object-cover w-10 h-auto rounded-full"
-                            />
-                        ) : (
-                            <Image
-                                src={WorkspacePlaceholder}
-                                alt="upload"
-                                width={56}
-                                height={56}
-                                className="w-10 h-auto object-cover rounded-full"
-                            />
-                        )}
+                <div className='inline-block mb-5 min-w-[180px]'>
+                    <div
+                        className="flex items-center gap-2 cursor-pointer group"
+                        onClick={() => setIsCharacterDialogOpen(true)}
+                    >
+                        <div className="w-14 h-14 bg-b12 rounded overflow-hidden p-1 flex items-center justify-center">
+                            {values.previewCoverImg ? (
+                                <Image
+                                    src={values.previewCoverImg}
+                                    alt="selected image"
+                                    width={56}
+                                    height={56}
+                                    className="object-cover w-10 h-auto rounded-full"
+                                />
+                            ) : (
+                                <Image
+                                    src={WorkspacePlaceholder}
+                                    alt="upload"
+                                    width={56}
+                                    height={56}
+                                    className="w-10 h-auto object-cover rounded-full"
+                                />
+                            )}
+                        </div>
+                        <p className="text-font-14 font-medium group-hover:text-b2 text-b5">
+                            Upload Image
+                        </p>
                     </div>
-                    <p className="text-font-14 font-medium group-hover:text-b2 text-b5">
-                        Upload Image
-                    </p>
                 </div>
-
-                {/* File Upload Fallback */}
-                {/* <FileUploadCustom
-                    inputId={'uploadCustomGPT'}
-                    placeholder={WorkspacePlaceholder}
-                    placeholderClass="h-[18px] w-auto"
-                    className="mb-4"
-                    prevImg={values.previewCoverImg}
-                    onLoadPreview={(prevImg) => {
-                        setFieldValue('previewCoverImg', prevImg || null);
-                    }}
-                    onLoad={(file) => {
-                        setFieldValue('coverImg', file || null);
-                    }}
-                    page={'agent'}
-                /> */}
 
                 {/* Character Selection Dialog */}
                 <CharacterSelectionDialog
@@ -213,9 +264,9 @@ const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGpt
                 />
 
                 {touched.coverImg && <FormikError errors={errors} field={'coverImg'} />}
-
+                
                 {/* Name */}
-                <div className="relative mb-5">
+                <div className="relative w-full mb-5">
                     <Label htmlFor={'cgpt-name'} title={'Name'} />
                     <input
                         type="text"
@@ -229,6 +280,83 @@ const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGpt
                     />
                     {touched.title && <FormikError errors={errors} field={'title'} />}
                 </div>
+
+                {/* Model Selection */}
+                {userModals && (
+                    <div className="relative mb-5">
+                        
+                        <div className="flex items-center">
+                            <Label htmlFor={'model'} title={'Model'} />
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="cursor-pointer mb-2 ml-1 inline-block">
+                                            <TooltipIcon
+                                                width={15}
+                                                height={15}
+                                                className={
+                                                    'w-[15px] h-[15px] object-cover inline-block fill-b7'
+                                                }
+                                            />
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="border-none">
+                                        <p className="text-font-14">{`Select the model for generating responses for your agents.`}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <Select
+                            options={userModals?.reduce((accumulator, current) => {
+                                if (!CUSTOM_BOT_IGNORE_MODAL.includes(current.name) && !current.isDisable) {
+                                    accumulator.push({
+                                        value: getDisplayModelName(current.name),
+                                        label: getDisplayModelName(current.name),
+                                        id: current._id,
+                                        company: current.company,
+                                        isDisabled:current.isDisable || false,
+                                        provider: current?.provider,
+                                        bot: current.bot,
+                                        name: current.name,
+                                    })
+                                }
+                                return accumulator;
+                            }, [])}
+                            id="model"
+                            className="react-select-container"
+                            classNamePrefix="react-select"
+                            name="responseModel"
+                            onChange={(value)=>{
+                                setFieldValue('responseModel',value);
+                            }}
+                            value={values.responseModel}
+                            isOptionDisabled={(option)=> option.isDisabled}
+                            styles={{
+                                option: (provided, option) => ({
+                                ...provided,
+                                cursor: option.isDisabled ? 'not-allowed' : 'pointer',
+                                })
+                            }}
+                        />
+                        {touched.responseModel && <FormikError errors={errors} field={'responseModel'} />}
+
+                        {values.responseModel?.bot?.code === API_TYPE_OPTIONS.OPEN_AI && (
+                            <div className="mt-4">
+                                <Label htmlFor={'imageEnable'} title={'Capabilities'} required={false} />
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="form-checkbox h-4 w-4 text-blue-600"
+                                        checked={values?.imageEnable || false}
+                                        onChange={(e) => setFieldValue('imageEnable', e.target.checked)}
+                                    />
+                                    <span className="ml-2">Image Generation</span>
+                                </label>
+                            </div>
+                        )}
+                    </div>
+                )}
+                
 
                 {/* System Prompt */}
                 <div className="relative mb-4">
@@ -267,161 +395,43 @@ const Overview: React.FC<OverviewProps> = ({ onNext, customGptData, setCustomGpt
                     )}
                 </div>
 
-                {/* Goals */}
+                
+                {/* File Upload Section */}
                 <div className="relative mb-5">
-                    <div className="flex items-center">
-                        <Label htmlFor={'Goals'} title={'Goals'} />
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span className="cursor-pointer mb-2 ml-1">
-                                        <TooltipIcon
-                                            width={15}
-                                            height={15}
-                                            className="w-[15px] h-[15px] object-cover inline-block fill-b7"
-                                        />
-                                    </span>
-                                </TooltipTrigger>
-                                <TooltipContent className="border-none">
-                                    <p className="text-font-14">
-                                        Outline specific aims and what success looks like for users
-                                    </p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    {values.goals.map((value, index) => (
-                        <div className="goal-input-wrap relative mb-2.5" key={index}>
-                            <input
-                                type="text"
-                                className="default-form-input !pr-10"
-                                id={`cgpt-goal-${index}`}
-                                value={value}
-                                name={`goals[${index}]`}
-                                onChange={handleChange}
-                            />
-                            {touched.goals && (
-                                <FormikError errors={errors} index={index} field={'goals'} />
-                            )}
-                            {values.goals.length > 1 && index > 0 && (
-                                <button
-                                    type="button"
-                                    className="goal-input-remove absolute top-0 right-0 h-[50px] p-3"
-                                    onClick={() => removeInput(index)}
-                                >
-                                    <Image
-                                        src={CloseIcon}
-                                        width={12}
-                                        height={12}
-                                        alt="close"
-                                    />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    {errors.goals && typeof errors.goals === 'string' && (
-                        <FormikError errors={errors} field={'goals'} />
-                    )}
-                    <button
-                        className="btn btn-outline-gray"
-                        id="add-new-goal"
-                        type="button"
-                        onClick={addNewTextInput}
-                    >
-                        <PlusRound
-                            className="inline-block mr-2.5 [&>circle]:fill-b11 [&>path]:fill-b2"
-                            width="22"
-                            height="22"
-                        />
-                        Add
-                    </button>
-                </div>
-
-                {/* Instructions */}
-                <div className="relative mb-4">
-                    <div className="flex items-center">
-                        <Label
-                            htmlFor={'cgpt-prompt-content'}
-                            title={'Instruction (optional)'}
-                            required={false}
-                        />
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span className="cursor-pointer mb-2 ml-1 inline-block">
-                                        <TooltipIcon
-                                            width={15}
-                                            height={15}
-                                            className="w-[15px] h-[15px] object-cover inline-block fill-b7"
-                                        />
-                                    </span>
-                                </TooltipTrigger>
-                                <TooltipContent className="border-none">
-                                    <p className="text-font-14">
-                                        Detail how the agent should interact and handle various
-                                        scenarios
-                                    </p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    {values.instructions.map((value, index) => (
-                        <div className="goal-input-wrap relative mt-2.5" key={index}>
-                            <textarea
-                                className="default-form-input !pr-10"
-                                placeholder="Enter Instruction here..."
-                                id={`cgpt-prompt-content-${index}`}
-                                rows={2}
-                                value={value}
-                                name={`instructions[${index}]`}
-                                onChange={handleChange}
-                            ></textarea>
-                            {touched.instructions && (
-                                <FormikError errors={errors} index={index} field={'instructions'} />
-                            )}
-                            {values.instructions.length > 1 && index > 0 && (
-                                <button
-                                    className="goal-input-remove absolute top-0 right-0 h-[50px] p-3"
-                                    type="button"
-                                    onClick={() => removeNewInstructionInput(index)}
-                                >
-                                    <Image
-                                        src={CloseIcon}
-                                        width={12}
-                                        height={12}
-                                        alt="close"
-                                    />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    {errors.instructions && typeof errors.instructions === 'string' && (
-                        <FormikError errors={errors} field={'instructions'} />
-                    )}
-                    <button
-                        className="btn btn-outline-gray mt-2.5"
-                        id="add-new-instruction"
-                        type="button"
-                        onClick={addNewInstructionInput}
-                    >
-                        <PlusRound
-                            className="inline-block mr-2.5 [&>circle]:fill-b11 [&>path]:fill-b2"
-                            width="22"
-                            height="22"
-                        />
-                        Add
-                    </button>
+                    <Label htmlFor={'doc'} title={'Documents (optional)'} required={false} />
+                    <FileUpload
+                        fileFormat="file"
+                        className='border border-b-4 rounded-lg text-center cursor-pointer p-[30px]' 
+                        onLoad={(files: File[]) => {
+                            if (files) {
+                                setFieldValue('doc', files);
+                                // Don't call setCustomGptData here as it causes Formik reinitialization
+                                // Formik will handle the state through setFieldValue
+                            } else {
+                                setFieldValue('doc', null);
+                            }
+                        }}
+                        multiple
+                        maxFiles={10}
+                        setFilesRemove={setFilesRemove}
+                        filesRemove={filesRemove}
+                        existingFiles={values.doc || []}
+                        maxFileSize={FILE.SIZE}
+                    />
+                    {(values.doc && values.doc.length > 0) ?
+                        <>{
+                            values.doc.map((item, index) => (
+                                <FormikError key={index} errors={errors} index={index} field={'doc'} />
+                            ))
+                        }
+                        </> : <FormikError errors={errors} field={'doc'} />}
                 </div>
 
                 {/* Submit */}
-                <div className="flex justify-end mt-5">
-                    <button type="submit" className="btn btn-blue">
-                        Next
-                        <ArrowNext
-                            width="14"
-                            height="12"
-                            className="fill-b15 ms-2.5 inline-block align-middle -mt-0.5"
-                        />
+                <div className="flex mt-5">
+                    <button type="submit" className="btn btn-black" disabled={loading}>
+                        Save Agent
+                        
                     </button>
                 </div>
             </form>

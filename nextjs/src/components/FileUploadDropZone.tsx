@@ -208,13 +208,13 @@ const FileUpload = ({
               acc.push(
                 <div key={index} className='border py-2 px-3 rounded-custom flex items-center gap-3'>
                   {imageSource && (
-                    <div className="relative w-[50px] h-[50px] flex-shrink-0">
+                    <div className="relative w-[35px] h-auto flex-shrink-0">
                       <img 
                         src={imageSource} 
                         alt={`${file.name} preview`} 
                         className='object-contain' 
-                        width={40}
-                        height={40}
+                        width={35}
+                        height={35}
                       />                      
                     </div>
                   )}

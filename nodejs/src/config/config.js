@@ -28,7 +28,7 @@ module.exports = {
         FRONT_URL: process.env.FRONT_URL,
         BASE_URL: process.env.BASE_URL,
         OPEN_AI_MODAL: process.env.OPEN_AI_MODAL,
-        PYTHON_API_URL: process.env.PYTHON_API_URL,
+        PYTHON_API_URL: "http://gateway_service:9089/pyapi",
         OPEN_AI_API_URL: process.env.OPEN_AI_API_URL,
         WEAM_OPEN_AI_KEY: process.env.WEAM_OPEN_AI_KEY,
         ANTHROPIC_AI_API_URL: process.env.ANTHROPIC_AI_API_URL,  

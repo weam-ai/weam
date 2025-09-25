@@ -46,7 +46,7 @@ const addPrompt = async (req) => {
             const prompt_ids = [];
             const child_prompt_ids = [];
             result.forEach((prompt) => {
-                if (prompt.brain.id.toString() === req.body.selected) {
+                if (prompt?.brain?.id && prompt.brain.id.toString() === req.body.selected) {
                     prompt_ids.push(prompt._id.toString());
                 } else {
                     child_prompt_ids.push(prompt._id.toString());
@@ -206,7 +206,7 @@ async function usersWiseGetAll(req) {
         if (!brains.length) return { data: [], paginator: {} };
         const brainStatus = await getBrainStatus(brains);
         const query ={
-            'brain.id': { $in: brains.map(ele => ele.brain.id) },
+            'brain.id': { $in: brains.filter(ele => ele?.brain?.id).map(ele => ele.brain.id) },
             ...req.body.query
         }
         delete query.workspaceId;

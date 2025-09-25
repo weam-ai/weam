@@ -7,11 +7,13 @@ export const addSharedBrainKeys = yup.object({
             email: yup.string().email().required(),
             id: yup.string().required(),
         })
-    ).min(1, 'Please select at least one member')
+    ).min(1, 'Please select at least one member'),
+    customInstruction: yup.string().optional()
 })
 
 export const addPersonalBrainKeys = yup.object({
     title: yup.string().required('Brain name is required'),
+    customInstruction: yup.string().optional()
 })
 
 
