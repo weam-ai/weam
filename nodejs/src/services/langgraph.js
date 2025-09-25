@@ -18,7 +18,7 @@ const CustomGpt = require('../models/customgpt');
 const ChatDocs = require('../models/chatdocs');
 const { createCostCallback } = require('./callbacks/contextManager');
 const logger = require('../utils/logger');
-const { deductUserMsgCredit } = require('./user');
+// const { deductUserMsgCredit } = require('./user');
 const Chat = require('../models/chat');
 const ChatMember = require('../models/chatmember');
 const Messages = require('../models/thread');
@@ -1268,20 +1268,20 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 }
 
                 // Deduct message credit from user (similar to Python implementation)
-                if (data.companyId || (data.user && data.user.company && data.user.company.id)) {
-                    try {
-                        const companyId = data.companyId || data.user.company.id;
-                        // Use model-specific credit amount from frontend (msgCredit field) and ensure it's stored as double
-                        const creditValue = Number((parseFloat(data.msgCredit || data.usedCredit || 1.0)).toFixed(1));
+                // if (data.companyId || (data.user && data.user.company && data.user.company.id)) {
+                //     try {
+                //         const companyId = data.companyId || data.user.company.id;
+                //         // Use model-specific credit amount from frontend (msgCredit field) and ensure it's stored as double
+                //         const creditValue = Number((parseFloat(data.msgCredit || data.usedCredit || 1.0)).toFixed(1));
                         
                         
-                        const creditResult = await deductUserMsgCredit(companyId, creditValue);
-                    } catch (error) {
-                        logger.error(`❌ [CREDIT_DEDUCT] Error deducting credit:`, error);
-                    }
-                } else {
-                    logger.warn(`⚠️ [CREDIT_DEDUCT] No company ID found in data for credit deduction`);
-                }
+                //         const creditResult = await deductUserMsgCredit(companyId, creditValue);
+                //     } catch (error) {
+                //         logger.error(`❌ [CREDIT_DEDUCT] Error deducting credit:`, error);
+                //     }
+                // } else {
+                //     logger.warn(`⚠️ [CREDIT_DEDUCT] No company ID found in data for credit deduction`);
+                // }
                 
                 socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
                     chunk: llmStreamingEvents.RESPONSE_DONE,
@@ -1337,7 +1337,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 await createLLMConversation({ 
                     ...data, 
                     answer: proccedMsg, 
-                    usedCredit: data.msgCredit || data.usedCredit || 1 
+                    usedCredit: data.usedCredit || 1 
                 });
             } catch (saveError) {
                 logger.error('❌ Error saving conversation to database:', saveError);

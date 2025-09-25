@@ -9,6 +9,7 @@ const checkPromptLimit = catchAsync(async (req, res, next) => {
     
     const filter = {
       companyId: companyId,
+      userId: req.user.id,
     };
     const user = req.user;
     const modelMessageCount = await getUsedCredit(

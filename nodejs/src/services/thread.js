@@ -583,11 +583,11 @@ async function createLLMConversation (data) {
         }
         
         // Determine the credit amount for this conversation and ensure it's stored as double
-        const creditAmount = Number((parseFloat(data.msgCredit || data.usedCredit || 1.0)).toFixed(1));
+        // const creditAmount = Number((parseFloat(data.msgCredit || data.usedCredit || 1.0)).toFixed(1));
         
-        logger.info(`📝 [THREAD_DEBUG] Creating thread with data keys: ${Object.keys(data).join(', ')}`);
-        logger.info(`📝 [THREAD_DEBUG] Model: ${data.responseModel || data.model || 'unknown'}`);
-        logger.info(`📝 [THREAD_DEBUG] Credit calculation: msgCredit=${data.msgCredit}, usedCredit=${data.usedCredit}, final=${creditAmount} (stored as Double)`);
+        // logger.info(`📝 [THREAD_DEBUG] Creating thread with data keys: ${Object.keys(data).join(', ')}`);
+        // logger.info(`📝 [THREAD_DEBUG] Model: ${data.responseModel || data.model || 'unknown'}`);
+        // logger.info(`📝 [THREAD_DEBUG] Credit calculation: msgCredit=${data.msgCredit}, usedCredit=${data.usedCredit}, final=${creditAmount} (stored as Double)`);
         
         // Create the thread document with sumhistory_checkpoint
         const threadDoc = await Thread.create({
@@ -607,11 +607,12 @@ async function createLLMConversation (data) {
             responseAPI: data.responseAPI,
             proAgentData: data.proAgentData,
             sumhistory_checkpoint: messageCheckpoint,
-            usedCredit: creditAmount, // Use model-specific credit from frontend, fallback to usedCredit or 1
-            citations: data.citations
+            usedCredit: data.usedCredit, // Use model-specific credit from frontend, fallback to usedCredit or 1
+            citations: data.citations,
+            isPaid: true
         });
         
-        logger.info(`📝 [THREAD_SAVED] Thread saved with usedCredit: ${creditAmount}`);
+        // logger.info(`📝 [THREAD_SAVED] Thread saved with usedCredit: ${creditAmount}`);
         
         // Always add system message with the same content and checkpoint as previous messages
         // This ensures every message has a system key until pruning occurs

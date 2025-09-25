@@ -459,13 +459,17 @@ const ChatPage = memo(() => {
         const messageId = generateObjectId();
         setText('');
         dispatch(setChatAccessAction(true));
+         // Calculate model credit before sending request
+        //  const modelCredit = getModelCredit(modalName);
         if (!chatHasConversation(conversations) && Object.keys(initialMessage).length > 0) {
             const newMessage = {
                 ...initialMessage,
                 id: messageId,
                 media: globalUploadedFile || [], // due to async state update due to that files are not show proper in ui
                 cloneMedia: globalUploadedFile || [],
-                proAgentData: JSON.parse(JSON.stringify(serializableProAgentData)) // Deep clone to break circular references
+                proAgentData: JSON.parse(JSON.stringify(serializableProAgentData)), // Deep clone to break circular references
+                isPaid: true,
+                usedCredit: modelCredit,
             };
             setConversations([newMessage]);
             dispatch(setInitialMessageAction({}));
@@ -499,7 +503,9 @@ const ChatPage = memo(() => {
                     id: messageId,
                     cloneMedia: globalUploadedFile || [],
                     proAgentData: serializableProAgentData,
-                    citations: []
+                    citations: [],
+                    isPaid: true,
+                    usedCredit: modelCredit,
                 },
             ]);
         }
@@ -516,9 +522,9 @@ const ChatPage = memo(() => {
             messageId: messageId,
             companyId: companyId,
             user: formatMessageUser(currentUser),
-            isPaid: false,
+            isPaid: true,
             apiKey: selectedAIModal.config.apikey,
-            brainId: getDecodedObjectId()
+            usedCredit: modelCredit
         };
         console.log(newPromptReqBody)
         img_url = handleImageConversation(globalUploadedFile);
@@ -572,13 +578,15 @@ const ChatPage = memo(() => {
             proAgentData: serializableProAgentData,
             apiKey: matchedModel.config.apikey,
             brainId: getDecodedObjectId(),
+            usedCredit: modelCredit
         })
         console.log("LLM_RESPONSE_SEND============",{
             query: query,
             chatId: params.id,
             model: matchedModel.name,
             code: selectedAIModal.bot.code,
-            apiKey: selectedAIModal.config.apikey
+            apiKey: selectedAIModal.config.apikey,
+            usedCredit: modelCredit
         })
         if (chatTitle == '' || chatTitle === undefined) {
             socket.emit(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, {
