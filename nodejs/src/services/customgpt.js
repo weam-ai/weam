@@ -201,10 +201,6 @@ const addCustomGpt = async (req) => {
             slug, 
             coverImg: {}, 
             doc: [],
-            type: agentType,
-            description: description || null,
-            Agents: agentType === 'supervisor' ? Agents : [],
-            mcpTools: mcpTools || []
         }; 
 
         const existing = await CustomGpt.findOne({ slug, 'brain.id': brainId });
@@ -314,10 +310,6 @@ const updateCustomGpt = async (req) => {
         let updateBody = {
             ...req.body,
             slug: slugify(title),
-            type: agentType,
-            description: description || null,
-            Agents: agentType === 'supervisor' ? Agents : [],
-            mcpTools: mcpTools || []
         }
 
         if (req.files['coverImg']) {
