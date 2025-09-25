@@ -4,7 +4,6 @@ import Overview from '@/components/CustomGpt/Overview';
 
 const AddGptForm = () => {
     const [customGptData, setCustomGptData] = useState({
-        id: null,
         coverImg: null,
         previewCoverImg: null,
         title: '',
@@ -15,7 +14,7 @@ const AddGptForm = () => {
         mcpTools: [],
         responseModel: null,
         maxItr: 0,
-        itrTimeDuration: undefined,
+        itrTimeDuration: '',
         doc: [],
         imageEnable: false,
         charimg: ''
