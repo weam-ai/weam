@@ -67,7 +67,6 @@ const PagesPage = () => {
 
     const { getAllPages, updatePage, deletePage } = usePageOperations({
         onError: (error) => {
-            console.error('Error loading pages:', error);
             setError(error);
         }
     });
@@ -102,15 +101,11 @@ const PagesPage = () => {
             setLoadingMore(true);
             const nextPage = currentPage + 1;
             
-            console.log('Loading more pages, page:', nextPage);
-            
             const query = {
                 companyId: companyId,
                 // Add brain filter to only show pages for the selected brain
                 ...(brainId && { 'brain.id': brainId })
             };
-            
-            console.log('LoadMore query with brain filter:', query);
             
             const result = await getAllPages({
                 query: query,
@@ -123,13 +118,10 @@ const PagesPage = () => {
             
             if (result?.data) {
                 const newPages = Array.isArray(result.data) ? result.data : [];
-                console.log('Received new pages:', newPages.length);
                 
                 // Check for duplicates and only add new pages
                 const existingIds = new Set(pages.map(page => page._id));
                 const uniqueNewPages = newPages.filter(page => !existingIds.has(page._id));
-                
-                console.log('Unique new pages:', uniqueNewPages.length);
                 
                 if (uniqueNewPages.length > 0) {
                     // Add new pages and maintain descending order by createdAt
@@ -159,14 +151,10 @@ const PagesPage = () => {
     };
 
     const handlePageClick = (page: Page) => {
-        // Navigate to the original chat where this page was created
-        console.log('page.brain', page.brain);
-        
         // Try to get brain ID from the page's brain data
         let brainId = page.brain?.id || page.brain?._id || '';
         
         if (!brainId) {
-            console.warn('Brain ID is undefined for page:', page.title);
             // Fallback: try to get brain ID from the current context
             const currentBrainId = searchParams.get('b');
             if (currentBrainId) {
@@ -185,19 +173,14 @@ const PagesPage = () => {
         } else {
             chatUrl = `${routes.chat}/${page.chatId}${page.originalMessageId ? `?mid=${page.originalMessageId}&edit=true` : ''}`;
         }
-        console.log('Navigating to chat:', chatUrl);
         router.push(chatUrl, { scroll: false });
     };
 
     // Handle page edit
     const handleEditPage = (page: Page) => {
-        console.log('handleEditPage called with:', page);
-        console.log('Setting editingPage to:', page);
-        console.log('Setting editTitle to:', page.title);
         setEditingPage(page);
         setEditTitle(page.title);
         setIsEditing(false); // Should be false initially
-        console.log('State should now be set');
     };
 
     // Handle page update
@@ -205,9 +188,7 @@ const PagesPage = () => {
         if (!editingPage || !editTitle.trim() || isEditing) return;
         
         try {
-            setIsEditing(true);
-            console.log('Updating page:', editingPage._id, 'with title:', editTitle.trim());
-            
+            setIsEditing(true);            
             await updatePage(editingPage._id, { title: editTitle.trim() });
             
             // Update local state
@@ -222,10 +203,8 @@ const PagesPage = () => {
             setEditTitle('');
             setIsEditing(false);
             
-            console.log('Page updated successfully');
             Toast('Page updated successfully!', 'success');
         } catch (error) {
-            console.error('Error updating page:', error);
             setIsEditing(false);
             // Show error to user
             Toast('Failed to update page. Please try again.', 'error');
@@ -248,7 +227,6 @@ const PagesPage = () => {
             setDeletingPage(null);
             Toast('Page deleted successfully!', 'success');
         } catch (error) {
-            console.error('Error deleting page:', error);
             setDeletingPage(null);
             Toast('Failed to delete page. Please try again.', 'error');
         }
@@ -269,15 +247,12 @@ const PagesPage = () => {
                 setError(null);
                 setCurrentPage(1);
                 setHasMore(true);
-                console.log('Loading pages for companyId:', companyId, 'brainId:', brainId);
                 
                 const query = {
                     companyId: companyId,
                     // Add brain filter to only show pages for the selected brain
                     ...(brainId && { 'brain.id': brainId })
                 };
-                
-                console.log('Query with brain filter:', query);
                 
                 const result = await getAllPages({
                     query: query,
@@ -288,11 +263,8 @@ const PagesPage = () => {
                     }
                 });
                 
-                console.log('Pages API response:', result);
-                
                 if (result?.data) {
                     const pagesData = Array.isArray(result.data) ? result.data : [];
-                    console.log('Setting pages:', pagesData.length, 'pages');
                     
                     // Ensure pages are sorted in descending order by createdAt
                     const sortedPages = pagesData.sort((a, b) => 
@@ -304,12 +276,10 @@ const PagesPage = () => {
                     const totalPages = Math.ceil((result.paginator?.itemCount || 0) / 10);
                     setHasMore(totalPages > 1);
                 } else {
-                    console.log('No data in response');
                     setPages([]);
                     setHasMore(false);
                 }
             } catch (error) {
-                console.error('Error loading pages:', error);
                 setError(error instanceof Error ? error.message : 'Failed to load pages');
                 setPages([]);
                 setHasMore(false);
