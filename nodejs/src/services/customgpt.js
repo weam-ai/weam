@@ -348,14 +348,14 @@ const viewCustomGpt = async (req) => {
 const deleteCustomGpt = async (req) => {
     try {
         // Check if this agent is used by any supervisor agents
-        const supervisorAgents = await CustomGpt.find({
+        const supervisorAgents = await CustomGpt.findOne({
             type: 'supervisor',
             Agents: req.params.id,
             'brain.id': { $exists: true }
         });
 
-        if (supervisorAgents.length > 0) {
-            const supervisorNames = supervisorAgents.map(agent => agent.title).join(', ');
+        if (supervisorAgents) {
+            const supervisorNames = supervisorAgents.title;
             throw new Error(`Cannot delete agent. It is currently being used by supervisor agent(s): ${supervisorNames}`);
         }
 
