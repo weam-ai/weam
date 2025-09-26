@@ -104,6 +104,54 @@ const getUninstallationProgress = catchAsync(async (req, res) => {
     }
 });
 
+const getSyncProgress = catchAsync(async (req, res) => {
+    // No token authentication required - simple approach
+
+    // Set SSE headers
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // Send initial connection message
+    res.write(`data: ${JSON.stringify({ 
+        type: 'connected', 
+        message: 'Connected to sync progress stream' 
+    })}\n\n`);
+
+    // Start the sync process
+    try {
+        // Get solution type from query parameter
+        let solutionType = req.query.solutionType || '';
+        
+        // Add this check:
+        if (!solutionType) {
+            res.write(`data: ${JSON.stringify({ 
+                type: 'error', 
+                message: 'Solution type is required' 
+            })}\n\n`);
+            res.end();
+            return;
+        }
+        console.log('Backend received solutionType for sync:', solutionType);
+        
+        req.body = { solutionType }; // Pass solution type to service
+        await solutionInstallService.syncWithProgress(req, res);
+        
+        // Close the connection after sync completes
+        res.end();
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ 
+            type: 'error', 
+            message: error.message || 'Sync failed' 
+        })}\n\n`);
+        res.end();
+    }
+});
+
 const checkInstallationHealth = catchAsync(async (req, res) => {
     try {
         const solutionType = req.query.solutionType || '';
@@ -145,15 +193,25 @@ const checkInstallationHealth = catchAsync(async (req, res) => {
                     const [name, status] = line.split(' ', 2);
                     
                     // Create patterns dynamically from solution config
-                    const patterns = [
-                        solutionConfig.containerName,
-                        solutionConfig.repoName,
-                        solutionType
-                    ];
+                    const patterns = [solutionConfig.repoName, solutionType];
+                    
+                    // Add container names from config
+                    if (solutionConfig.containerName && Array.isArray(solutionConfig.containerName)) {
+                        patterns.push(...solutionConfig.containerName);
+                    } else if (solutionConfig.containerName) {
+                        patterns.push(solutionConfig.containerName);
+                    }
+                    
+                    // Add image names from config
+                    if (solutionConfig.imageName && Array.isArray(solutionConfig.imageName)) {
+                        patterns.push(...solutionConfig.imageName);
+                    } else if (solutionConfig.imageName) {
+                        patterns.push(solutionConfig.imageName);
+                    }
                     
                     // Check if any pattern matches the container name
                     const matches = patterns.some(pattern => 
-                        name.toLowerCase().includes(pattern.toLowerCase())
+                        pattern && typeof pattern === 'string' && name.toLowerCase().includes(pattern.toLowerCase())
                     );
                     
                     return matches && status.includes('Up');
@@ -175,5 +233,6 @@ const checkInstallationHealth = catchAsync(async (req, res) => {
 module.exports = {
     getInstallationProgress,
     getUninstallationProgress,
+    getSyncProgress,
     checkInstallationHealth
 };

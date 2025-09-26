@@ -205,28 +205,6 @@ async function cleanupExistingContainers(config) {
     try {
         console.log(`[${config.repoName}] 🧹 Cleaning up existing containers...`);
         
-        // Stop and remove main container
-        await runCommand(`docker rm -f ${config.containerName} || true`, config.repoName);
-        
-        console.log(`[${config.repoName}] ✅ Existing containers cleaned up`);
-    } catch (error) {
-        console.log(`[${config.repoName}] ⚠️ Error cleaning up containers:`, error.message);
-    }
-}
-
-/**
- * Uninstalls a solution by stopping and removing containers and cleaning up repository
- * @param {object} config - Solution configuration
- * @param {string} repoPath - Repository path
- * @returns {Promise<void>}
- */
-async function uninstallSolution(config, repoPath) {
-    try {
-        console.log(`[${config.repoName}] 🗑️ Starting uninstallation process...`);
-        
-        // Step 1: Find and remove actual running containers
-        console.log(`[${config.repoName}] 🔍 Finding running containers...`);
-        
         // Get list of running containers
         const { exec } = require('child_process');
         const containerList = await new Promise((resolve, reject) => {
@@ -259,6 +237,75 @@ async function uninstallSolution(config, repoPath) {
             }
         }
         
+        // Also try to stop and remove using docker-compose if repository exists
+        const repoPath = `/workspace/${config.repoName}`;
+        if (require('fs').existsSync(repoPath)) {
+            try {
+                console.log(`[${config.repoName}] 🛑 Trying docker-compose cleanup...`);
+                await runCommand(`cd ${repoPath} && docker-compose down -v --remove-orphans`, config.repoName);
+            } catch (error) {
+                console.log(`[${config.repoName}] ⚠️ Docker compose cleanup failed (expected if not using compose):`, error.message);
+            }
+        }
+        
+        console.log(`[${config.repoName}] ✅ Existing containers cleaned up`);
+    } catch (error) {
+        console.log(`[${config.repoName}] ⚠️ Error cleaning up containers:`, error.message);
+    }
+}
+
+/**
+ * Uninstalls a solution by stopping and removing containers and cleaning up repository
+ * @param {object} config - Solution configuration
+ * @param {string} repoPath - Repository path
+ * @returns {Promise<void>}
+ */
+async function uninstallSolution(config, repoPath) {
+    try {
+        console.log(`[${config.repoName}] 🗑️ Starting uninstallation process...`);
+        
+        // Step 1: Find and remove ALL containers (running and stopped)
+        console.log(`[${config.repoName}] 🔍 Finding all containers (running and stopped)...`);
+        
+        // Get list of ALL containers (running and stopped)
+        const { exec } = require('child_process');
+        const containerList = await new Promise((resolve, reject) => {
+            exec('docker ps -a --format "{{.Names}}"', (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(stdout.trim().split('\n').filter(name => name.trim()));
+                }
+            });
+        });
+        
+        // Find containers that match this solution
+        const patterns = getSolutionPatterns(config.repoName);
+        console.log(`[${config.repoName}] Generated patterns for uninstall:`, patterns);
+        console.log(`[${config.repoName}] All containers (running and stopped):`, containerList);
+        
+        const solutionContainers = containerList.filter(containerName => {
+            const matches = patterns.some(pattern => 
+                pattern && typeof pattern === 'string' && containerName.toLowerCase().includes(pattern.toLowerCase())
+            );
+            if (matches) {
+                console.log(`[${config.repoName}] Container '${containerName}' matches patterns:`, patterns);
+            }
+            return matches;
+        });
+        
+        console.log(`[${config.repoName}] Found containers to remove:`, solutionContainers);
+        
+        // Remove each container
+        for (const containerName of solutionContainers) {
+            try {
+                console.log(`[${config.repoName}] 🛑 Removing container: ${containerName}`);
+                await runCommand(`docker rm -f ${containerName}`, config.repoName);
+            } catch (error) {
+                console.log(`[${config.repoName}] ⚠️ Failed to remove container ${containerName}:`, error.message);
+            }
+        }
+        
         // Step 2: Try docker-compose cleanup if repository exists
         if (require('fs').existsSync(repoPath)) {
             try {
@@ -272,7 +319,25 @@ async function uninstallSolution(config, repoPath) {
         // Step 3: Remove images
         console.log(`[${config.repoName}] 🗑️ Removing images...`);
         try {
-            await runCommand(`docker rmi -f ${config.imageName} || true`, config.repoName);
+            // Handle both single image and array of images
+            const imagesToRemove = Array.isArray(config.imageName) ? config.imageName : [config.imageName];
+            
+            for (const imageName of imagesToRemove) {
+                try {
+                    console.log(`[${config.repoName}] 🗑️ Removing image: ${imageName}`);
+                    await runCommand(`docker rmi -f ${imageName} || true`, config.repoName);
+                } catch (error) {
+                    console.log(`[${config.repoName}] ⚠️ Failed to remove image ${imageName}:`, error.message);
+                }
+            }
+            
+            // Also try to remove any dangling images related to this solution
+            try {
+                console.log(`[${config.repoName}] 🗑️ Removing dangling images...`);
+                await runCommand(`docker image prune -f`, config.repoName);
+            } catch (error) {
+                console.log(`[${config.repoName}] ⚠️ Dangling image cleanup failed:`, error.message);
+            }
         } catch (error) {
             console.log(`[${config.repoName}] ⚠️ Image removal failed (may not exist):`, error.message);
         }
@@ -297,16 +362,31 @@ async function uninstallSolution(config, repoPath) {
     }
 }
 
-// Helper function to get solution patterns (same logic as health check)
+// Helper function to get solution patterns dynamically from config
 function getSolutionPatterns(repoName) {
-    const patterns = {
-        'ai-doc-editor': ['ai-doc-editor-container', 'ai-doc-editor'],
-        'ai-recruiter': ['ai-recruiter-container', 'ai-recruiter-foloup', 'ai-recruiter'],
-        'landing-page-content-generator': ['landing-page-content-generator-container', 'landing-page-frontend', 'landing-page-backend', 'landing-page'],
-        'seo-content-gen': ['seo-content-gen-container', 'seo-content-gen']
-    };
+    const config = SOLUTION_CONFIGS[repoName];
+    if (!config) {
+        return [repoName];
+    }
     
-    return patterns[repoName] || [repoName];
+    // Combine container names and repo name for pattern matching
+    const patterns = [repoName];
+    
+    // Add container names from config
+    if (config.containerName && Array.isArray(config.containerName)) {
+        patterns.push(...config.containerName);
+    } else if (config.containerName) {
+        patterns.push(config.containerName);
+    }
+    
+    // Add image names from config
+    if (config.imageName && Array.isArray(config.imageName)) {
+        patterns.push(...config.imageName);
+    } else if (config.imageName) {
+        patterns.push(config.imageName);
+    }
+    
+    return patterns;
 }
 
 
@@ -445,7 +525,50 @@ const uninstallWithProgress = async (req, res) => {
     }
 };
 
+const syncWithProgress = async (req, res) => {
+    try {
+        const solutionType = req.body?.solutionType;
+        
+        if (!solutionType) {
+            throw new Error('Solution type is required');
+        }
+        
+        const config = SOLUTION_CONFIGS[solutionType];
+        if (!config) {
+            throw new Error(`Unknown solution type: ${solutionType}`);
+        }
+        
+        console.log(`[${config.repoName}] 🔄 Syncing solution: ${solutionType}`);
+        
+        const repoPath = `/workspace/${config.repoName}`;
+        
+        // Step 1: Clean up existing containers first
+        await cleanupExistingContainers(config);
+        
+        // Step 2: Clean up existing repository
+        console.log(`[${config.repoName}] 🧹 Cleaning up existing repository...`);
+        await runCommand(`rm -rf ${repoPath}`, config.repoName);
+        
+        // Step 3: Clone repository
+        console.log(`[${config.repoName}] 📥 Cloning repository...`);
+        await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
+        
+        // Step 4: Install using Docker Compose
+        await installDockerComposeService(config, repoPath);
+        
+        console.log(`[${config.repoName}] ✅ Sync completed successfully!`);
+        
+        return { success: true, solutionType, repoName: config.repoName };
+        
+    } catch (error) {
+        console.error(`[${config.repoName}] ❌ Sync failed: ${error.message}`);
+        handleError(error, 'Error - solutionSyncWithProgress');
+        throw error;
+    }
+};
+
 module.exports = {
     installWithProgress,
     uninstallWithProgress,
+    syncWithProgress,
 };

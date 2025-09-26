@@ -12,7 +12,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Shield, UserCheck, Users as TeamIcon, X, DownloadIcon } from 'lucide-react';
+import { Shield, UserCheck, Users as TeamIcon, X, DownloadIcon, RefreshCw } from 'lucide-react';
 import { getIconComponent } from '@/utils/iconMapping';
 import { AppSolution } from '@/types/superSolution';
 import { hasPermission, PERMISSIONS } from '@/utils/permission';
@@ -279,6 +279,7 @@ const SuperSolutionPage = () => {
     const [loadingSolutions, setLoadingSolutions] = useState<{ [key: string]: boolean }>({});
     const [installingSolutions, setInstallingSolutions] = useState<{ [key: string]: boolean }>({});
     const [uninstallingSolutions, setUninstallingSolutions] = useState<{ [key: string]: boolean }>({});
+    const [syncingSolutions, setSyncingSolutions] = useState<{ [key: string]: boolean }>({});
     const [installedSolutions, setInstalledSolutions] = useState<{ [key: string]: boolean }>({});
 
     // Mapping from app names to solution types
@@ -298,6 +299,10 @@ const SuperSolutionPage = () => {
 
     const getUninstallButtonText = (appName: string): string => {
         return 'Uninstall';
+    };
+
+    const getSyncButtonText = (appName: string): string => {
+        return 'Sync';
     };
 
     const handleInstall = async (solutionType?: string) => {
@@ -411,6 +416,63 @@ const SuperSolutionPage = () => {
         } catch (error) {
             console.error('solution-uninstall error:', error);
             setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+        }
+    };
+
+    const handleSync = async (solutionType?: string) => {
+        // If no solutionType provided, get it from selectedApp
+        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
+        console.log('SuperSolution handleSync - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
+        
+        // Disable button immediately for this specific solution
+        setSyncingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+        
+        try {
+            const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
+            const url = `${baseUrl}/web/solution-install-progress/sync?solutionType=${encodeURIComponent(finalSolutionType)}`;
+            
+            // Trigger the sync (which will stop existing containers and reinstall)
+            fetch(url, { method: 'GET' }).catch(error => {
+                console.log('Sync triggered:', error);
+            });
+            
+            // Start polling to check if process is complete
+            const pollInterval = setInterval(async () => {
+                try {
+                    // Check if containers are running (simple health check)
+                    const healthUrl = `${baseUrl}/web/solution-install-progress/health?solutionType=${encodeURIComponent(finalSolutionType)}`;
+                    const response = await fetch(healthUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Health check status:', data.status);
+                        
+                        if (data.status === 'running') {
+                            setSyncingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                            setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+                            clearInterval(pollInterval);
+                            console.log('Sync completed - button enabled');
+                            Toast('Solution synced successfully!', 'success');
+                        } else if (data.status === 'installing') {
+                            console.log('Sync still in progress...');
+                        }
+                    }
+                } catch (error) {
+                    // Ignore health check errors, continue polling
+                    console.log('Health check error:', error);
+                }
+            }, 10000); // Check every 10 seconds
+            
+            // Fallback timeout after 10 minutes
+            setTimeout(() => {
+                setSyncingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                clearInterval(pollInterval);
+                console.log('Sync timeout - button re-enabled');
+            }, 10 * 60 * 1000); // 10 minutes
+            
+        } catch (error) {
+            console.error('solution-sync error:', error);
+            setSyncingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
         }
     };
 
@@ -560,7 +622,7 @@ const SuperSolutionPage = () => {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 text-font-14">
-                                                <Badge variant="outline" className='px-4 py-1.5 group-hover:bg-b11'>
+                                                <Badge className='px-4 py-1.5 group-hover:bg-b11'>
                                                     {app.category}
                                                 </Badge>
                                                 <span className="text-xs text-gray-500">
@@ -602,6 +664,7 @@ const SuperSolutionPage = () => {
                                         const solutionType = getSolutionTypeFromAppName(selectedApp?.name || '');
                                         const isInstalling = installingSolutions[solutionType] || false;
                                         const isUninstalling = uninstallingSolutions[solutionType] || false;
+                                        const isSyncing = syncingSolutions[solutionType] || false;
                                         const isInstalled = installedSolutions[solutionType] || false;
                                         
                                         return (
@@ -615,6 +678,15 @@ const SuperSolutionPage = () => {
                                                     {isInstalling ? 'Installing...' : 
                                                      isInstalled ? 'Already Installed' : 
                                                      getInstallButtonText(selectedApp?.name || '')}
+                                                </Button>
+                                                <Button 
+                                                    className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
+                                                    onClick={() => handleSync()} 
+                                                    disabled={isSyncing || !isInstalled}
+                                                >
+                                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                                    {isSyncing ? 'Syncing...' : 
+                                                     getSyncButtonText(selectedApp?.name || '')}
                                                 </Button>
                                                 <Button 
                                                     className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
