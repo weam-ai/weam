@@ -19,15 +19,15 @@ const SOLUTION_CONFIGS = {
         repoUrl: 'https://github.com/weam-ai/landing-page-content-generator.git',
         repoName: 'landing-page-content-generator',
         imageName: 'landing-page-content-generator-img',
-        containerName: 'landing-page-content-generator-container',
+        containerName: 'landing-page-frontend',
         branchName: 'devops',
         envFile: 'example.env'
     },
     'seo-content-gen': {
         repoUrl: 'https://github.com/weam-ai/seo-content-gen.git',
         repoName: 'seo-content-gen',
-        imageName: 'seo-content-gen-img',
-        containerName: 'seo-content-gen-container',
+        imageName: 'seo-content-gen-frontend',
+        containerName: 'seo-frontend',
         branchName: 'devops',
         envFile: '.env.example'
     },

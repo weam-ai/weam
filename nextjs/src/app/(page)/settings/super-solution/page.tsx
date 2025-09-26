@@ -276,6 +276,7 @@ const SuperSolutionPage = () => {
     };
 
     const [loadingSolutions, setLoadingSolutions] = useState<{ [key: string]: boolean }>({});
+    const [installedSolutions, setInstalledSolutions] = useState<{ [key: string]: boolean }>({});
 
     // Mapping from app names to solution types
     const getSolutionTypeFromAppName = (appName: string): string => {
@@ -296,6 +297,16 @@ const SuperSolutionPage = () => {
             'SEO Content Gen': 'Install SEO Content Gen'
         };
         return mapping[appName] || 'Install Solution';
+    };
+
+    const getUninstallButtonText = (appName: string): string => {
+        const mapping: { [key: string]: string } = {
+            'AI Docs': 'Uninstall AI Doc Editor',
+            'AI Recruiter': 'Uninstall AI Recruiter Agent',
+            'AI Landing Page Generator': 'Uninstall AI Landing Page Generator',
+            'SEO Content Gen': 'Uninstall SEO Content Gen'
+        };
+        return mapping[appName] || 'Uninstall Solution';
     };
 
     const handleInstall = async (solutionType?: string) => {
@@ -328,6 +339,7 @@ const SuperSolutionPage = () => {
                         
                         if (data.status === 'running') {
                             setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                            setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
                             clearInterval(pollInterval);
                             console.log('Installation completed - button enabled');
                         } else if (data.status === 'installing') {
@@ -353,6 +365,90 @@ const SuperSolutionPage = () => {
         }
     };
 
+    const handleUninstall = async (solutionType?: string) => {
+        // If no solutionType provided, get it from selectedApp
+        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
+        console.log('SuperSolution handleUninstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
+        
+        // Disable button immediately for this specific solution
+        setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+        
+        try {
+            const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
+            const url = `${baseUrl}/web/solution-install-progress/uninstall?solutionType=${encodeURIComponent(finalSolutionType)}`;
+            
+            // Trigger the uninstallation
+            fetch(url, { method: 'GET' }).catch(error => {
+                console.log('Uninstallation triggered:', error);
+            });
+            
+            // Start polling to check if process is complete
+            const pollInterval = setInterval(async () => {
+                try {
+                    // Check if containers are running (simple health check)
+                    const healthUrl = `${baseUrl}/web/solution-install-progress/health?solutionType=${encodeURIComponent(finalSolutionType)}`;
+                    const response = await fetch(healthUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Health check status:', data.status);
+                        
+                        if (data.status === 'not_running') {
+                            setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                            setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                            clearInterval(pollInterval);
+                            console.log('Uninstallation completed - button enabled');
+                        } else if (data.status === 'running') {
+                            console.log('Uninstallation still in progress...');
+                        }
+                    }
+                } catch (error) {
+                    // Ignore health check errors, continue polling
+                    console.log('Health check error:', error);
+                }
+            }, 10000); // Check every 10 seconds
+            
+            // Fallback timeout after 10 minutes
+            setTimeout(() => {
+                setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                clearInterval(pollInterval);
+                console.log('Uninstallation timeout - button re-enabled');
+            }, 10 * 60 * 1000); // 10 minutes
+            
+        } catch (error) {
+            console.error('solution-uninstall error:', error);
+            setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+        }
+    };
+
+    // Check installation status for all solutions
+    const checkInstallationStatus = async () => {
+        // Get solution types dynamically from available apps
+        const solutionTypes = availableApps.map(app => getSolutionTypeFromAppName(app.name)).filter(Boolean);
+        
+        for (const solutionType of solutionTypes) {
+            try {
+                const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
+                const healthUrl = `${baseUrl}/web/solution-install-progress/health?solutionType=${encodeURIComponent(solutionType)}`;
+                const response = await fetch(healthUrl);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'running') {
+                        setInstalledSolutions(prev => ({ ...prev, [solutionType]: true }));
+                    } else {
+                        setInstalledSolutions(prev => ({ ...prev, [solutionType]: false }));
+                    }
+                } else {
+                    setInstalledSolutions(prev => ({ ...prev, [solutionType]: false }));
+                }
+            } catch (error) {
+                console.log(`Health check error for ${solutionType}:`, error);
+                setInstalledSolutions(prev => ({ ...prev, [solutionType]: false }));
+            }
+        }
+    };
+
     // Effects
     useEffect(() => {
         if (isAdminOrManager) {
@@ -361,6 +457,13 @@ const SuperSolutionPage = () => {
             getTeams({ search: '', pagination: false });
         }
     }, [isAdminOrManager]);
+
+    // Check installation status after available apps are loaded
+    useEffect(() => {
+        if (availableApps.length > 0) {
+            checkInstallationStatus();
+        }
+    }, [availableApps]);
 
     useEffect(() => {
         if (members?.length) {
@@ -502,10 +605,35 @@ const SuperSolutionPage = () => {
                                     {selectedApp.name} - Access Management
                                 </div>
                                 <div className="flex gap-2 ml-auto">
-                                    <Button className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" onClick={() => handleInstall()} disabled={loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] || false}>
-                                        <DownloadIcon className="w-4 h-4 mr-2" />
-                                        {loadingSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')] ? 'Installing...' : getInstallButtonText(selectedApp?.name || '')}
-                                    </Button>
+                                    {(() => {
+                                        const solutionType = getSolutionTypeFromAppName(selectedApp?.name || '');
+                                        const isLoading = loadingSolutions[solutionType] || false;
+                                        const isInstalled = installedSolutions[solutionType] || false;
+                                        
+                                        return (
+                                            <>
+                                                <Button 
+                                                    className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
+                                                    onClick={() => handleInstall()} 
+                                                    disabled={isLoading || isInstalled}
+                                                >
+                                                    <DownloadIcon className="w-4 h-4 mr-2" />
+                                                    {isLoading ? 'Installing...' : 
+                                                     isInstalled ? 'Already Installed' : 
+                                                     getInstallButtonText(selectedApp?.name || '')}
+                                                </Button>
+                                                <Button 
+                                                    className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
+                                                    onClick={() => handleUninstall()} 
+                                                    disabled={isLoading || !isInstalled}
+                                                >
+                                                    <DownloadIcon className="w-4 h-4 mr-2" />
+                                                    {isLoading ? 'Uninstalling...' : 
+                                                     getUninstallButtonText(selectedApp?.name || '')}
+                                                </Button>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </DialogTitle>
                             <DialogDescription>
