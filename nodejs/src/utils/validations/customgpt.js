@@ -12,12 +12,16 @@ const wordCount = (value, helpers, maxWords) => {
 const createCustomGptKeys = joi.object({
     title: joi.string().required(),
     systemPrompt: joi.string().required(),
-    type: joi.string().valid('agent', 'supervisor').optional().default('agent'),
-    description: joi.string().optional(),
-    Agents: joi.alternatives().try(
-        joi.string(),
-        joi.array().items(joi.string())
-    ).optional(),
+    type: joi.string().valid('agent', 'supervisor').required().default('agent'),
+    description: joi.string().required(),
+    Agents: joi.when('type', {
+        is: 'supervisor',
+        then: joi.alternatives().try(
+            joi.string(),
+            joi.array().items(joi.string())
+        ).required(),
+        otherwise: joi.forbidden()
+    }),
     coverImg: joi.alternatives().try(
         joi.array(),
         joi.valid(null),
@@ -48,11 +52,15 @@ const createCustomGptKeys = joi.object({
 const updateCustomGptKeys = joi.object({
     title: joi.string().required(),
     type: joi.string().valid('agent', 'supervisor').optional(),
-    description: joi.string().optional(),
-    Agents: joi.alternatives().try(
-        joi.string(),
-        joi.array().items(joi.string())
-    ).optional(),
+    description: joi.string().required(),
+    Agents: joi.when('type', {
+        is: 'supervisor',
+        then: joi.alternatives().try(
+            joi.string(),
+            joi.array().items(joi.string())
+        ).required(),
+        otherwise: joi.forbidden()
+    }),
     coverImg: joi.alternatives().try(
         joi.array(),
         joi.valid(null),

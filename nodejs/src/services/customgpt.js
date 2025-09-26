@@ -158,42 +158,9 @@ async function createChatDocs(payload) {
 const addCustomGpt = async (req) => {
     try {
         const { fileData } = require('./uploadFile');
-        const { title, brain, responseModel, type, description, Agents, systemPrompt, mcpTools } = req.body;
+        const { title, brain, responseModel } = req.body;
         const { id: brainId } = brain;
         const { company } = responseModel;
-
-        // Validate based on agent type
-        const agentType = type || 'agent';
-        
-        if (agentType === 'agent') {
-            if (!systemPrompt) {
-                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
-            }
-            if (!description) {
-                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
-            }
-        } else if (agentType === 'supervisor') {
-            if (!systemPrompt) {
-                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
-            }
-            if (!description) {
-                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
-            }
-            if (!Agents || !Array.isArray(Agents) || Agents.length === 0) {
-                throw new Error(_localize('AGENTS_REQUIRED', req));
-            }
-            
-            // Validate that all agents exist and are of type 'agent'
-            const agentDocs = await CustomGpt.find({ 
-                _id: { $in: Agents }, 
-                'brain.id': brainId,
-                type: 'agent'
-            });
-            
-            if (agentDocs.length !== Agents.length) {
-    throw new Error(_localize('INVALID_AGENTS', req));
-}
-        }
 
         const slug = slugify(title);
         const createData = { 
@@ -266,46 +233,8 @@ const updateCustomGpt = async (req) => {
         
         if (!existingBot) throw new Error(_localize('module.notFound', req, 'custom bot'));
 
-        const { title, responseModel, brain, type, description, Agents, systemPrompt, mcpTools } = req.body;
+        const { title, responseModel } = req.body;
         const { company } = responseModel;
-
-        // Prevent type changes for existing agents
-        if (type && existingBot.type && type !== existingBot.type) {
-            throw new Error('Agent type cannot be changed after creation');
-        }
-
-        // Validate based on agent type
-        const agentType = type || existingBot.type || 'agent';
-        
-        if (agentType === 'agent') {
-            if (!systemPrompt) {
-                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
-            }
-            if (!description) {
-                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
-            }
-        } else if (agentType === 'supervisor') {
-            if (!systemPrompt) {
-                throw new Error(_localize('SYSTEM_PROMPT_REQUIRED', req));
-            }
-            if (!description) {
-                throw new Error(_localize('DESCRIPTION_REQUIRED', req));
-            }
-            if (!Agents || !Array.isArray(Agents) || Agents.length === 0) {
-    throw new Error(_localize('AGENTS_REQUIRED', req));
-}
-            
-            // Validate that all agents exist and are of type 'agent'
-            const agentDocs = await CustomGpt.find({ 
-                _id: { $in: Agents }, 
-                'brain.id': existingBot.brain.id,
-                type: 'agent' 
-            });
-            
-            if (agentDocs.length !== Agents.length) {
-    throw new Error(_localize('INVALID_AGENTS', req));
-}
-        }
 
         let updateBody = {
             ...req.body,
