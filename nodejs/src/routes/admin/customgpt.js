@@ -6,7 +6,7 @@ const { partialUpdateKeys } = require('../../utils/validations/common');
 const { authentication, checkPermission } = require('../../middleware/authentication');
 const { upload, checkAndUpdateStorage } = require('../../middleware/multer');
 const { checkPromptLimit } = require('../../middleware/promptlimit');
-const { parseFormData } = require('../../middleware/parseFormData');
+const { parseFormData } = require('../../utils/helper');
 
 router.post('/create', authentication, checkPromptLimit, upload.fields([{ name: 'coverImg', maxCount: 1 }, { name: 'doc', maxCount: 1 }]), checkAndUpdateStorage, parseFormData, validate(createCustomGptKeys), customgptController.addCustomGpt).descriptor('customgpt.create');
 router.put('/update/:id', authentication, checkPromptLimit, upload.fields([{ name: 'coverImg', maxCount: 1 }, { name: 'doc', maxCount: 1 }]), checkAndUpdateStorage, parseFormData, validate(updateCustomGptKeys), customgptController.updateCustomGpt).descriptor('customgpt.update');
