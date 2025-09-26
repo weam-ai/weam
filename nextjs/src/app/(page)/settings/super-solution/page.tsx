@@ -28,6 +28,7 @@ import { displayName, showNameOrEmail } from '@/utils/common';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import Toast from '@/utils/toast';
 // Removed commonApi and MODULE_ACTIONS imports - using direct SSE connection instead
 
 // Validation schemas
@@ -276,6 +277,8 @@ const SuperSolutionPage = () => {
     };
 
     const [loadingSolutions, setLoadingSolutions] = useState<{ [key: string]: boolean }>({});
+    const [installingSolutions, setInstallingSolutions] = useState<{ [key: string]: boolean }>({});
+    const [uninstallingSolutions, setUninstallingSolutions] = useState<{ [key: string]: boolean }>({});
     const [installedSolutions, setInstalledSolutions] = useState<{ [key: string]: boolean }>({});
 
     // Mapping from app names to solution types
@@ -290,23 +293,11 @@ const SuperSolutionPage = () => {
     };
 
     const getInstallButtonText = (appName: string): string => {
-        const mapping: { [key: string]: string } = {
-            'AI Docs': 'Install AI Doc Editor',
-            'AI Recruiter': 'Install AI Recruiter Agent',
-            'AI Landing Page Generator': 'Install AI Landing Page Generator',
-            'SEO Content Gen': 'Install SEO Content Gen'
-        };
-        return mapping[appName] || 'Install Solution';
+        return 'Install';
     };
 
     const getUninstallButtonText = (appName: string): string => {
-        const mapping: { [key: string]: string } = {
-            'AI Docs': 'Uninstall AI Doc Editor',
-            'AI Recruiter': 'Uninstall AI Recruiter Agent',
-            'AI Landing Page Generator': 'Uninstall AI Landing Page Generator',
-            'SEO Content Gen': 'Uninstall SEO Content Gen'
-        };
-        return mapping[appName] || 'Uninstall Solution';
+        return 'Uninstall';
     };
 
     const handleInstall = async (solutionType?: string) => {
@@ -315,7 +306,7 @@ const SuperSolutionPage = () => {
         console.log('SuperSolution handleInstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
         // Disable button immediately for this specific solution
-        setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+        setInstallingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
         
         try {
             const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
@@ -338,10 +329,11 @@ const SuperSolutionPage = () => {
                         console.log('Health check status:', data.status);
                         
                         if (data.status === 'running') {
-                            setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                            setInstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                             setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
                             clearInterval(pollInterval);
                             console.log('Installation completed - button enabled');
+                            Toast('Solution installed successfully!', 'success');
                         } else if (data.status === 'installing') {
                             console.log('Installation still in progress...');
                         }
@@ -354,14 +346,14 @@ const SuperSolutionPage = () => {
             
             // Fallback timeout after 10 minutes
             setTimeout(() => {
-                setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                setInstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                 clearInterval(pollInterval);
                 console.log('Installation timeout - button re-enabled');
             }, 10 * 60 * 1000); // 10 minutes
             
         } catch (error) {
             console.error('solution-install error:', error);
-            setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+            setInstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
         }
     };
 
@@ -371,7 +363,7 @@ const SuperSolutionPage = () => {
         console.log('SuperSolution handleUninstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
         // Disable button immediately for this specific solution
-        setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+        setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
         
         try {
             const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
@@ -394,10 +386,11 @@ const SuperSolutionPage = () => {
                         console.log('Health check status:', data.status);
                         
                         if (data.status === 'not_running') {
-                            setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                            setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                             setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                             clearInterval(pollInterval);
                             console.log('Uninstallation completed - button enabled');
+                            Toast('Solution uninstalled successfully!', 'success');
                         } else if (data.status === 'running') {
                             console.log('Uninstallation still in progress...');
                         }
@@ -410,14 +403,14 @@ const SuperSolutionPage = () => {
             
             // Fallback timeout after 10 minutes
             setTimeout(() => {
-                setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+                setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                 clearInterval(pollInterval);
                 console.log('Uninstallation timeout - button re-enabled');
             }, 10 * 60 * 1000); // 10 minutes
             
         } catch (error) {
             console.error('solution-uninstall error:', error);
-            setLoadingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
+            setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
         }
     };
 
@@ -607,7 +600,8 @@ const SuperSolutionPage = () => {
                                 <div className="flex gap-2 ml-auto">
                                     {(() => {
                                         const solutionType = getSolutionTypeFromAppName(selectedApp?.name || '');
-                                        const isLoading = loadingSolutions[solutionType] || false;
+                                        const isInstalling = installingSolutions[solutionType] || false;
+                                        const isUninstalling = uninstallingSolutions[solutionType] || false;
                                         const isInstalled = installedSolutions[solutionType] || false;
                                         
                                         return (
@@ -615,20 +609,20 @@ const SuperSolutionPage = () => {
                                                 <Button 
                                                     className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
                                                     onClick={() => handleInstall()} 
-                                                    disabled={isLoading || isInstalled}
+                                                    disabled={isInstalling || isInstalled}
                                                 >
                                                     <DownloadIcon className="w-4 h-4 mr-2" />
-                                                    {isLoading ? 'Installing...' : 
+                                                    {isInstalling ? 'Installing...' : 
                                                      isInstalled ? 'Already Installed' : 
                                                      getInstallButtonText(selectedApp?.name || '')}
                                                 </Button>
                                                 <Button 
                                                     className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
                                                     onClick={() => handleUninstall()} 
-                                                    disabled={isLoading || !isInstalled}
+                                                    disabled={isUninstalling || !isInstalled}
                                                 >
                                                     <DownloadIcon className="w-4 h-4 mr-2" />
-                                                    {isLoading ? 'Uninstalling...' : 
+                                                    {isUninstalling ? 'Uninstalling...' : 
                                                      getUninstallButtonText(selectedApp?.name || '')}
                                                 </Button>
                                             </>
@@ -649,7 +643,10 @@ const SuperSolutionPage = () => {
                                     onOpenChange={setIsUserDialogOpen}
                                 >
                                     <DialogTrigger asChild>
-                                        <Button className="inline-flex items-center cursor-pointer px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150">
+                                        <Button 
+                                            className="inline-flex items-center cursor-pointer px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                            disabled={!installedSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')]}
+                                        >
                                             <UserCheck className="w-4 h-4 mr-2" />
                                             Add Member
                                         </Button>
@@ -755,7 +752,10 @@ const SuperSolutionPage = () => {
                                     onOpenChange={setIsTeamDialogOpen}
                                 >
                                     <DialogTrigger asChild>
-                                        <Button className="inline-flex items-center cursor-pointer px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150">
+                                        <Button 
+                                            className="inline-flex items-center cursor-pointer px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                            disabled={!installedSolutions[getSolutionTypeFromAppName(selectedApp?.name || '')]}
+                                        >
                                             <TeamIcon className="w-4 h-4 mr-2" />
                                             Add Team
                                         </Button>
