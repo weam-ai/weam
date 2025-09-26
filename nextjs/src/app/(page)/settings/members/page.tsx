@@ -450,8 +450,8 @@ const Member = ({ selectedTab, membersOptions, setTotalMembers, totalMembers, is
 			},
 		},
 		{
-			header: 'Actions',
-			accessorKey: 'action',
+			header: 'Delete',
+			accessorKey: 'delete',
 			cell: ({row}) => {
 				const visibilityAction =
 					(currLoggedInUser.roleCode === ROLE_TYPE.COMPANY_MANAGER &&
@@ -459,11 +459,6 @@ const Member = ({ selectedTab, membersOptions, setTotalMembers, totalMembers, is
 					(currLoggedInUser.roleCode === ROLE_TYPE.COMPANY_MANAGER &&
 						row?.original?.roleCode === ROLE_TYPE.COMPANY) ||
 					row?.original?.roleCode === ROLE_TYPE.COMPANY;
-
-				const status = (row?.original?.inviteSts || '').toUpperCase();
-				const expiredDate = row?.original?.inviteExpireOn ? new Date(row.original.inviteExpireOn).getTime() : null;
-				const isExpiredByDate = expiredDate ? expiredDate < Date.now() : false;
-				const canResend = status === 'PENDING' || status === 'EXPIRED' || isExpiredByDate;
 
 				return (
 					<div className="flex items-center gap-2 justify-center">
@@ -501,9 +496,27 @@ const Member = ({ selectedTab, membersOptions, setTotalMembers, totalMembers, is
 								</Tooltip>
 							</TooltipProvider>
 						</button>
-						{canResend && (
+					</div>
+				);
+			}
+		},
+		{
+			header: 'Resend',
+			accessorKey: 'resend',
+			cell: ({row}) => {
+				const status = (row?.original?.inviteSts || '').toUpperCase();
+				const expiredDate = row?.original?.inviteExpireOn ? new Date(row.original.inviteExpireOn).getTime() : null;
+				const isExpiredByDate = expiredDate ? expiredDate < Date.now() : false;
+				const canResend = status === 'EXPIRED' || isExpiredByDate;
+
+				if (!canResend) {
+					return null;
+				}
+
+				return (
+					<div className="flex items-center gap-2 justify-center">	
 						<button
-							className='mx-auto'
+							className='mx-auto text-center p-2 rounded-md hover:bg-gray-100 transition-colors duration-200'
 							onClick={() => {
 								reSendVerificationEmail(row.original.email);
 							}}
@@ -517,7 +530,7 @@ const Member = ({ selectedTab, membersOptions, setTotalMembers, totalMembers, is
 										<ResendIcon
 											width={16}
 											height={16}
-											className="w-4 h-4 fill-b4 hover:fill-red object-contain"
+											className="w-4 h-4 fill-b4 hover:fill-red object-contain transition-colors duration-200"
 										/>
 									</TooltipTrigger>
 									<TooltipContent side="top">
@@ -526,7 +539,6 @@ const Member = ({ selectedTab, membersOptions, setTotalMembers, totalMembers, is
 								</Tooltip>
 							</TooltipProvider>
 						</button>
-					)}
 					</div>
 				);
 			}
