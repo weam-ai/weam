@@ -139,7 +139,6 @@ const CompanyDetails = () => {
         }
     };
 
-      
     return (   
         <>
             <form
