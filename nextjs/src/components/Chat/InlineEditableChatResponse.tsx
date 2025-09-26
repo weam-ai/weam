@@ -25,10 +25,6 @@ const InlineEditableChatResponse = ({
     setEditContent(response);
   }, [response]);
 
-  const handleClick = () => {
-    if (disabled) return;
-    setIsEditing(true);
-  };
 
   const handleSave = () => {
     setIsEditing(false);
@@ -100,11 +96,8 @@ const InlineEditableChatResponse = ({
 
   return (
     <div
-      onClick={handleClick}
       className={`
-        inline-editable-response cursor-pointer rounded-lg p-3 transition-all duration-200
-        hover:bg-gray-50 hover:shadow-sm border border-transparent hover:border-gray-200
-        ${disabled ? 'cursor-default hover:bg-transparent hover:shadow-none hover:border-transparent' : ''}
+        inline-editable-response rounded-lg p-3
         ${className}
       `}
     >
@@ -112,13 +105,6 @@ const InlineEditableChatResponse = ({
         {MarkOutPut(response)}
       </div>
       
-      {!disabled && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <div className="bg-white shadow-md rounded-md p-1 border">
-            <span className="text-gray-500">✏️</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
