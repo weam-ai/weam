@@ -310,8 +310,9 @@ const SuperSolutionPage = () => {
         const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
         console.log('SuperSolution handleInstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
-        // Disable button immediately for this specific solution
+        // Disable buttons immediately for this specific solution
         setInstallingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+        // Note: We don't set syncingSolutions to true here because we want sync button to be disabled but not show "Syncing..."
         
         try {
             const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
@@ -337,7 +338,7 @@ const SuperSolutionPage = () => {
                             setInstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                             setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
                             clearInterval(pollInterval);
-                            console.log('Installation completed - button enabled');
+                            console.log('Installation completed - buttons enabled');
                             Toast('Solution installed successfully!', 'success');
                         } else if (data.status === 'installing') {
                             console.log('Installation still in progress...');
@@ -353,7 +354,7 @@ const SuperSolutionPage = () => {
             setTimeout(() => {
                 setInstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                 clearInterval(pollInterval);
-                console.log('Installation timeout - button re-enabled');
+                console.log('Installation timeout - buttons re-enabled');
             }, 10 * 60 * 1000); // 10 minutes
             
         } catch (error) {
@@ -367,8 +368,9 @@ const SuperSolutionPage = () => {
         const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
         console.log('SuperSolution handleUninstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
-        // Disable button immediately for this specific solution
+        // Disable buttons immediately for this specific solution
         setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+        // Note: We don't set syncingSolutions to true here because we want sync button to be disabled but not show "Syncing..."
         
         try {
             const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
@@ -394,7 +396,7 @@ const SuperSolutionPage = () => {
                             setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                             setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                             clearInterval(pollInterval);
-                            console.log('Uninstallation completed - button enabled');
+                            console.log('Uninstallation completed - buttons enabled');
                             Toast('Solution uninstalled successfully!', 'success');
                         } else if (data.status === 'running') {
                             console.log('Uninstallation still in progress...');
@@ -410,7 +412,7 @@ const SuperSolutionPage = () => {
             setTimeout(() => {
                 setUninstallingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                 clearInterval(pollInterval);
-                console.log('Uninstallation timeout - button re-enabled');
+                console.log('Uninstallation timeout - buttons re-enabled');
             }, 10 * 60 * 1000); // 10 minutes
             
         } catch (error) {
@@ -424,8 +426,9 @@ const SuperSolutionPage = () => {
         const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
         console.log('SuperSolution handleSync - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
-        // Disable button immediately for this specific solution
+        // Disable buttons immediately for this specific solution
         setSyncingSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
+        // Note: We don't set other states to true here because we want other buttons to be disabled but not show their loading text
         
         try {
             const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
@@ -451,7 +454,7 @@ const SuperSolutionPage = () => {
                             setSyncingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                             setInstalledSolutions(prev => ({ ...prev, [finalSolutionType]: true }));
                             clearInterval(pollInterval);
-                            console.log('Sync completed - button enabled');
+                            console.log('Sync completed - buttons enabled');
                             Toast('Solution synced successfully!', 'success');
                         } else if (data.status === 'installing') {
                             console.log('Sync still in progress...');
@@ -467,7 +470,7 @@ const SuperSolutionPage = () => {
             setTimeout(() => {
                 setSyncingSolutions(prev => ({ ...prev, [finalSolutionType]: false }));
                 clearInterval(pollInterval);
-                console.log('Sync timeout - button re-enabled');
+                console.log('Sync timeout - buttons re-enabled');
             }, 10 * 60 * 1000); // 10 minutes
             
         } catch (error) {
@@ -667,12 +670,13 @@ const SuperSolutionPage = () => {
                                         const isSyncing = syncingSolutions[solutionType] || false;
                                         const isInstalled = installedSolutions[solutionType] || false;
                                         
+                                        
                                         return (
                                             <>
                                                 <Button 
                                                     className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
                                                     onClick={() => handleInstall()} 
-                                                    disabled={isInstalling || isInstalled}
+                                                    disabled={isInstalling || isInstalled || isSyncing || isUninstalling}
                                                 >
                                                     <DownloadIcon className="w-4 h-4 mr-2" />
                                                     {isInstalling ? 'Installing...' : 
@@ -682,7 +686,7 @@ const SuperSolutionPage = () => {
                                                 <Button 
                                                     className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
                                                     onClick={() => handleSync()} 
-                                                    disabled={isSyncing || !isInstalled}
+                                                    disabled={isSyncing || !isInstalled || isInstalling || isUninstalling}
                                                 >
                                                     <RefreshCw className="w-4 h-4 mr-2" />
                                                     {isSyncing ? 'Syncing...' : 
@@ -691,7 +695,7 @@ const SuperSolutionPage = () => {
                                                 <Button 
                                                     className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
                                                     onClick={() => handleUninstall()} 
-                                                    disabled={isUninstalling || !isInstalled}
+                                                    disabled={isUninstalling || !isInstalled || isInstalling || isSyncing}
                                                 >
                                                     <DownloadIcon className="w-4 h-4 mr-2" />
                                                     {isUninstalling ? 'Uninstalling...' : 
