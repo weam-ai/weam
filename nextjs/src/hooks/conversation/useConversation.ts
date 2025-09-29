@@ -358,8 +358,28 @@ const useConversation = () => {
             const data = response.data.map((m) => {
                 const decodedMessage = decryptedData(m.message); 
                 const decodedAnswer = m.ai ? decryptedData(m.ai) : null;
-                const prompt = JSON.parse(decodedMessage);
-                const answer = decodedAnswer ? JSON.parse(decodedAnswer) : { data: { content: m.openai_error.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
+                
+                // Handle message parsing with error handling
+                let prompt;
+                try {
+                    prompt = JSON.parse(decodedMessage);
+                } catch (jsonError) {
+                    console.warn('⚠️  Message is not valid JSON, treating as plain text:', decodedMessage.substring(0, 50) + '...');
+                    prompt = { data: { content: decodedMessage } };
+                }
+                
+                // Handle answer parsing with error handling
+                let answer;
+                if (decodedAnswer) {
+                    try {
+                        answer = JSON.parse(decodedAnswer);
+                    } catch (jsonError) {
+                        console.warn('⚠️  Answer is not valid JSON, treating as plain text:', decodedAnswer.substring(0, 50) + '...');
+                        answer = { data: { content: decodedAnswer } };
+                    }
+                } else {
+                    answer = { data: { content: m.openai_error.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
+                }
 
 
                 const gptCoverImage=m?.customGptId?.coverImg?.uri?`${LINK.AWS_S3_URL}${m?.customGptId?.coverImg?.uri}`:defaultCustomGptImage.src
@@ -828,8 +848,32 @@ const useConversation = () => {
             const conversations = data.map((m) => {
                 const decodedMessage = decryptedData(m.message); 
                 const decodedAnswer = m.ai ? decryptedData(m.ai) : null;
-                const prompt = JSON.parse(decodedMessage);
-                const answer = (m.proAgentData?.code === ProAgentCode.SEO_OPTIMISED_ARTICLES && !m.proAgentData?.hasOwnProperty('step4')) ? { data: { content: '' } } : decodedAnswer ? JSON.parse(decodedAnswer) : { data: { content: m.openai_error.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
+                
+                // Handle message parsing with error handling
+                let prompt;
+                try {
+                    prompt = JSON.parse(decodedMessage);
+                } catch (jsonError) {
+                    console.warn('⚠️  Message is not valid JSON, treating as plain text:', decodedMessage.substring(0, 50) + '...');
+                    prompt = { content: decodedMessage };
+                }
+                
+                // Handle answer parsing with error handling
+                let answer;
+                if (m.proAgentData?.code === ProAgentCode.SEO_OPTIMISED_ARTICLES && !m.proAgentData?.hasOwnProperty('step4')) {
+                    answer = { data: { content: '' } };
+                } else if (decodedAnswer) {
+                    try {
+                        // Try to parse as JSON first
+                        answer = JSON.parse(decodedAnswer);
+                    } catch (jsonError) {
+                        // If JSON parsing fails, treat as plain text
+                        console.warn('⚠️  Answer is not valid JSON, treating as plain text:', decodedAnswer.substring(0, 50) + '...');
+                        answer = { data: { content: decodedAnswer } };
+                    }
+                } else {
+                    answer = { data: { content: m.openai_error.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
+                }
 
             let formattedResponse = answer.data.content;
 

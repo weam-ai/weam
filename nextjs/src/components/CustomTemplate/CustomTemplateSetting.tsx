@@ -89,7 +89,8 @@ const CustomTemplateSetting = memo(({bot, prompt, type, mykey, DialogTitle}) => 
                     }
                 },
                 maxItr: persistCustombot?.botdata?.maxItr || '0',
-                selectedBrain: selectedBrain
+                selectedBrain: selectedBrain,
+                charimg: persistCustombot?.botdata?.charimg || ''
             };
 
             const reqObject = {

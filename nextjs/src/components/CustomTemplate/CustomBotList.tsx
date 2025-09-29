@@ -20,6 +20,7 @@ const CustomBotList = ({ defaultbots }) => {
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState();
     const [botrecords, setBotRecords] = useState(defaultbots);
+    let imageSrc = '';
 
     const handleSearchChange = (e) => {
         setSearch(e.target.value);
@@ -66,16 +67,19 @@ const CustomBotList = ({ defaultbots }) => {
             {!loading &&
                 <div className="mt-7 w-full px-2 lg:px-0 overflow-y-auto pb-5 lg:pb-0 lg:h-[calc(100vh-240px)]">
                     <div className="grid lg:grid-cols-2 gap-4" >
-                           { botrecords?.map((bot) => (
+                           { botrecords?.map((bot) => {
+                                imageSrc = bot?.charimg ? bot.charimg : defaultCustomGptImage;
+                                //console.log('Bot _id:', bot?._id, 'charimg:', bot?.charimg, 'imageSrc:', imageSrc);
+                                return (
                                 <div key={bot?._id} className="border px-5 py-3 rounded-lg hover:bg-b12 transition duration-150 ease-in-out group">
                                     <div className="flex">
-                                        <div className="w-12 h-12 mr-3 bg-gray-300 rounded-md">
+                                        <div className="w-12 h-12 mr-3">
                                             <Image
-                                                src={defaultCustomGptImage}
-                                                // width="auto"
-                                                // height="auto"
+                                                src={imageSrc}
+                                                width={48}
+                                                height={48}
                                                 className="w-12 object-contain rounded-md"
-                                                alt="Default GPT"
+                                                alt={bot?.charimg ? "Bot Image" : "Default GPT"}
                                             />
                                         </div>
                                         <div className="ml-auto flex items-center">
@@ -109,7 +113,8 @@ const CustomBotList = ({ defaultbots }) => {
                                         {truncateText(bot?.systemPrompt, 200)}
                                     </p>
                                 </div>
-                            )) }
+                                );
+                            }) }
                         
                     </div>
                 </div>
