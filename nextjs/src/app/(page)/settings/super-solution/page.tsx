@@ -675,32 +675,33 @@ const SuperSolutionPage = () => {
                                             <>
                                                 <Button 
                                                     className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
-                                                    onClick={() => handleInstall()} 
-                                                    disabled={isInstalling || isInstalled || isSyncing || isUninstalling}
+                                                    onClick={() => isInstalled ? handleUninstall() : handleInstall()} 
+                                                    disabled={isInstalling || isSyncing || isUninstalling}
                                                 >
-                                                    <DownloadIcon className="w-4 h-4 mr-2" />
-                                                    {isInstalling ? 'Installing...' : 
-                                                     isInstalled ? 'Already Installed' : 
-                                                     getInstallButtonText(selectedApp?.name || '')}
+                                                    {isInstalled ? (
+                                                        <>
+                                                            <X className="w-4 h-4 mr-2" />
+                                                            Uninstall
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <DownloadIcon className="w-4 h-4 mr-2" />
+                                                            {isInstalling ? 'Installing...' : getInstallButtonText(selectedApp?.name || '')}
+                                                        </>
+                                                    )}
                                                 </Button>
-                                                <Button 
-                                                    className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
-                                                    onClick={() => handleSync()} 
-                                                    disabled={isSyncing || !isInstalled || isInstalling || isUninstalling}
-                                                >
-                                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                                    {isSyncing ? 'Syncing...' : 
-                                                     getSyncButtonText(selectedApp?.name || '')}
-                                                </Button>
-                                                <Button 
-                                                    className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
-                                                    onClick={() => handleUninstall()} 
-                                                    disabled={isUninstalling || !isInstalled || isInstalling || isSyncing}
-                                                >
-                                                    <DownloadIcon className="w-4 h-4 mr-2" />
-                                                    {isUninstalling ? 'Uninstalling...' : 
-                                                     getUninstallButtonText(selectedApp?.name || '')}
-                                                </Button>
+                                                {isInstalled && (
+                                                    <>
+                                                        <Button 
+                                                            className="inline-flex items-center font-normal text-xs underline ml-auto mr-3 cursor-pointer hover:text-black text-gray-600" 
+                                                            onClick={() => handleSync()} 
+                                                            disabled={isSyncing || isInstalling || isUninstalling}
+                                                        >
+                                                            <RefreshCw className="w-4 h-4 mr-2" />
+                                                            {isSyncing ? 'Syncing...' : getSyncButtonText(selectedApp?.name || '')}
+                                                        </Button>
+                                                    </>
+                                                )}
                                             </>
                                         );
                                     })()}
