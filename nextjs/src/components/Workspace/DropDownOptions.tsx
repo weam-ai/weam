@@ -148,7 +148,7 @@ export const WorkspaceNewChatButton = memo(() => {
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <span className='text-font-14 font-medium block text-blue2'>+</span>
+                                <span className='text-font-14 font-medium block text-b7'>+</span>
                             </TooltipTrigger>
                             <TooltipContent side="right" className="border-none">
                                 <p className="text-font-14">New Chat</p>

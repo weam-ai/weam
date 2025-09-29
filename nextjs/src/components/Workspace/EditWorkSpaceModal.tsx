@@ -736,7 +736,7 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                             <DialogTrigger asChild>
                                                 <div className="w-full gap-1 flex">
                                                     <span
-                                                        className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
+                                                        className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
                                                         onClick={() =>
                                                             setAddMemberModal(
                                                                 true
@@ -753,7 +753,7 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                                         </span>
                                                     </span>
                                                     <span
-                                                        className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
+                                                        className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
                                                         onClick={() =>
                                                             setAddTeamModal(
                                                                 true

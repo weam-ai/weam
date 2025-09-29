@@ -362,7 +362,7 @@ const MemberItem = ({
             <div className="flex items-center space-x-2.5">
             
                 {member.role == ROLE_TYPE.OWNER && (
-                    <span className="bg-ligheter text-b2 text-xs font-medium me-2 px-2.5 py-0.5 rounded text-font-14">
+                    <span className="bg-b12 text-b2 text-xs font-medium me-2 px-2.5 py-0.5 rounded text-font-14">
                         {member.role}
                     </span>
                 )}
@@ -604,7 +604,7 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
                                             ROLE_TYPE.USER) && (
                                         <div className='flex items-center gap-x-1 mb-2'>
                                             <span
-                                                className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
+                                                className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
                                                 onClick={() =>
                                                     setAddMemberModal(
                                                         true
@@ -626,7 +626,7 @@ const EditBrainModal = ({ open, closeModal, brain }) => {
                                             </span>
                         
                                             <span
-                                                className="btn btn-outline-black flex items-center gap-x-1 justify-center group"
+                                                className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
                                                 onClick={() =>
                                                     setAddTeamModal(
                                                         true

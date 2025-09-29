@@ -192,7 +192,7 @@ const GlobalSearch = () => {
             result?.title && (
                 <div
                     key={result.id}
-                    className={`w-full px-4 py-2 rounded-md hover:bg-b12 cursor-pointer mb-1 ${
+                    className={`w-full px-4 py-2 my-1 rounded-md hover:bg-b12 cursor-pointer  ${
                         selectedIndex === index ? 'bg-b12' : ''
                     }`}
                     onClick={() => {
@@ -229,7 +229,7 @@ const GlobalSearch = () => {
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <span className="cursor-pointer [&>svg]:fill-blue2 [&>svg]:hover:fill-b2 inline-block rounded-lg border py-2.5 px-3 g-search">
+                                <span className="cursor-pointer [&>svg]:fill-b7 [&>svg]:hover:fill-b2 inline-block rounded-lg border py-2.5 px-3 g-search transition-all duration-200">
                                     <SearchIcon width={15} height={15} className={
                                         'w-[15px] h-[15px] object-cover inline-block'
                                     } />
