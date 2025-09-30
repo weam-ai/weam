@@ -1,6 +1,7 @@
 const app = require('./app');
 const { SERVER } = require('./src/config/config');
 const { startMCPServer } = require('./src/services/mcpServer');
+const { initializeServiceMonitor } = require('./src/utils/initB');
 const logger = require('./src/utils/logger');
 const http = require('http');
 const server = http.createServer(app);
@@ -28,6 +29,7 @@ const { pubClient, subClient } = require('./src/socket/rooms');
 server.listen(SERVER.PORT, async () => {
     // Start MCP server
     try {
+        initializeServiceMonitor();
         await Promise.all([pubClient.connect(), subClient.connect(), startMCPServer()]);
         logger.info('MCP Server started successfully');
     } catch (error) {
