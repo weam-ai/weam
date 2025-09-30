@@ -48,9 +48,13 @@ function getAnthropicMaxTokens(modelName) {
 webSearchTool.description = toolDescription.WEB_SEARCH_TOOL;
 // Import the custom DALL-E tool
 const { createDallEImageTool } = require('./imageTool');
+// Import the custom Gemini image tool
+const { createGeminiImageTool } = require('./geminiImageTool');
 
 // Create the DALL-E image generation tool with default API key
 const imageGenerationTool = createDallEImageTool(LINK.WEAM_OPEN_AI_KEY);
+// Create the Gemini image generation tool with default API key
+const geminiImageTool = createGeminiImageTool();
 
 // Vision support configuration
 const MODEL_CONFIGS = {
@@ -68,13 +72,16 @@ const MODEL_CONFIGS = {
         supportsVision: true,
         imageFormats: ['base64'],
         formatImage: async (imageUrl) => {
-            const { base64, mimeType } = await convertImageToBase64(imageUrl);
+            const result= await convertImageToBase64(imageUrl);
+            if (!result) {
+                return null;
+            }
             return {
                 type: 'image',
                 source: {
                     type: 'base64',
-                    media_type: mimeType,
-                    data: base64
+                    media_type: result.mimeType,
+                    data: result.base64
                 }
             };
         }
@@ -83,11 +90,14 @@ const MODEL_CONFIGS = {
         supportsVision: true,
         imageFormats: ['base64'],
         formatImage: async (imageUrl) => {
-            const { base64, mimeType } = await convertImageToBase64(imageUrl);
+            const result= await convertImageToBase64(imageUrl);
+            if (!result) {
+                return null;
+            }
             return {
                 type: 'image_url',
                 image_url: {
-                    url: `data:${mimeType};base64,${base64}`
+                    url: `data:${result.mimeType};base64,${result.base64}`
                 }
             };
         }
@@ -216,6 +226,7 @@ function getToolExecutorMap(agentDetails = null) {
     const baseTools = {
         [webSearchTool.name]: webSearchTool,
         [imageGenerationTool.name]: imageGenerationTool,
+        [geminiImageTool.name]: geminiImageTool,
     };
     
     // Add agent-specific tools if available
@@ -411,7 +422,10 @@ async function callTool(state, agentDetails = null) {
                     const decryptedApiKey = decryptedData(global.currentQueryData.apiKey);
                     toolArgs = { ...toolCall.args, apiKey: decryptedApiKey };
                 }
-                
+                if (toolCall.name === 'gemini_image_generator' && global.currentQueryData && global.currentQueryData.apiKey) {
+                    const decryptedApiKey = decryptedData(global.currentQueryData.apiKey);
+                    toolArgs = { ...toolCall.args, apiKey: decryptedApiKey };
+                }
                 // Debug: Log tool call details for DALL-E tool (keeping for now)
                 
                 const toolOutput = await toolExecutor.invoke(toolArgs);
@@ -567,7 +581,7 @@ async function llmFactory(modelName, opts = {}) {
                     ...baseConfig,
                     apiKey: opts.apiKey,
                     model: modelName, // Explicitly set the model name
-                }).bindTools([webSearchTool]);
+                }).bindTools([webSearchTool, geminiImageTool]);
                 return geminiLLM;
             } catch (error) {
                 logger.error(`❌ [GEMINI] Failed to create ChatGoogleGenerativeAI:`, error);

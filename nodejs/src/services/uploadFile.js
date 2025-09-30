@@ -1667,6 +1667,76 @@ function generateHashVector(text, size) {
         return new Array(size).fill(0);
     }
 }
+/**
+ * Upload base64 image to S3 for Gemini AI generated images
+ * @param {string} base64Data - Base64 encoded image data
+ * @param {Object} options - Upload options
+ * @param {string} options.customFileName - Custom filename prefix
+ * @returns {Promise<Object>} - Result object with success status and S3 URL
+ */
+const uploadGeminiImageToS3 = async (base64Data, options = {}) => {
+    try {
+        const { customFileName = 'gemini' } = options;
+        
+        // Remove data URL prefix if present
+        const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
+        const buffer = Buffer.from(base64Image, 'base64');
+        
+        // Generate unique S3 key with UUID
+        const id = uuidv4();
+        const fileExtension = 'png'; // Default to PNG for Gemini images
+        const s3Key = `images/${customFileName}-${id}.${fileExtension}`;
+        
+        const uploadParams = {
+            Bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
+            Key: s3Key,
+            Body: buffer,
+            ContentType: 'image/png',
+            ACL: 'public-read',
+            Metadata: {
+                uploadedAt: new Date().toISOString(),
+                source: 'gemini-ai'
+            }
+        };
+        
+        logger.info(`🔄 [GEMINI_IMAGE] Attempting S3 upload with params:`, {
+            bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
+            key: s3Key,
+            contentType: 'image/png',
+            bufferSize: buffer.length
+        });
+        
+        const uploadResult = await S3.upload(uploadParams).promise();
+        
+        logger.info(`✅ [GEMINI_IMAGE] S3 upload successful:`, {
+            location: uploadResult.Location,
+            bucket: uploadResult.Bucket,
+            key: uploadResult.Key,
+            etag: uploadResult.ETag
+        });
+        
+        logger.info(`Successfully uploaded Gemini image to S3: ${uploadResult.Location}`);
+        
+        return {
+            success: true,
+            s3Url: uploadResult.Location,
+            s3Key: s3Key,
+            fileSize: buffer.length,
+            contentType: 'image/png'
+        };
+    } catch (error) {
+        logger.error('❌ [GEMINI_IMAGE] Error uploading base64 image to S3:', {
+            error: error.message,
+            code: error.code,
+            statusCode: error.statusCode,
+            stack: error.stack
+        });
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
 
 module.exports = {
     uploadFileToS3,
@@ -1687,6 +1757,7 @@ module.exports = {
     downloadAndUploadImageToS3,
     uploadOpenAIImageToS3Background,
     uploadOpenAIImageToS3,
+    uploadGeminiImageToS3,
     getS3UrlByFileId,
     getS3UrlByKey,
     getSupportedFileTypes,

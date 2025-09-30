@@ -13,6 +13,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@google/generative-ai": "^0.24.1",
         "@langchain/anthropic": "^0.3.26",
         "@langchain/core": "^0.3.70",
         "@langchain/google-genai": "^0.2.16",
