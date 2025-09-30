@@ -7,6 +7,10 @@ import GoogleDriveIcon from '@/icons/GoogleDriveIcon';
 import GoogleCalendarIcon from '@/icons/GoogleCalendarIcon';
 import GitHubConfigModal from './GitHubConfigModal';
 import GitHubIcon from '@/icons/GitHubIcon';
+import ZoomConfigModal from './ZoomConfigModal';
+import ZoomIcon from '@/icons/ZoomIcon';
+import MongoDBIcon from '@/icons/MongoDBIcon';
+import MongoDBConfigModal from './MongoDBConfigModal';
 import { formatToCodeFormat } from '@/utils/helper';
 import MCPDisconnectDialog from '../Shared/MCPDisconnectDialog';
 import { MCP_CODES } from './MCPAppList';
@@ -52,6 +56,7 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
         N8N: false,
         FIGMA: false,
         CALENDLY: false,
+        ZOOM: false,
     });
     const [loading, setLoading] = useState(false);
 
@@ -76,10 +81,10 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
     const handleDisconnect = useCallback(async(title: string) => {
         try {
             setLoading(true);
-            await updateMcpDataAction({ [`mcpdata.${title}`]: 1, isDeleted: true });
+            await updateMcpDataAction({ [`mcpdata.${title}`]: '', isDeleted: true });
         } finally {
-            setLoading(false);
             handleCloseModal(title);
+            setLoading(false);
         }
     }, [handleCloseModal]);
 
@@ -200,6 +205,55 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
                     <GitHubConfigModal 
                         isOpen={showConfigurationModal.GITHUB}
                         onClose={() => handleCloseModal(MCP_CODES.GITHUB)}
+                    />
+                )
+            }
+            {
+                isConnected(MCP_CODES.ZOOM) ? (
+                    <MCPDisconnectDialog
+                        open={showConfigurationModal.ZOOM}
+                        closeModal={() => handleCloseModal(MCP_CODES.ZOOM)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.ZOOM)}
+                        serviceName="Zoom"
+                        serviceIcon={<ZoomIcon className="size-6" />}
+                        loading={loading}
+                    />
+                ) : showConfigurationModal.ZOOM && (
+                    <ZoomConfigModal 
+                        isOpen={showConfigurationModal.ZOOM}
+                        onClose={() => handleCloseModal(MCP_CODES.ZOOM)}
+                        mcpIcon={<ZoomIcon className="size-6" />}
+                        title="Zoom"
+                        description="Connect your Zoom account to enable Zoom integrations."
+                    />
+                )
+            }
+
+            {
+                localStorage.getItem('mongodb_config') ? (
+                    <MCPDisconnectDialog
+                        open={showConfigurationModal.MONGODB}
+                        closeModal={() => handleCloseModal(MCP_CODES.MONGODB)}
+                        onDisconnect={() => {
+                            localStorage.removeItem('mongodb_config');
+                            handleCloseModal(MCP_CODES.MONGODB);
+                            window.location.reload();
+                        }}
+                        serviceName="MongoDB"
+                        serviceIcon={<MongoDBIcon className="size-6" />}
+                        description="Are you sure you want to disconnect MongoDB? This will remove all database connections and stop all automation."
+                        loading={loading}
+                        buttonVisible={true}
+                    />
+                ) : showConfigurationModal.MONGODB && (
+                    <MongoDBConfigModal 
+                        isOpen={showConfigurationModal.MONGODB}
+                        onClose={() => handleCloseModal(MCP_CODES.MONGODB)}
+                        onConnect={() => {
+                            handleCloseModal(MCP_CODES.MONGODB);
+                            window.location.reload();
+                        }}
+                        mcpData={mcpData}
                     />
                 )
             }

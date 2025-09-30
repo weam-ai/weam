@@ -1,11 +1,13 @@
 const { ChatOpenAI } = require('@langchain/openai');
 const { StateGraph, END } = require('@langchain/langgraph');
 const { ToolMessage, HumanMessage, SystemMessage } = require('@langchain/core/messages');
-const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription } = require('../config/constants/llm');
+const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription, IS_MCP_TOOLS } = require('../config/constants/llm');
 const { SOCKET_EVENTS } = require('../config/constants/socket');
-const { decryptedData, encodeImageToBase64 } = require('../utils/helper');
+const Messages = require('../models/thread');
+const Brain = require('../models/brains');
+const { decryptedData } = require('../utils/helper');
 const { LINK } = require('../config/config');
-const { AI_MODAL_PROVIDER, MODAL_NAME ,ANTHROPIC_MAX_TOKENS} = require('../config/constants/aimodal');
+const { AI_MODAL_PROVIDER, MODAL_NAME , ANTHROPIC_MAX_TOKENS } = require('../config/constants/aimodal');
 const { ChatAnthropic } = require('@langchain/anthropic');
 const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
 const { SearxNGSearchTool } = require('./searchTool');
@@ -19,15 +21,17 @@ const ChatDocs = require('../models/chatdocs');
 const { createCostCallback } = require('./callbacks/contextManager');
 const logger = require('../utils/logger');
 // const { deductUserMsgCredit } = require('./user');
+const { tool } = require('@langchain/core/tools');
 const Chat = require('../models/chat');
 const ChatMember = require('../models/chatmember');
-const Messages = require('../models/thread');
-const Brain = require('../models/brains');
 
 const webSearchTool = new SearxNGSearchTool({
     searxUrl: LINK.SEARXNG_API_URL,
     maxResults: 10,
 });
+
+// set web search tool description
+webSearchTool.description = toolDescription.WEB_SEARCH_TOOL;
 
 /**
  * Get model-specific max_tokens for Anthropic models
@@ -44,13 +48,26 @@ function getAnthropicMaxTokens(modelName) {
     // Fallback to default
     return ANTHROPIC_MAX_TOKENS['default'];
 }
-// set web search tool description
-webSearchTool.description = toolDescription.WEB_SEARCH_TOOL;
 // Import the custom DALL-E tool
 const { createDallEImageTool } = require('./imageTool');
+const { initializeMCPClient, selectRelevantToolsWithDomainFilter } = require('./mcpService');
+const { z } = require('zod');
 
 // Create the DALL-E image generation tool with default API key
 const imageGenerationTool = createDallEImageTool(LINK.WEAM_OPEN_AI_KEY);
+
+// Current time tool
+const currentTimeTool = tool(
+    async () => {
+        return new Date().toISOString();
+    },
+    {
+        name: 'get_current_time',
+        description: 'Get the current date and time in ISO format',
+        schema: z.object({}),
+    }
+);
+
 
 // Vision support configuration
 const MODEL_CONFIGS = {
@@ -148,19 +165,10 @@ async function formatImagesForModel(imageUrls, provider) {
     
     const formattedImages = [];
     
-    for (let imageUrl of imageUrls) {
-        console.log("==========ImageUrl=========",imageUrl)
+    for (const imageUrl of imageUrls) {
         try {
-            // this is my regex ^https?://(?:localhost|minio):9000/ if imageurl has minio include replace it with localhost
-            // Ensure MINIO_ENDPOINT is properly replaced with localhost:9000
-            console.log("MINIO_ENDPOINT:", LINK.MINIO_ENDPOINT);
-            // imageUrl = imageUrl.replace(LINK.MINIO_ENDPOINT, "http://localhost:9000");
-            const encodedImageUrl = await encodeImageToBase64(imageUrl);
-            console.log("==========EncodedImageUrl=========",encodedImageUrl)
-            const formattedImage = await config.formatImage(encodedImageUrl);
-            console.log("==========FormattedImage=========",formattedImage)
+            const formattedImage = await config.formatImage(imageUrl);
             formattedImages.push(formattedImage);
-            console.log("==========FormattedImage=========",formattedImages)
         } catch (error) {
             logger.error(`Error formatting image ${imageUrl}:`, error);
             // Continue with other images even if one fails
@@ -183,7 +191,6 @@ async function createVisionMessage(query, imageUrls, provider) {
     
     try {
         const formattedImages = await formatImagesForModel(imageUrls, provider);
-        console.log("==========FormattedImages inside cretae vision=========",formattedImages)
         
         if (formattedImages.length === 0) {
             logger.warn('No images could be formatted for vision, falling back to text-only');
@@ -211,11 +218,49 @@ const graphState = {
     },
 }
 
+// Global cache for MCP client and simple models
+let mcpClientCache = null;
+let mcpCacheTimestamp = 0;
+const MCP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let simpleModelCache = new Map();
+
+// Dynamic query classification - Let LangGraph decide which tools to use
+function queryNeedsTools(query) {
+    // Always return true to allow LangGraph to make dynamic tool decisions
+    // This ensures all tools (including web search) are available for the model to choose from
+    if (!query || typeof query !== 'string') {
+        return false;
+    }
+    
+    console.log('🔧 [DYNAMIC ANALYSIS] Enabling all tools for LangGraph to decide dynamically');
+    return true;
+}
+
+// Cached MCP client initialization
+async function getCachedMCPClient() {
+    const now = Date.now();
+    
+    // Return cached client if still valid
+    if (mcpClientCache && (now - mcpCacheTimestamp) < MCP_CACHE_TTL) {
+        console.log('🚀 [ULTRA-FAST] Using cached MCP client');
+        return mcpClientCache;
+    }
+    
+    // Initialize new client and cache it
+    console.log('🔧 [OPTIMIZATION] Initializing and caching MCP client');
+    mcpClientCache = await initializeMCPClient();
+    mcpCacheTimestamp = now;
+    
+    return mcpClientCache;
+}
+
 // Enhanced tool executor map with agent-specific tools
-function getToolExecutorMap(agentDetails = null) {
+function getToolExecutorMap(agentDetails = null, mcpTools = []) {
     const baseTools = {
         [webSearchTool.name]: webSearchTool,
         [imageGenerationTool.name]: imageGenerationTool,
+        [currentTimeTool.name]: currentTimeTool,
+        ...Object.fromEntries(mcpTools.map(tool => [tool.name, tool]))
     };
     
     // Add agent-specific tools if available
@@ -234,7 +279,8 @@ async function callModel(state, model, data, agentDetails = null) {
     const { messages } = state;
     const lastMessageIndex = messages[messages.length - 1];
     let context = [];
-        // Fetch brain data and add SystemMessage with customInstruction if exists
+    
+    // Fetch brain data and add SystemMessage with customInstruction if exists
     let brainData = null;
     if (data.brainId) {
         try {
@@ -244,6 +290,8 @@ async function callModel(state, model, data, agentDetails = null) {
             console.error('Error fetching brain data:', error);
         }
     }
+    
+    
     // Determine if we're using Gemini or Anthropic provider
     const isGeminiProvider = data.llmProvider === 'GEMINI' || (data.model && data.model.toLowerCase().includes('gemini'));
     const isAnthropicProvider = data.llmProvider === 'ANTHROPIC' || (data.model && data.model.toLowerCase().includes('claude'));
@@ -254,7 +302,7 @@ async function callModel(state, model, data, agentDetails = null) {
         
         // Start with conversation history
         context = [...conversationHistory];
-        
+
         // For Gemini and Anthropic: collect all system messages and consolidate them
         let consolidatedSystemContent = '';
 
@@ -271,14 +319,14 @@ async function callModel(state, model, data, agentDetails = null) {
         
         // Add agent's system message if available (this will override or supplement the DB system message)
         if (agentDetails) {
-            let agentSystemContent = `${agentDetails.systemPrompt}\n\nGoals:\n${agentDetails.goals.join('\n')}\n\nInstructions:\n${agentDetails.instructions.join('\n')}`;
+            let agentSystemContent = `${agentDetails.systemPrompt}\n`;
             
             // If RAG context is available, add it to the system message (like Python implementation)
             if (global.currentRagContext) {
                 agentSystemContent += `\n\n----\nContext from uploaded documents:\n${global.currentRagContext}\n----\n\nUse the above document context when relevant to answer the user's question.`;
             }
             
-        if (isGeminiProvider || isAnthropicProvider) {
+            if (isGeminiProvider || isAnthropicProvider) {
                 // For Gemini and Anthropic: consolidate with existing system content
                 if (consolidatedSystemContent) {
                     consolidatedSystemContent = agentSystemContent + '\n\n' + consolidatedSystemContent;
@@ -298,7 +346,7 @@ async function callModel(state, model, data, agentDetails = null) {
                     context.unshift(agentSystemMessage);
                 }
             }
-         } else if ((isGeminiProvider || isAnthropicProvider) && !consolidatedSystemContent) {
+        } else if ((isGeminiProvider || isAnthropicProvider) && !consolidatedSystemContent) {
             // For Gemini and Anthropic without agent: still need to consolidate any existing system messages
             const systemMessages = context.filter(msg => msg.constructor.name === 'SystemMessage' || msg.type === 'system');
             if (systemMessages.length > 0) {
@@ -306,8 +354,8 @@ async function callModel(state, model, data, agentDetails = null) {
                 consolidatedSystemContent = systemMessages.map(msg => msg.content).join('\n\n');
             }
         }
-        
-      // For Gemini and Anthropic: insert the consolidated system message at position 0
+
+        // For Gemini and Anthropic: insert the consolidated system message at position 0
         if ((isGeminiProvider || isAnthropicProvider) && consolidatedSystemContent) {
             const finalSystemMessage = new SystemMessage({
                 content: consolidatedSystemContent
@@ -326,8 +374,9 @@ async function callModel(state, model, data, agentDetails = null) {
         // Fallback for non-array messages
         context = messages;
     }
-        // Add SystemMessage with customInstruction if brain has customInstruction
-   if (brainData && brainData.customInstruction && brainData.customInstruction.trim()) {
+    
+    // Add SystemMessage with customInstruction if brain has customInstruction
+    if (brainData && brainData.customInstruction && brainData.customInstruction.trim()) {
         if (isAnthropicProvider) {
             // For Anthropic: convert additional system prompt to human message to avoid multiple system prompts
             // Check if there's already a system message in context
@@ -352,6 +401,7 @@ async function callModel(state, model, data, agentDetails = null) {
             context.unshift(['system', systemMessage.content]);
         }
     }
+    
     // Log the context being sent to LLM for debugging
     context.forEach((msg, idx) => {
         let content = '';
@@ -390,7 +440,7 @@ async function callModel(state, model, data, agentDetails = null) {
     return { messages: [response] };
 }
 
-async function callTool(state, agentDetails = null) {
+async function callTool(state, agentDetails = null, userData = null) {
     const { messages } = state;
     const lastMessage = messages[messages.length - 1];
 
@@ -398,23 +448,71 @@ async function callTool(state, agentDetails = null) {
         return {};
     }
 
-    const toolExecutorMap = getToolExecutorMap(agentDetails);
+    // Get MCP tools from global state if available
+    const mcpTools = global.mcpTools || [];
+    // console.log('mcpTools:', mcpTools);
+    const toolExecutorMap = getToolExecutorMap(agentDetails, mcpTools);
     const toolInvocations = [];
     
     for (const toolCall of lastMessage.tool_calls) {
         const toolExecutor = toolExecutorMap[toolCall.name];
         if (toolExecutor) {
             try {
+                const mcpTools = IS_MCP_TOOLS.includes(toolCall.name);
                 // For image generation tool, pass the API key from the query data
                 let toolArgs = toolCall.args;
                 if (toolCall.name === 'dalle_api_wrapper' && global.currentQueryData && global.currentQueryData.apiKey) {
                     const decryptedApiKey = decryptedData(global.currentQueryData.apiKey);
                     toolArgs = { ...toolCall.args, apiKey: decryptedApiKey };
                 }
+
+                if (mcpTools) {
+                    if (toolCall.args.mcp_data) {
+                        toolArgs = {
+                            ...toolCall.args,
+                            user_id: toolCall.args.mcp_data
+                        };
+                        // Remove mcp_data from args as it's not needed by the tool
+                        delete toolArgs.mcp_data;
+                    } else if (typeof userData !== 'undefined' && userData && userData.id) {
+                        // Fallback to userData if mcp_data is not available
+                        toolArgs = {
+                            ...toolCall.args,
+                            user_id: userData.id
+                        };
+                    }
+                }
                 
                 // Debug: Log tool call details for DALL-E tool (keeping for now)
                 
-                const toolOutput = await toolExecutor.invoke(toolArgs);
+                let toolOutput;
+                if (mcpTools) {
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error(`MCP tool '${toolCall.name}' timed out after 5 minutes`)), 300000);
+                    });
+                    
+                    const executeWithRetry = async (retries = 2) => {
+                        for (let attempt = 0; attempt <= retries; attempt++) {
+                            try {
+                                console.log(`Executing MCP tool '${toolCall.name}' (attempt ${attempt + 1}/${retries + 1})`);
+                                return await Promise.race([
+                                    toolExecutor.invoke(toolArgs),
+                                    timeoutPromise
+                                ]);
+                            } catch (error) {
+                                console.error(`MCP tool '${toolCall.name}' attempt ${attempt + 1} failed:`, error.message);
+                                if (attempt === retries) {
+                                    throw error;
+                                }
+                                // Exponential backoff: wait 1s, then 2s, then 4s
+                                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                            }
+                        }
+                    };
+                    toolOutput = await executeWithRetry();
+                } else {
+                    toolOutput = await toolExecutor.invoke(toolArgs);
+                }
                 
                 // Ensure tool output is properly formatted for LangChain
                 let formattedOutput;
@@ -437,15 +535,27 @@ async function callTool(state, agentDetails = null) {
                 );
             } catch (error) {
                 logger.error(`Error executing tool ${toolCall.name}:`, error);
+
+                const errorOutput = mcpTools 
+                    ? `MCP tool execution failed: ${error.message}. This might be due to connection timeout or server issues. Please try again.`
+                    : `Error executing tool ${toolCall.name}: ${error.message}`;
                 
                 // Add error message to tool invocations
                 toolInvocations.push(
                     new ToolMessage({
-                        content: `Error executing tool ${toolCall.name}: ${error.message}`,
+                        content: errorOutput,
                         tool_call_id: toolCall.id,
                     }),
                 );
             }
+        } else {
+            // Only add "tool not found" message if tool executor doesn't exist
+            toolInvocations.push(
+                new ToolMessage({
+                    content: `Tool '${toolCall.name}' not found or not available. Available tools: ${Object.keys(toolExecutorMap).join(', ')}`,
+                    tool_call_id: toolCall.id,
+                }),
+            );
         }
     }
 
@@ -481,7 +591,8 @@ async function chatOpenRouterWithCallback(modelName, opts = {}, costCallback = n
     });
 }
 
-async function toolChatOpenRouterWithCallback(modelName, opts = {}, costCallback = null) {
+
+async function toolChatOpenRouterWithCallback(modelName, opts = {}, costCallback = null, selectedTools = []) {
     const baseURL = LINK.OPEN_ROUTER_API_URL;
     return new ChatOpenAI({
         model: modelName,
@@ -496,11 +607,11 @@ async function toolChatOpenRouterWithCallback(modelName, opts = {}, costCallback
             }
         },
         ...(costCallback && { callbacks: [costCallback] })
-    }).bindTools([webSearchTool]);
+    }).bindTools([webSearchTool, currentTimeTool, ...selectedTools]);
 }
 
 async function llmFactory(modelName, opts = {}) {
-    
+
     // Validate API key
     if (!opts.apiKey) {
         throw new Error('API key is required but not provided');
@@ -537,10 +648,31 @@ async function llmFactory(modelName, opts = {}) {
         streaming: opts.streaming ?? true,
         ...(costCallback && { callbacks: [costCallback] })
     };
+
+    // Ultra-fast path: Skip expensive operations for simple queries
+    let selectedTools = [];
+    const needsTools = queryNeedsTools(opts.query);
+    // console.log('🔍 [QUERY ANALYSIS] Query needs tools:', needsTools);
     
+    if (needsTools) {
+        console.log('🔧 [OPTIMIZATION] Query requires tools, using cached MCP client...');
+        const availableMcpTools = await getCachedMCPClient();
+        const rawSelectedTools = await selectRelevantToolsWithDomainFilter(opts.query, availableMcpTools);
+        selectedTools = (rawSelectedTools || []).filter(tool => tool != null && typeof tool === 'object');
+        console.log(`🔧 [OPTIMIZATION] Selected ${selectedTools.length} MCP tools for query`);
+    } else {
+        console.log('🚀 [ULTRA-FAST] Simple query detected, bypassing all tool operations');
+    }
     
     const llmConfig = {
         [AI_MODAL_PROVIDER.OPEN_AI]: (() => {
+            // Check cache for simple model first
+            const cacheKey = `openai_${modelName}_${needsTools}`;
+            if (!needsTools && simpleModelCache.has(cacheKey)) {
+                console.log('🚀 [ULTRA-FAST] Using cached simple OpenAI model');
+                return simpleModelCache.get(cacheKey);
+            }
+            
             const openAIModel = new ChatOpenAI({
                 ...baseConfig,
                 openAIApiKey: opts.apiKey,
@@ -551,23 +683,75 @@ async function llmFactory(modelName, opts = {}) {
             
             // chatgpt-4o-latest doesn't support tools, so don't bind them
             if (modelName.toLowerCase().includes('chatgpt-4o-latest')) {
+                if (!needsTools) {
+                    simpleModelCache.set(cacheKey, openAIModel);
+                }
                 return openAIModel;
             }
             
-            return openAIModel.bindTools([webSearchTool, imageGenerationTool]);
+            // Only bind tools if query needs them
+            if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
+                return openAIModel.bindTools([webSearchTool, imageGenerationTool, currentTimeTool, ...selectedTools]);
+            }
+            
+            // Cache simple model for reuse
+            if (!needsTools) {
+                simpleModelCache.set(cacheKey, openAIModel);
+            }
+            
+            return openAIModel;
         })(),
-        [AI_MODAL_PROVIDER.ANTHROPIC]: new ChatAnthropic({
-            ...baseConfig,
-            anthropicApiKey: opts.apiKey,
-            maxTokens: getAnthropicMaxTokens(modelName)
-        }).bindTools([webSearchTool]),
+        [AI_MODAL_PROVIDER.ANTHROPIC]: (() => {
+            // Check cache for simple model first
+            const cacheKey = `anthropic_${modelName}_${needsTools}`;
+            if (!needsTools && simpleModelCache.has(cacheKey)) {
+                console.log('🚀 [ULTRA-FAST] Using cached simple Anthropic model');
+                return simpleModelCache.get(cacheKey);
+            }
+            
+            const anthropicModel = new ChatAnthropic({
+                ...baseConfig,
+                anthropicApiKey: opts.apiKey,
+            maxTokens: getAnthropicMaxTokens(modelName), // Model-specific max_tokens
+            });
+            
+            // Only bind tools if query needs them
+            if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
+                return anthropicModel.bindTools([webSearchTool, currentTimeTool, ...selectedTools]);
+            }
+            
+            // Cache simple model for reuse
+            if (!needsTools) {
+                simpleModelCache.set(cacheKey, anthropicModel);
+            }
+            
+            return anthropicModel;
+        })(),
         [AI_MODAL_PROVIDER.GEMINI]: (() => {
             try {
+                // Check cache for simple model first
+                const cacheKey = `gemini_${modelName}_${needsTools}`;
+                if (!needsTools && simpleModelCache.has(cacheKey)) {
+                    console.log('🚀 [ULTRA-FAST] Using cached simple Gemini model');
+                    return simpleModelCache.get(cacheKey);
+                }
+                
                 const geminiLLM = new ChatGoogleGenerativeAI({
                     ...baseConfig,
                     apiKey: opts.apiKey,
                     model: modelName, // Explicitly set the model name
-                }).bindTools([webSearchTool]);
+                });
+                
+                // Only bind tools if query needs them
+                if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
+                    return geminiLLM.bindTools([webSearchTool, currentTimeTool, ...selectedTools]);
+                }
+                
+                // Cache simple model for reuse
+                if (!needsTools) {
+                    simpleModelCache.set(cacheKey, geminiLLM);
+                }
+                
                 return geminiLLM;
             } catch (error) {
                 logger.error(`❌ [GEMINI] Failed to create ChatGoogleGenerativeAI:`, error);
@@ -575,8 +759,8 @@ async function llmFactory(modelName, opts = {}) {
             }
         })(),
         [AI_MODAL_PROVIDER.DEEPSEEK]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
-        [AI_MODAL_PROVIDER.LLAMA4]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
-        [AI_MODAL_PROVIDER.GROK]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.LLAMA4]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
+        [AI_MODAL_PROVIDER.GROK]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.QWEN]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
     }
     
@@ -598,11 +782,29 @@ async function llmFactory(modelName, opts = {}) {
     return selectedLLM;
 }
 
-function buildGraph(model, data, agentDetails = null) {
+
+
+
+
+async function buildGraph(model, data, agentDetails = null) {
+    // Ultra-fast path: Only initialize MCP tools if the query needs them
+    let mcpTools = [];
+    const needsTools = queryNeedsTools(data.query);
+    
+    if (needsTools) {
+        console.log('🔧 [OPTIMIZATION] Using cached MCP tools for tool-requiring query');
+        mcpTools = await getCachedMCPClient();
+    } else {
+        console.log('🚀 [ULTRA-FAST] Bypassing MCP initialization for simple query');
+    }
+    
+    // Store MCP tools in global state for access in callTool function
+    global.mcpTools = mcpTools;
+    getToolExecutorMap(agentDetails, mcpTools);
     const workflow = new StateGraph({ channels: graphState });
     
     // Use agent-specific tool executor if available
-    const toolExecutor = (state) => callTool(state, agentDetails);
+    const toolExecutor = (state) => callTool(state, agentDetails, data.user);
     
     // Pass agentDetails to callModel
     workflow.addNode('agent', state => callModel(state, model, data, agentDetails));
@@ -881,20 +1083,6 @@ function buildAgentContext(agent) {
         agentContext += `\nSystem Prompt: ${agent.systemPrompt}\n`;
     }
     
-    if (agent.goals && Array.isArray(agent.goals) && agent.goals.length > 0) {
-        agentContext += `\nGoals:\n`;
-        agent.goals.forEach((goal, index) => {
-            agentContext += `${index + 1}. ${goal}\n`;
-        });
-    }
-    
-    if (agent.instructions && Array.isArray(agent.instructions) && agent.instructions.length > 0) {
-        agentContext += `\nInstructions:\n`;
-        agent.instructions.forEach((instruction, index) => {
-            agentContext += `${index + 1}. ${instruction}\n`;
-        });
-    }
-    
     agentContext += '\nPlease follow these agent configurations in your response.\n';
     return agentContext;
 }
@@ -914,6 +1102,7 @@ async function fetchAgentDetails(agentId) {
 }
 
 async function streamAndLog(app, data, socket, threadId = null) {
+    console.log("🚀 ~ streamAndLog ~ data:", data)
     let proccedMsg = '';
     let costCallback = null;
     
@@ -971,7 +1160,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
             if (!companyId) {
                 throw new Error('Company ID is required for pinecone search');
             }
-        
+            
             
             // Get unique tags and namespaces from uploaded files and agent documents
             const tagList = [];
@@ -1078,11 +1267,8 @@ async function streamAndLog(app, data, socket, threadId = null) {
                     logger.warn(`❌ Could not extract filename from file object:`, file);
                 }
             }
-
-                // Use the brainId + filename approach for search
-            // const { searchAcrossNamespaces, getIndexList } = require('./pinecone');
             const { searchWithinFileByFileId } = require('./qdrant');
-            
+
             // Search across all relevant namespaces
             const searchResults =  await searchWithinFileByFileId(allFiles[0]._id, data.query, 18);
             
@@ -1098,7 +1284,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 // });
 
                 // Build RAG context from search results
-               const relevantTexts = searchResults.map(result => {
+                const relevantTexts = searchResults.map(result => {
                     const text = result.payload?.text || '';
                     const filename = result.payload?.filename || 'unknown';
                     return `[From ${filename}]: ${text}`;
@@ -1208,10 +1394,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
         // Handle vision support for normal flow
         if (shouldEnableVision(data)) {
             const mappedProvider = mapProviderCode(data.code);
-
-            let a= await createVisionMessage(normalQuery, data.imageUrls, mappedProvider) 
-            console.log("==========createVisionMessage=========",a)
-            inputs = { messages:a };
+            inputs = { messages: await createVisionMessage(normalQuery, data.imageUrls, mappedProvider) };
         } else {
             inputs = { messages: [['user', normalQuery]] };
         }
@@ -1275,7 +1458,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 //         const creditValue = Number((parseFloat(data.msgCredit || data.usedCredit || 1.0)).toFixed(1));
                         
                         
-                //         const creditResult = await deductUserMsgCredit(companyId, creditValue);
+                //         // const creditResult = await deductUserMsgCredit(companyId, creditValue);
                 //     } catch (error) {
                 //         logger.error(`❌ [CREDIT_DEDUCT] Error deducting credit:`, error);
                 //     }
@@ -1337,7 +1520,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 await createLLMConversation({ 
                     ...data, 
                     answer: proccedMsg, 
-                    usedCredit: data.usedCredit || 1 
+                    usedCredit:  data.usedCredit || 1 
                 });
             } catch (saveError) {
                 logger.error('❌ Error saving conversation to database:', saveError);
@@ -1468,10 +1651,18 @@ async function toolExecutor(data, socket) {
     try {
         let apiKey, model, app, agentDetails = null;
         
-        
+
         // Map the provider code to the correct constant
         const mappedProvider = mapProviderCode(data.code);
-        
+        const options = {
+            apiKey: data.apiKey,
+            llmProvider: mappedProvider,
+            temperature: data.temperature,
+            streaming: true,
+            query: data.query,
+            threadId: data.threadId,
+            userId: data.user.id
+        };
         if (shouldEnableAgent(data)) {
             agentDetails = await fetchAgentDetails(data.customGptId);
             if (agentDetails) {
@@ -1482,31 +1673,25 @@ async function toolExecutor(data, socket) {
                     // Map the agent's provider to the correct format
                     const mappedAgentProvider = mapProviderCode(agentModelConfig.llmProvider);
                     
-                    model = await llmFactory(agentModelConfig.model, { 
-                        streaming: agentModelConfig.streaming, 
-                        apiKey, 
-                        llmProvider: mappedAgentProvider,
-                        temperature: agentModelConfig.temperature,
-                        threadId: data.threadId
-                    });
+                    model = await llmFactory(agentModelConfig.model, {...options, apiKey: apiKey});
                 } else {
                     // Fallback to user's model configuration
                     apiKey = safeDecryptApiKey(data.apiKey);
-                    model = await llmFactory(data.model, { streaming: true, apiKey, llmProvider: mappedProvider, threadId: data.threadId });
+                    model = await llmFactory(data.model, {...options, apiKey: apiKey});
                 }
             } else {
                 // Agent not found, use user's model configuration
                 apiKey = decryptedData(data.apiKey);
-                model = await llmFactory(data.model, { streaming: true, apiKey, llmProvider: data.code, threadId: data.threadId });
+                model = await llmFactory(data.model, {...options, apiKey: apiKey});
             }
         } else {
             // Normal flow: use user's model configuration
             apiKey = decryptedData(data.apiKey);
-            model = await llmFactory(data.model, { streaming: true, apiKey, llmProvider: data.code, threadId: data.threadId });
+            model = await llmFactory(data.model, {...options, apiKey: apiKey});
         }
         
         // Build the graph with the selected model and agent details
-        app = buildGraph(model, data, agentDetails);
+        app = await buildGraph(model, data, agentDetails);
         
         // Stream and log the response
         await streamAndLog(app, data, socket, data.threadId);
@@ -1571,7 +1756,7 @@ async function generateTitleByLLM(payload) {
     }
 }
 
-async function enhancePromptByLLM() {
+async function enhancePromptByLLM(payload) {
     try {
         const { query, apiKey } = payload;
         
@@ -1596,6 +1781,7 @@ async function enhancePromptByLLM() {
         ];
         const result = await model.invoke(messages);
         const parsedResult = JSON.parse(result.content);
+        return parsedResult;
     } catch (error) {
         handleError(error, 'Error in enhancePromptByLLM');
     }
@@ -1604,5 +1790,9 @@ async function enhancePromptByLLM() {
 module.exports = {
     toolExecutor,
     generateTitleByLLM,
+    webSearchTool,
+    imageGenerationTool,
+    currentTimeTool,
+    enhancePromptByLLM,
     llmFactory
 }
