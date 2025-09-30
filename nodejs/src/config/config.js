@@ -43,7 +43,8 @@ module.exports = {
         WEAM_QWEN_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
         OPEN_ROUTER_API_URL: process.env.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1',
         SEARXNG_API_URL: 'https://dev-searxng.weam.ai',
-       MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
+        MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
+        MCP_SERVER_URL: process.env.MCP_SERVER_URL,
     },
     AUTH: {
         JWT_SECRET: process.env.JWT_SECRET,
@@ -125,5 +126,15 @@ module.exports = {
         CHUNK_SIZE_CHARS: 3000,
         CHUNK_OVERLAP_CHARS: 60,
         BATCH_SIZE: 32,
+    },
+    GOOGLE_OAUTH: {
+        CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
+        CLIENT_SECRET: process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_SECRET,
+        REDIRECT_URI: `${process.env.BASE_URL}/api/auth/google/callback`
+    },
+    ZOOM_OAUTH: {
+        CLIENT_ID: process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID,
+        CLIENT_SECRET: process.env.NEXT_PUBLIC_ZOOM_CLIENT_SECRET,
+        REDIRECT_URI: `${process.env.DOMAIN_URL}/api/auth/zoom/callback`
     }
 };

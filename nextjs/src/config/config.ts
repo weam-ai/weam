@@ -89,3 +89,14 @@ export const GITHUB = {
     USER_INFO_URL: 'https://api.github.com/user',
     SCOPE: 'repo,user,read:org,write:org,admin:org,workflow'
 }
+
+
+export const ZOOM = {
+    CLIENT_ID: process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID,
+    CLIENT_SECRET: process.env.NEXT_PUBLIC_ZOOM_CLIENT_SECRET,
+    REDIRECT_URI: `${process.env.NEXT_PUBLIC_DOMAIN_URL}/api/auth/zoom/callback`,
+    AUTH_URL: 'https://zoom.us/oauth/authorize',
+    TOKEN_URL: 'https://zoom.us/oauth/token',
+    USER_INFO_URL: 'https://api.zoom.us/v2/users/me',
+    SCOPE: 'webinar:read:list_webinars,webinar:read:list_past_polls,webinar:read:list_templates,webinar:read:list_registrants,webinar:read:list_polls,webinar:read:registrant,webinar:read:poll,webinar:read:list_panelists,user:read:user,user:read:email,meeting:read:participant,meeting:read:list_registrants,meeting:read:poll,meeting:read:list_meetings,meeting:read:meeting,meeting:write:poll,meeting:write:meeting,meeting:write:invite_links,calendar:read:event,calendar:read:calendar_list,meeting:update:meeting,meeting:delete:meeting'
+}

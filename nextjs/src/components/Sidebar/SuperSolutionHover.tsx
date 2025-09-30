@@ -15,7 +15,7 @@ import useSuperSolution from '@/hooks/superSolution/useSuperSolution';
 import { getCurrentUser } from '@/utils/handleAuth';
 import Link from 'next/link';
 import { ROLE_TYPE } from '@/utils/constant';
-import { LINK } from '@/config/config';
+import { LINK, NODE_API_PREFIX } from '@/config/config';
 import { getIconComponent } from '@/utils/iconMapping';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import DashboardIcon from '@/icons/DashboardIcon';
@@ -41,6 +41,7 @@ type SolutionData = {
 
 const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
     const [solutions, setSolutions] = useState<SolutionData[]>([]);
+    const [installedSolutions, setInstalledSolutions] = useState<{ [key: string]: boolean }>({});
     const [isLoading, setIsLoading] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,14 +49,67 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
     const user = getCurrentUser();
     const isMobile = useMediaQuery('(max-width: 1024px)');
 
+    // Mapping from app names to solution types
+    const getSolutionTypeFromAppName = (appName: string): string => {
+        const mapping: { [key: string]: string } = {
+            'AI Docs': 'ai-doc-editor',
+            'AI Recruiter': 'ai-recruiter',
+            'AI Landing Page Generator': 'ai-landing-page-generator',
+            'SEO Content Gen': 'seo-content-gen'
+        };
+        return mapping[appName] || '';
+    };
+
+    // Check installation status for all solutions
+    const checkInstallationStatus = async (solutions: SolutionData[]) => {
+        const solutionTypes = solutions.map(solution => {
+            const appName = ROLE_TYPE.USER === user?.roleCode ? solution?.appId?.name : solution?.name;
+            return getSolutionTypeFromAppName(appName);
+        }).filter(Boolean);
+        
+        const installedStatus: { [key: string]: boolean } = {};
+        
+        for (const solutionType of solutionTypes) {
+            try {
+                const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
+                const healthUrl = `${baseUrl}/web/solution-install-progress/health?solutionType=${encodeURIComponent(solutionType)}`;
+                const response = await fetch(healthUrl);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    installedStatus[solutionType] = data.status === 'running';
+                } else {
+                    installedStatus[solutionType] = false;
+                }
+            } catch (error) {
+                console.log(`Health check error for ${solutionType}:`, error);
+                installedStatus[solutionType] = false;
+            }
+        }
+        
+        setInstalledSolutions(installedStatus);
+        return installedStatus;
+    };
+
     const fetchUserSolutions = async () => {
         if (!user?._id || hasLoaded) return;
 
         try {
             setIsLoading(true);
             const data = await getSolutionAppByUserId(user._id);
+            const solutionsData = data || [];
+            
+            // Check installation status for all solutions
+            const installedStatus = await checkInstallationStatus(solutionsData);
+            
+            // Filter solutions to only show installed ones
+            const installedSolutionsData = solutionsData.filter(solution => {
+                const appName = ROLE_TYPE.USER === user?.roleCode ? solution?.appId?.name : solution?.name;
+                const solutionType = getSolutionTypeFromAppName(appName);
+                return installedStatus[solutionType] === true;
+            });
 
-            setSolutions(data || []);
+            setSolutions(installedSolutionsData);
             setHasLoaded(true);
         } catch (error) {
             console.error('Error fetching user solutions:', error);

@@ -462,6 +462,47 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
     const handleInlineChange = (e) => {
         setEditContent(e.target.value);
     };
+
+    // Function to apply text formatting in markdown editor
+    const applyFormatting = (type: 'bold' | 'italic' | 'underline' | 'code' | 'header') => {
+        if (!textareaRef.current) return;
+
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = editContent.substring(start, end);
+        let newText = '';
+
+        switch (type) {
+            case 'bold':
+                newText = `**${selectedText || 'bold text'}**`;
+                break;
+            case 'italic':
+                newText = `*${selectedText || 'italic text'}*`;
+                break;
+            case 'underline':
+                newText = `==${selectedText || 'underlined text'}==`;
+                break;
+            case 'code':
+                newText = `\`${selectedText || 'code'}\``;
+                break;
+            case 'header':
+                newText = `### ${selectedText || 'Header'}`;
+                break;
+            default:
+                return;
+        }
+
+        const newContent = editContent.substring(0, start) + newText + editContent.substring(end);
+        setEditContent(newContent);
+
+        // Set cursor position after the inserted text
+        setTimeout(() => {
+            const newCursorPos = start + newText.length;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+            textarea.focus();
+        }, 0);
+    };
    
     return m?.response?.startsWith('images') ? (
         <DallEImagePreview
