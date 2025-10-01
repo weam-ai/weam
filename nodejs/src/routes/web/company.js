@@ -11,5 +11,6 @@ router.post('/resend-verification', validate(resendVerification), companyControl
 router.post('/huggingface/apikey', validate(huggingFaceAuthKeys), authentication, companyController.huggingFaceApiChecker);
 router.post('/anthropic/apikey', validate(anthropicAuthKeys), authentication, companyController.anthropicApiChecker);
 router.post('/gemini/apikey', authentication, companyController.geminiApiKeyChecker);
+router.post('/ollama/apikey', authentication, companyController.ollamaApiChecker);
 router.post('/blocked-domain', authentication, companyController.addBlockedDomain);
 module.exports = router;

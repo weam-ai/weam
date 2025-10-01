@@ -62,6 +62,42 @@ const schema = new Schema(
         freshCRMContactId: {
             type: String,
         },
+        ollamaSettings: {
+            enabled: {
+                type: Boolean,
+                default: true
+            },
+            allowedModels: [{
+                type: String
+            }],
+            restrictedModels: [{
+                type: String
+            }],
+            defaultModel: {
+                type: String
+            },
+            maxConcurrentRequests: {
+                type: Number,
+                default: 5
+            },
+            defaultBaseUrl: {
+                type: String
+            },
+            teamSettings: {
+                allowModelPulling: {
+                    type: Boolean,
+                    default: false
+                },
+                allowModelDeletion: {
+                    type: Boolean,
+                    default: false
+                }
+            },
+            updatedAt: {
+                type: Date,
+                default: Date.now
+            }
+        },
     },
     { timestamps: true },
 );

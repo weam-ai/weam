@@ -133,6 +133,9 @@ export const MODULE_ACTIONS = {
     HUGGING_FACE_HEALTH: 'huggingFaceKeyCheck',
     ANTHROPIC_HEALTH: 'anthropicKeyCheck',
     CHECK_GEMINI_API_KEY: 'geminiKeyCheck',
+    OLLAMA_HEALTH: 'ollamaKeyCheck',
+    TEST_OLLAMA_CONNECTION: 'testOllamaConnection',
+    SAVE_OLLAMA_SETTINGS: 'saveOllamaSettings',
     BRAIN_LIST_ALL: 'brainListAll',
     GET_MESSAGE_CREDITS: 'getMessageCredits',
     FAVORITE_LIST: 'userFavoriteList',
@@ -255,6 +258,7 @@ export const AI_MODEL_CODE = {
     LLAMA4: 'LLAMA4',
     GROK: 'GROK',
     QWEN: 'QWEN',
+    OLLAMA: 'OLLAMA',
     OPEN_ROUTER: 'OPEN_ROUTER',
     // error conversation response
     CONVERSATION_ERROR: `We encountered an issue and were unable to receive a response. This could be due to a variety of reasons including network issues, server problems, or unexpected errors.Please try your request again later. If the problem persists, check your network connection or [contact support](mailto:hello@weam.ai) for further assistance.`,
