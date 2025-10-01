@@ -696,8 +696,8 @@ async function llmFactory(modelName, opts = {}) {
                 }
             });
             
-            // chatgpt-4o-latest doesn't support tools, so don't bind them
-            if (modelName.toLowerCase().includes('chatgpt-4o-latest')) {
+            // chatgpt-4o-latest and gpt-5-chat-latest doesn't support tools, so don't bind them
+            if (modelName.toLowerCase().includes('chatgpt-4o-latest') || modelName.toLowerCase().includes('gpt-5-chat-latest')) {
                 if (!needsTools) {
                     simpleModelCache.set(cacheKey, openAIModel);
                 }

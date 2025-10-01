@@ -1682,8 +1682,7 @@ const uploadGeminiImageToS3 = async (base64Data, options = {}) => {
         const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
         const buffer = Buffer.from(base64Image, 'base64');
         
-        // Generate unique S3 key with UUID
-        const id = uuidv4();
+        const id = new mongoose.Types.ObjectId();
         const fileExtension = 'png'; // Default to PNG for Gemini images
         const s3Key = `images/${customFileName}-${id}.${fileExtension}`;
         
@@ -1695,7 +1694,7 @@ const uploadGeminiImageToS3 = async (base64Data, options = {}) => {
             ACL: 'public-read',
             Metadata: {
                 uploadedAt: new Date().toISOString(),
-                source: 'gemini-ai'
+                source: 'gemini-nanobanana'
             }
         };
         
@@ -1717,23 +1716,33 @@ const uploadGeminiImageToS3 = async (base64Data, options = {}) => {
         
         logger.info(`Successfully uploaded Gemini image to S3: ${uploadResult.Location}`);
         
+        const fileData = {
+            name: `${customFileName}-${id}.${fileExtension}`,
+            mime_type: 'image/png',
+            file_size: buffer.length.toString(),
+            uri: `/${s3Key}`,
+            type: 'png',
+            isActive: true,
+            module: 'ai-generated',
+        }
+
+        const fileRecord = await File.create(fileData);
+
         return {
             success: true,
             s3Url: uploadResult.Location,
             s3Key: s3Key,
+            fileId: fileRecord._id,
             fileSize: buffer.length,
             contentType: 'image/png'
         };
+
     } catch (error) {
-        logger.error('❌ [GEMINI_IMAGE] Error uploading base64 image to S3:', {
-            error: error.message,
-            code: error.code,
-            statusCode: error.statusCode,
-            stack: error.stack
-        });
+        logger.error('❌ [GEMINI_IMAGE] Error uploading base64 image to S3:', error);
         return {
             success: false,
-            error: error.message
+            error: error.message,
+            message: 'Failed to upload image to S3'
         };
     }
 };

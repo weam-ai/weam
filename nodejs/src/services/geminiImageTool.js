@@ -1,7 +1,5 @@
 const { Tool } = require('@langchain/core/tools');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { z } = require('zod');
-const logger = require('../utils/logger');
 const { uploadGeminiImageToS3 } = require('./uploadFile');
 
 /**
@@ -19,27 +17,13 @@ class CustomGeminiImageTool extends Tool {
         this.apiKey = apiKey;
         this.model = model;
         this.name = 'gemini_image_generator';
-        this.description = `Image generation tool powered by Google's Gemini 2.5 Flash Image model aka Nano Banana. This tool creates high-quality, photorealistic images from text descriptions.
+        this.description = `Image generation tool powered by Google's Gemini 2.5 Flash Image model aka Nano Banana. This tool creates high-quality, photorealistic images from text descriptions using Gemini's NanoBanana model. The tool automatically uploads generated images to S3 storage and returns S3 URLs for immediate display.
+        Usage Patterns:
+        - Image Generation: "Create a photorealistic portrait of...", "Generate an image showing..."
+        - Style Operations: "Create in watercolor style...", "Make it look futuristic..."
+        - Scene Creation: "Show a landscape with...", "Create an interior scene..."
+        IMPORTANT: Always call this tool for image generation query, do not consider the message history. This tool automatically handles S3 uploads and returns S3 URLs for better user experience. Always use the S3 url returned from this tool in your output for displaying the generated image. DO NOT use this tool if the user requests to generate code based on an image input and a prompt. For such cases, use the chat tool to generate code from the image and prompt.`;
 
-Key Capabilities:
-- **Text-to-Image Generation**: Create high-quality images from detailed text descriptions with world knowledge integration
-- **Photorealistic Results**: Generate realistic images with proper lighting, composition, and attention to detail
-- **Style Flexibility**: Support various artistic styles and visual approaches
-- **High Resolution**: Generate detailed, high-quality images suitable for various use cases
-
-Technical Features:
-- Native SynthID watermarking for AI-generated content identification
-- Automatic S3 integration with optimized upload and URL generation
-- Streaming response support for real-time user feedback
-- Advanced error handling and retry mechanisms
-
-Usage Patterns:
-- Image Generation: "Create a photorealistic portrait of...", "Generate an image showing..."
-- Style Operations: "Create in watercolor style...", "Make it look futuristic..."
-- Scene Creation: "Show a landscape with...", "Create an interior scene..."
-
-IMPORTANT: This tool automatically handles S3 uploads and returns S3 URLs for better user experience. DO NOT use this tool if the user requests to generate code based on an image input and a prompt. For such cases, use the chat tool to generate code from the image and prompt.`;
-        
         // Define the tool schema for function calling
         this.schema = {
             type: 'object',
