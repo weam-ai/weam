@@ -129,7 +129,7 @@ export default function DashboardReport() {
                         </h5>
                         <p className="text-font-15 font-normal text-b5 mb-2 flex md:items-center justify-between max-md:flex-col">
                             Weekly usage report by companies
-                            <Link href="/settings/reports" className="text-font-14 underline hover:text-blue text-b2 mb-2">
+                            <Link href="/settings/reports" className="text-font-14 underline hover:text-b5 text-b2 mb-2">
                                 Back to Usage Report
                             </Link>
                         </p>

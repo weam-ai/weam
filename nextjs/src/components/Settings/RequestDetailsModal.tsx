@@ -91,7 +91,7 @@ const RequestDetailsModal = ({ closeModal, selectedRequest, setRefreshStorageReq
                         <button className='btn btn-outline-gray'
                             onClick={handleDecline}
                             disabled={loading}>Decline</button>
-                        <button className='btn btn-blue'
+                        <button className='btn btn-black'
                             onClick={onApprove}
                             disabled={loading || dataLoading}>Approve</button>
                     </DialogFooter>

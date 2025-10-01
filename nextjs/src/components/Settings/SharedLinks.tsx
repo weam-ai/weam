@@ -13,7 +13,7 @@ const ShareItem = ({ share }) => {
                     <LinkIcon
                         width={'14'}
                         height={'14'}
-                        className="fill-blue hover:fill-bluehover inline-block me-2.5"
+                        className="fill-b5 hover:fill-b2 inline-block me-2.5"
                     />
                     {share?.chatId?.title}
                 </Link>

@@ -122,13 +122,13 @@ export const LinkItems = React.memo(({ icon, text, href, data }: LinkItemsProps)
                 href={href}
                 className={`${
                     isActive ? 'active' : ''
-                } peer-hover:bg-blue5 flex items-center px-[15px] py-[8.6px] text-b5 rounded-custom hover:text-blue [&.active]:text-blue`}
+                } peer-hover:bg-gray-100 flex items-center px-[15px] py-[8.6px] text-b5 rounded-custom hover:text-b2 [&.active]:text-b2`}
                 onClick={handleLinkClick}
             >
                 <span
                     className={`${
                         isActive ? 'active' : ''
-                    } mr-2.5 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:fill-b6 group-hover:[&>svg]:fill-blue [&>svg]:[&.active]:fill-blue`}
+                    } mr-2.5 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:fill-b6 group-hover:[&>svg]:fill-b2 [&>svg]:[&.active]:fill-b2`}
                 >
                     {icon}
                 </span>

@@ -20,7 +20,7 @@ const Step1 = () => {
         />
       </div>
       <div className="max-md:mt-3 max-md:text-center">
-        <h5 className="text-font-14 text-blue">Ready to team up?</h5>
+        <h5 className="text-font-14 text-b2">Ready to team up?</h5>
         <h2 className="md:text-[36px] text-font-20 font-bold text-black">
           Invite Your Team Members
         </h2>

@@ -156,7 +156,7 @@ export const WorkspaceNewChatButton = memo(() => {
                         </Tooltip>
                     </TooltipProvider>
                 ) : (
-                    <span className='text-font-14 font-medium block text-blue2'>+</span>
+                    <span className='text-font-14 font-medium block text-b5'>+</span>
                 )}
                 <span className='collapsed-text'>New Chat</span>
             </div>

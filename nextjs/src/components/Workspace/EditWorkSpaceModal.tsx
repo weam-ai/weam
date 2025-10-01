@@ -148,7 +148,7 @@ const AddNewMemberModal = ({ workspace, onClose, open, refetchMemebrs }) => {
                                             <div className="flex justify-center mt-5 mb-5">
                                                 <button
                                                     type="submit"
-                                                    className="btn btn-blue"
+                                                    className="btn btn-black"
                                                     disabled={isPending}
                                                 >
                                                     Add a Member
@@ -291,7 +291,7 @@ const AddTeamMemberModal = ({
                                             <div className="flex justify-center mt-5 mb-5">
                                                 <button
                                                     type="submit"
-                                                    className="btn btn-blue"
+                                                    className="btn btn-black"
                                                     disabled={isPending}
                                                 >
                                                     Add a Team
@@ -495,7 +495,7 @@ const MemberItem = ({ member, handleRemoveMember }) => {
                     <span className='cursor-pointer' onClick={() =>
                         handleRemoveMember(member?.user?.id)
                     }>
-                        <RemoveIcon width={14} height={14} className={"size-4 fill-b4 hover:fill-blue"} />
+                        <RemoveIcon width={14} height={14} className={"size-4 fill-b5 hover:fill-red"} />
                     </span>
                 )}
                 {/* } */}
@@ -524,7 +524,7 @@ const TeamItem = ({ team, handleRemoveTeam, brain }:any) => {
                      <span className='cursor-pointer' onClick={() =>
                         handleRemoveTeam(team.id._id)
                     }>
-                        <RemoveIcon width={14} height={14} className={"size-4 fill-b4 hover:fill-blue"} />
+                        <RemoveIcon width={14} height={14} className={"size-4 fill-b5 hover:fill-red"} />
                     </span>
                    
                 }

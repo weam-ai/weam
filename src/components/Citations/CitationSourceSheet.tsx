@@ -42,7 +42,7 @@ export function CitationItem({ citations }: CitationItemProps) {
                                     <div className="text-b5 text-sm font-medium">
                                         {domain}
                                     </div>
-                                    <h3 className="text-blue text-sm font-medium leading-tight line-clamp-2 group-hover:text-blue-300 transition-colors">
+                                    <h3 className="text-b2 text-sm font-medium leading-tight line-clamp-2 group-hover:text-b5 transition-colors">
                                         {citation.title}
                                     </h3>
                                     <p className="text-black text-sm leading-relaxed line-clamp-3">

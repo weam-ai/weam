@@ -17,7 +17,7 @@ export default function GlobalError({
                 <p className="text-gray-600 mb-6">Our team has been notified and will fix this issue as soon as possible.</p>
                 <a
                     href="/"
-                    className="bg-blue text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition"
+                    className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition"
                 >
                     Go Home
                 </a>

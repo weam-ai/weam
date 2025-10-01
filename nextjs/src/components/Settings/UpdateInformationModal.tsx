@@ -58,7 +58,7 @@ const UpdateInformationModal = ({open, closeModal}) => {
             <DialogClose asChild>
             <button className='btn btn-outline-gray'>Cancel</button>
             </DialogClose>
-            <button className='btn btn-blue'>Update Information</button>
+            <button className='btn btn-black'>Update Information</button>
         </DialogFooter>
         </DialogContent>
     </Dialog>

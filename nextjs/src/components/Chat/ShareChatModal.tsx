@@ -184,7 +184,7 @@ const MemberItem = ({ member, adminUser, isOwner }) => {
             </div>
             <div className="flex items-center space-x-2.5">
                 {role && (
-                    <span className="bg-blue5 text-gray-800 text-xs font-medium me-2 px-2.5 text-font-14 py-0.5 rounded">
+                    <span className="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 text-font-14 py-0.5 rounded">
                         {role}
                     </span>
                 )}

@@ -1,4 +1,4 @@
-const CommonFileIcon = ({ height, width, className = 'fill-blue' }: any) => {
+const CommonFileIcon = ({ height, width, className = 'fill-b2' }: any) => {
     return (
         <svg
             className={className}

@@ -99,6 +99,88 @@ const Overview = ({ onNext, customGptData, setCustomGptData }) => {
                     />
                     {touched.title && <FormikError errors={errors} field={'title'} />}
                 </div>
+<<<<<<< HEAD
+=======
+
+                {/* Model Selection */}
+                {userModals && (
+                    <div className="relative mb-5">
+                        
+                        <div className="flex items-center">
+                            <Label htmlFor={'model'} title={'Model'} />
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="cursor-pointer mb-2 ml-1 inline-block">
+                                            <TooltipIcon
+                                                width={15}
+                                                height={15}
+                                                className={
+                                                    'w-[15px] h-[15px] object-cover inline-block fill-b7'
+                                                }
+                                            />
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="border-none">
+                                        <p className="text-font-14">{`Select the model for generating responses for your agents.`}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <Select
+                            options={userModals?.reduce((accumulator, current) => {
+                                if (!CUSTOM_BOT_IGNORE_MODAL.includes(current.name) && !current.isDisable) {
+                                    accumulator.push({
+                                        value: getDisplayModelName(current.name),
+                                        label: getDisplayModelName(current.name),
+                                        id: current._id,
+                                        company: current.company,
+                                        isDisabled:current.isDisable || false,
+                                        provider: current?.provider,
+                                        bot: current.bot,
+                                        name: current.name,
+                                    })
+                                }
+                                return accumulator;
+                            }, [])}
+                            id="model"
+                            className="react-select-container"
+                            classNamePrefix="react-select"
+                            name="responseModel"
+                            onChange={(value)=>{
+                                setFieldValue('responseModel',value);
+                            }}
+                            value={values.responseModel}
+                            isOptionDisabled={(option)=> option.isDisabled}
+                            styles={{
+                                option: (provided, option) => ({
+                                ...provided,
+                                cursor: option.isDisabled ? 'not-allowed' : 'pointer',
+                                })
+                            }}
+                        />
+                        {touched.responseModel && <FormikError errors={errors} field={'responseModel'} />}
+
+                        {values.responseModel?.bot?.code === API_TYPE_OPTIONS.OPEN_AI && (
+                            <div className="mt-4">
+                                <Label htmlFor={'imageEnable'} title={'Capabilities'} required={false} />
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="form-checkbox h-4 w-4 text-b5"
+                                        checked={values?.imageEnable || false}
+                                        onChange={(e) => setFieldValue('imageEnable', e.target.checked)}
+                                    />
+                                    <span className="ml-2">Image Generation</span>
+                                </label>
+                            </div>
+                        )}
+                    </div>
+                )}
+                
+
+                {/* System Prompt */}
+>>>>>>> 45c86faf (button size, color and design fixes)
                 <div className="relative mb-4">
                     <div className='flex items-center'>
                         <Label htmlFor={'SystemPrompt'} title={'System Prompt'} />

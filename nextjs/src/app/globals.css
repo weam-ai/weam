@@ -377,7 +377,7 @@ body .MuiChipsInput-TextField{
   }
 }
 .input-checkbox{
-  @apply relative float-left -ms-8 me-[6px] mt-[0.15rem] h-6 w-6 appearance-none rounded-[0.25rem] border border-solid border-b8 outline-none before:pointer-events-none before:absolute before:h-[22px] before:w-[22px] before:scale-0 before:rounded-full before:bg-transparent before:opacity-0 before:shadow-transparent before:content-[''] checked:border-blue checked:bg-blue checked:before:opacity-[0.16] checked:after:absolute checked:after:mt-0.5 checked:after:ms-2 checked:after:block checked:after:h-[0.8125rem] checked:after:w-[0.375rem] checked:after:rotate-45 checked:after:border-[0.125rem] checked:after:border-l-0 checked:after:border-t-0 checked:after:border-solid checked:after:border-white checked:after:bg-transparent checked:after:content-[''] hover:cursor-pointer hover:before:opacity-[0.04] hover:before:shadow-black/60 focus:shadow-none focus:transition-[border-color_0.2s] focus:before:scale-100 focus:before:opacity-[0.12] focus:before:shadow-black/60 focus:before:transition-[box-shadow_0.2s,transform_0.2s] focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-[22px] focus:after:w-[22px] focus:after:rounded-[0.125rem] focus:after:content-[''] checked:focus:before:scale-100  checked:focus:before:transition-[box-shadow_0.2s,transform_0.2s] checked:focus:after:mt-0.5 checked:focus:after:ms-2 checked:focus:after:h-[0.8125rem] checked:focus:after:w-[0.375rem] checked:focus:after:rotate-45 checked:focus:after:rounded-none checked:focus:after:border-[0.125rem] checked:focus:after:border-l-0 checked:focus:after:border-t-0 checked:focus:after:border-solid checked:focus:after:border-white checked:focus:after:bg-transparent rtl:float-right ;
+  @apply relative float-left -ms-8 me-[6px] mt-[0.15rem] h-6 w-6 appearance-none rounded-[0.25rem] border border-solid border-b8 outline-none before:pointer-events-none before:absolute before:h-[22px] before:w-[22px] before:scale-0 before:rounded-full before:bg-transparent before:opacity-0 before:shadow-transparent before:content-[''] checked:border-b2 checked:bg-b2 checked:before:opacity-[0.16] checked:after:absolute checked:after:mt-0.5 checked:after:ms-2 checked:after:block checked:after:h-[0.8125rem] checked:after:w-[0.375rem] checked:after:rotate-45 checked:after:border-[0.125rem] checked:after:border-l-0 checked:after:border-t-0 checked:after:border-solid checked:after:border-white checked:after:bg-transparent checked:after:content-[''] hover:cursor-pointer hover:before:opacity-[0.04] hover:before:shadow-black/60 focus:shadow-none focus:transition-[border-color_0.2s] focus:before:scale-100 focus:before:opacity-[0.12] focus:before:shadow-black/60 focus:before:transition-[box-shadow_0.2s,transform_0.2s] focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-[22px] focus:after:w-[22px] focus:after:rounded-[0.125rem] focus:after:content-[''] checked:focus:before:scale-100  checked:focus:before:transition-[box-shadow_0.2s,transform_0.2s] checked:focus:after:mt-0.5 checked:focus:after:ms-2 checked:focus:after:h-[0.8125rem] checked:focus:after:w-[0.375rem] checked:focus:after:rotate-45 checked:focus:after:rounded-none checked:focus:after:border-[0.125rem] checked:focus:after:border-l-0 checked:focus:after:border-t-0 checked:focus:after:border-solid checked:focus:after:border-white checked:focus:after:bg-transparent rtl:float-right ;
 }
 .group-button{
   @apply absolute transition duration-150 ease-in-out -right-3 -top-3 h-7 w-7 p-[5px] appearance-none rounded-full checked:bg-white checked:before:content-[''] checked:before:absolute checked:before:w-[18px] checked:before:h-[18px] checked:before:rounded-full checked:before:border-[2px] checked:before:border-green checked:after:absolute checked:after:mt-1 checked:after:ms-[7px] checked:after:block checked:after:h-2 checked:after:w-[5px] checked:after:rotate-45 checked:after:border-[0.125rem] checked:after:border-l-0 checked:after:border-t-0 checked:after:border-solid checked:after:border-green checked:after:bg-transparent checked:after:content-[''];
@@ -718,8 +718,8 @@ body .MuiChipsInput-TextField{
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #9880ff;
-  color: #9880ff;
+  background-color: #565656;
+  color: #565656;
   animation: dot-flashing 1s infinite linear alternate;
   animation-delay: 0.5s;
 }
@@ -734,8 +734,8 @@ body .MuiChipsInput-TextField{
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #9880ff;
-  color: #9880ff;
+  background-color: #565656;
+  color: #565656;
   animation: dot-flashing 1s infinite alternate;
   animation-delay: 0s;
 }
@@ -744,18 +744,18 @@ body .MuiChipsInput-TextField{
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #6637EC;
-  color: #9880ff;
+  background-color: #000000;
+  color: #565656;
   animation: dot-flashing 1s infinite alternate;
   animation-delay: 1s;
 }
 
 @keyframes dot-flashing {
   0% {
-    background-color: #9880ff;
+    background-color: #565656;
   }
   50%, 100% {
-    background-color: rgba(152, 128, 255, 0.2);
+    background-color: rgba(199, 199, 199, 0.2);
   }
 }
 

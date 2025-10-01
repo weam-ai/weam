@@ -39,7 +39,7 @@ const markdownToHTML = (content: string): string => {
       if (/^\d+$/.test(text)) {
         return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-600 text-white rounded-full mr-1 mb-1 font-medium">${text}</a>`;
       }
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">${text}</a>`;
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-b2 underline">${text}</a>`;
     })
     // Unordered lists
     .replace(/^[\s]*[-*+]\s+(.+)$/gm, '<li class="mb-2">$1</li>')

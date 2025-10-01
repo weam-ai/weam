@@ -663,7 +663,7 @@ const ChatThreadOffcanvas = ({ queryParams, isBrainDeleted }) => {
                                                     <AttachFileIcon
                                                         width={'8'}
                                                         height={'14'}
-                                                        className="h-auto w-2.5 max-w-full fill-b7 object-contain hover:fill-blue"
+                                                        className="h-auto w-2.5 max-w-full fill-b7 object-contain hover:fill-b2"
                                                     />
                                                 </div>
                                                 <input

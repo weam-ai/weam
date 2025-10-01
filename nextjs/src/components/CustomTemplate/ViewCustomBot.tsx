@@ -36,19 +36,7 @@ const ViewCustomBot = ({ bot }) => {
                 </DialogHeader>
                 <div className="dialog-body h-full max-h-[70vh] overflow-y-auto px-[30px] py-5">
                     <h3 className='font-bold mb-2'>System Prompt</h3>
-                    <p>{bot?.systemPrompt}</p>
-                    <h3 className='font-bold mb-2 mt-5'>Goals</h3>
-                    <ol className='list-decimal pl-4'>
-                    {bot?.goals?.map((goal, index) => (
-                        <li key={index}>{goal}</li>
-                    ))}
-                    </ol>
-                    <h3 className='font-bold mb-2 mt-5'>Instruction</h3>
-                    <ol className='list-decimal pl-4'>
-                    {bot?.instructions?.map((inst, index) => (
-                        <li key={index}>{inst}</li>
-                    ))}
-                    </ol>
+                    <p className='text-b5 text-font-14'>{bot?.systemPrompt}</p>
                 </div>
             </DialogContent>
         </Dialog>
