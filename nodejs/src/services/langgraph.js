@@ -1784,7 +1784,7 @@ async function enhancePromptByLLM(payload) {
             throw new Error('Invalid or missing API key');
         }
         
-        const model = await llmFactory(MODAL_NAME.GPT_4O_MINI, { 
+        const model = await llmFactory(MODAL_NAME.GPT_4_1_MINI, { 
             streaming: false, 
             apiKey: decryptedApiKey, 
             llmProvider: AI_MODAL_PROVIDER.OPEN_AI 
@@ -1795,8 +1795,7 @@ async function enhancePromptByLLM(payload) {
             new HumanMessage(query)
         ];
         const result = await model.invoke(messages);
-        const parsedResult = JSON.parse(result.content);
-        return parsedResult;
+        return result.content;
     } catch (error) {
         handleError(error, 'Error in enhancePromptByLLM');
     }
