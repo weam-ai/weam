@@ -40,7 +40,7 @@ export const WorkspaceSelection = memo(({ w, brainList }) => {
     const selectedWorkSpace = useSelector((state:RootState) => state.workspacelist.selected)
 
     const handleSelectedWorkspace = (w) => {
-        if (selectedWorkSpace && selectedWorkSpace?._id != w?._id) {
+        if (selectedWorkSpace && selectedWorkSpace?._id !== w?._id) {
             dispatch(setSelectedWorkSpaceAction(w));
             encryptedPersist(w, WORKSPACE);
             if (!brainList?.length) return;
@@ -52,7 +52,7 @@ export const WorkspaceSelection = memo(({ w, brainList }) => {
     }
 
     useEffect(() => {
-        if (selectedWorkSpace && selectedWorkSpace.title != w.title && selectedWorkSpace._id == w._id) {
+        if (selectedWorkSpace && String(selectedWorkSpace.title) !== String(w.title) && selectedWorkSpace._id == w._id) {
             dispatch(setSelectedWorkSpaceAction((prev) => ({ ...prev, title: w.title })))
         }
     }, [selectedWorkSpace])
