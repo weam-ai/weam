@@ -20,7 +20,7 @@ import {
 import TooltipIcon from '@/icons/TooltipIcon';
 import CharacterSelectionDialog from './CharacterSelectionDialog';
 import AgentSelector from './AgentSelector';
-import MCPToolsSelector from './MCPToolsSelector';
+// import MCPToolsSelector from './MCPToolsSelector';
 import Select from 'react-select';
 import useAssignModalList from '@/hooks/aiModal/useAssignModalList';
 import { AI_MODAL_NAME, API_TYPE_OPTIONS, MODULES, MODULE_ACTIONS, FILE } from '@/utils/constant';
@@ -120,9 +120,9 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                     formData.append('Agents', JSON.stringify(submissionData.Agents));
                 }
                 
-                if (submissionData.mcpTools && submissionData.mcpTools.length > 0) {
-                    formData.append('mcpTools', JSON.stringify(submissionData.mcpTools));
-                }
+                // if (submissionData.mcpTools && submissionData.mcpTools.length > 0) {
+                //     formData.append('mcpTools', JSON.stringify(submissionData.mcpTools));
+                // }
                 
                 if (submissionData.charimg) {
                     formData.append('charimg', submissionData.charimg);
@@ -514,7 +514,7 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                 </div>
 
                 {/* MCP Tools Selection - Only for agents (optional) */}
-                {values.type === 'agent' && (
+                {/* {values.type === 'agent' && (
                     <div className="relative w-full mb-5">
                         <Label htmlFor={'mcp-tools'} title={'MCP Tools (optional)'} required={false} />
                         <div className="text-sm text-gray-600 mb-2">
@@ -527,7 +527,7 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                             }}
                         />
                     </div>
-                )}
+                )} */}
 
                 {/* Submit */}
                 <div className="flex mt-5">

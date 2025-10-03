@@ -21,7 +21,7 @@ const EditGptForm = () => {
         type: 'agent',
         description: '',
         Agents: [],
-        mcpTools: [],
+        // mcpTools: [],
         responseModel: null,
         maxItr: 0,
         itrTimeDuration: undefined,
@@ -64,7 +64,7 @@ const EditGptForm = () => {
             type: data.type || 'agent',
             description: data.description || '',
             Agents: data.Agents || [],
-            mcpTools: data.mcpTools || [],
+            // mcpTools: data.mcpTools || [],
             responseModel: {
                 ...data.responseModel,
                 value: getDisplayModelName(data.responseModel.name),

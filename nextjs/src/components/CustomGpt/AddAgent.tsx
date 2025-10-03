@@ -11,7 +11,7 @@ const AddGptForm = () => {
         type: 'agent',
         description: '',
         Agents: [],
-        mcpTools: [],
+        // mcpTools: [],
         responseModel: null,
         maxItr: 0,
         itrTimeDuration: '',
