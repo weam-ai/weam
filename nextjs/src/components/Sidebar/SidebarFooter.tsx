@@ -22,7 +22,7 @@ const SidebarFooter = () => {
     const tooltipSide = isCollapsed ? "right" : "top";
     
     return (
-        <div className="flex items-center justify-between px-5 py-1 mt-auto border-t bg-b12 sidebar-footer">
+        <div className="flex items-center justify-between px-5 py-1 mt-auto border-t bg-white sidebar-footer">
             <div className="relative inline-block hover:bg-b5 hover:bg-opacity-[0.2] w-10 h-10 rounded-full text-center">
                 <UserProfile />
             </div>
