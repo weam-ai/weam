@@ -163,13 +163,15 @@ export default function DashboardReport() {
 
                                     {/* Popover Date Picker */}
                                     {showDatePicker && (
-                                        <div className="absolute z-10 mt-2 shadow-lg bg-white p-2 rounded-md">
+                                        <div className="absolute z-10 mt-2 right-0 shadow-lg bg-white p-2 rounded-md">
                                             <DateRangePicker
                                                 ranges={[dateRange]}
                                                 onChange={handleSelect}
                                                 staticRanges={defaultStaticRanges}
                                                 inputRanges={[]}
                                                 placeholder="Select Date"
+                                                color="#323232"
+                                                rangeColors={['#323232']}
                                             />
                                         </div>
                                     )}

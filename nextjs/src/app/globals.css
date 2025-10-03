@@ -881,3 +881,38 @@ body .MuiChipsInput-TextField{
     opacity: 1;
   }
 }
+
+/* Override react-date-range inline styles with higher specificity */
+.rdrDateRangePickerWrapper .rdrDay.rdrInRange span,
+.rdrDateRangePickerWrapper .rdrDay.rdrSelected span,
+.rdrDateRangePickerWrapper .rdrDay.rdrStartEdge span,
+.rdrDateRangePickerWrapper .rdrDay.rdrEndEdge span {
+  color: #ffffff !important;
+  background-color: #323232 !important;
+}
+
+.rdrDateRangePickerWrapper .rdrDay.rdrInRange,
+.rdrDateRangePickerWrapper .rdrDay.rdrSelected,
+.rdrDateRangePickerWrapper .rdrDay.rdrStartEdge,
+.rdrDateRangePickerWrapper .rdrDay.rdrEndEdge {
+  background-color: #323232 !important;
+}
+
+.rdrDateRangePickerWrapper .rdrDay.rdrInRange:hover span,
+.rdrDateRangePickerWrapper .rdrDay.rdrSelected:hover span,
+.rdrDateRangePickerWrapper .rdrDay.rdrStartEdge:hover span,
+.rdrDateRangePickerWrapper .rdrDay.rdrEndEdge:hover span {
+  color: #ffffff !important;
+  background-color: #323232 !important;
+}
+
+/* Override left sidebar */
+.rdrDateRangePickerWrapper .rdrDefinedRangesWrapper .rdrStaticRange:hover {
+  background-color: #323232 !important;
+  color: #000 !important;
+}
+
+.rdrDateRangePickerWrapper .rdrDefinedRangesWrapper .rdrStaticRange.rdrStaticRangeSelected {
+  background-color: #323232 !important;
+  color: #ffffff !important;
+}
