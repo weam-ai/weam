@@ -85,7 +85,7 @@ const CodeBlock = (props) => {
 
 export const MarkOutPut = (assisnantResponse: string) => {
     return (
-        <div className="markdown w-full mx-auto flex-1 prose">
+        <div className="markdown w-full mx-auto flex-1 prose max-w-full overflow-hidden">
             <Markdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -155,8 +155,8 @@ export const MarkOutPut = (assisnantResponse: string) => {
                             writeRichClipboard();
                         };
                         return (
-                            <div className="relative group markdown-table-wrap">
-                                <div className="md:absolute right-0 top-[-2px] flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                            <div className="relative group markdown-table-wrap w-full">
+                                <div className="md:absolute right-0 top-[-2px] flex items-center gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10">
                                     <TooltipProvider delayDuration={0}>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
@@ -183,7 +183,9 @@ export const MarkOutPut = (assisnantResponse: string) => {
                                         </Tooltip>
                                     </TooltipProvider>
                                 </div>
-                                <table ref={tableRef}>{children}</table>
+                                <div className="overflow-x-auto w-full">
+                                    <table ref={tableRef} className="min-w-full">{children}</table>
+                                </div>
                             </div>
                         );
                     },
