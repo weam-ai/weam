@@ -38,7 +38,15 @@ const deleteBrain = catchAsync(async (req, res) => {
     return util.failureResponse(_localize('module.deleteError', req, BRAIN), res);
 })
 
+const { ROLE_TYPE } = require('../../config/constants/common');
+
 const deleteAllBrain = catchAsync(async (req, res) => {
+    // Controller-level defense: allow only COMPANY or MANAGER roles
+    if (!(req.roleCode === ROLE_TYPE.COMPANY || req.roleCode === ROLE_TYPE.COMPANY_MANAGER)) {
+        res.message = _localize('auth.permission', req);
+        return util.unAuthorizedRequest(res);
+    }
+
     const result = await brainService.deleteAllBrain(req);
     if (result) {
         res.message = _localize('module.delete', req, BRAIN);
@@ -135,5 +143,5 @@ module.exports = {
     restoreBrain,
     deleteAllBrain,
     workspaceWiseList
-} 
+}
 
