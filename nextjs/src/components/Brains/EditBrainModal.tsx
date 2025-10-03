@@ -30,6 +30,8 @@ import useServerAction from '@/hooks/common/useServerActions';
 import { addBrainMemberAction, deleteBrainAction, deleteShareTeamToBrainAction, removeBrainMemberAction, shareTeamToBrainAction, updateBrainAction } from '@/actions/brains';
 import Toast from '@/utils/toast';
 import ExitIcon from '@/icons/ExitIcon';
+import TooltipIcon from '@/icons/TooltipIcon';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AddNewMemberModal = ({
     brain,
@@ -394,6 +396,33 @@ const TeamItem = ({ team, handleRemoveTeam, brain }): any => {
                 <p className="m-0 text-font-14 leading-[22px] font-normal text-b2 ml-2">
                     ({team?.id?.teamUsers.length} Members)
                 </p>
+
+                {/* Info button with tooltip showing team member details */}
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="ml-2 cursor-pointer hover:opacity-70 transition-opacity">
+                                <TooltipIcon width={16} height={16} className="fill-b5 hover:fill-b2" />
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                            <div className="space-y-2">
+                                <p className="font-semibold text-sm">Team Members:</p>
+                                <div className="space-y-1">
+                                    {team?.id?.teamUsers?.map((member, index) => (
+                                        <div key={member._id || index} className="text-xs">
+                                            <p className="font-medium">
+                                                {member.fname} {member.lname}
+                                            </p>
+                                            <p className="text-b5">{member.email}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                
             </div>
             <div className="flex items-center space-x-2.5 text-font-14">
                 {
