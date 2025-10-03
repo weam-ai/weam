@@ -83,10 +83,6 @@ const LoginMfaForm = () => {
                     </div>
                 </div>
             </div>
-            {/* <div className='flex items-center justify-center w-full gap-5 mt-8'>
-                <button type="submit" className="btn btn-outline-black btn-lg w-full">Cancel</button>
-                <button type="submit" className="btn btn-blue btn-lg w-full" disabled={!isFormFilled}>Verify</button>
-            </div> */}
         </form>
     );
 };

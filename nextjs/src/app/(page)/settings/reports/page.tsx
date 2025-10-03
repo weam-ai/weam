@@ -117,10 +117,10 @@ export default function DashboardReport() {
     return (
         <>
         <div className="max-lg:h-[50px] max-lg:sticky max-lg:top-0 bg-white z-10"></div>
-            <div className="flex flex-col flex-1 relative h-full overflow-hidden lg:pt-20 pb-10 px-2 ">
-                <div className="h-full overflow-y-auto w-full relative">
-                    <div className="mx-auto max-w-[950px]">
-                        <h5 className="text-font-18 font-bold text-b2 mb-1">
+            <div className="flex flex-col flex-1 relative h-full lg:pt-20 pb-2 px-5 overflow-y-auto ">
+                <div className="h-full w-full relative">
+                    <div className="mx-auto 3xl:max-w-[1450px]">
+                        <h5 className="text-font-18 font-bold text-b2">
                             { 
                                 isCompanyAdminOrManager(user)
                                 ? 'Usage of ' + user?.company?.name
@@ -134,7 +134,7 @@ export default function DashboardReport() {
                                     : 'Detailed Report of usage ' + showNameOrEmail(user)
                             }                             
                             { isWeamAdminOrManager(user) &&
-                                <Link href="/settings/weekly-report" className="text-font-14 underline hover:text-blue text-b2 mb-2">
+                                <Link href="/settings/weekly-report" className="text-font-14 underline hover:text-b2 text-b4 mb-2">
                                     Companies Weekly Usage Report
                                 </Link>
                             }
@@ -163,13 +163,15 @@ export default function DashboardReport() {
 
                                     {/* Popover Date Picker */}
                                     {showDatePicker && (
-                                        <div className="absolute z-10 mt-2 shadow-lg bg-white p-2 rounded-md">
+                                        <div className="absolute z-10 mt-2 right-0 shadow-lg bg-white p-2 rounded-md">
                                             <DateRangePicker
                                                 ranges={[dateRange]}
                                                 onChange={handleSelect}
                                                 staticRanges={defaultStaticRanges}
                                                 inputRanges={[]}
                                                 placeholder="Select Date"
+                                                color="#323232"
+                                                rangeColors={['#323232']}
                                             />
                                         </div>
                                     )}

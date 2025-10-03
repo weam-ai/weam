@@ -285,7 +285,7 @@ const TeamModal = ({
                             <div className="flex items-center justify-center mt-10">
                                 <button
                                     type="submit"
-                                    className="flex btn btn-blue"
+                                    className="flex btn btn-black"
                                     onClick={handleSubmit(handleTeamSubmit)}
                                     disabled={ !isDirty || teamLoading || isUpdateTeamPending}
                                 >

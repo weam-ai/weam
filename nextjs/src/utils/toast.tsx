@@ -42,7 +42,7 @@ export const NotificationToast = (payload, notificationData) => {
                             <p className="text-sm font-medium text-gray-900">
                                 {payload.title}
                             </p>
-                            <p className="mt-1 text-sm text-gray-500">
+                            <p className="mt-1 text-font-14 text-gray-500">
                                 {payload.body}
                             </p>
                         </div>

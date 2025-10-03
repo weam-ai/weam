@@ -126,7 +126,7 @@ const InlineEditableResponse: React.FC<InlineEditableResponseProps> = ({
               handleChange={(e) => handleSegmentChange(segment.id, e.target.value)}
               handleKeyDown={(e) => handleKeyDown(e, segment.id)}
               isDisable={false}
-              className="min-h-[60px] resize-none border-2 border-blue-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 rounded-lg p-3 text-sm leading-relaxed"
+              className="min-h-[60px] resize-none border-2 border-b10 focus:border-b2 focus:ring-2 focus:ring-b2 rounded-lg p-3 text-sm leading-relaxed"
               placeholder="Edit your response..."
               ref={textareaRef}
             />

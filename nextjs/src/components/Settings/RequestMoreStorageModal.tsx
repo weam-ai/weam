@@ -43,7 +43,7 @@ const RequestMoreStorageModal = ({ open, closeModal }: any) => {
                             unit="mb" 
                             onChange={(newValue) => setValue(newValue)} />
                         <button 
-                            className='btn btn-blue'
+                            className='btn btn-black'
                             onClick={handleStorage}
                             disabled={value < 1 || isPending}
                         >Request</button>

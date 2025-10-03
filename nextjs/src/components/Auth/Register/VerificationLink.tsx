@@ -8,7 +8,7 @@ const VerificationLink = () => {
     return (
         <>
             <p>{`Didn't receive the link?`}</p>
-            <button className="btn btn-blue max-w-[300px] mt-5" disabled={loading} onClick={()=>reSendVerificationEmail()}>
+            <button className="btn btn-black max-w-[300px] mt-5" disabled={loading} onClick={()=>reSendVerificationEmail()}>
                 Resend Verification Link
             </button>
         </>

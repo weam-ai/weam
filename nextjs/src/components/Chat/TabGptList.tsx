@@ -220,19 +220,19 @@ const TabGptList: React.FC<TabGptListProps> = ({
                     className="flex rounded-md border-none gap-x-2 overflow-hidden px-1 py-1 bg-b12 mb-2"
                 >
                     <TabsTrigger
-                        className="text-font-14 text-left px-3 py-1.5 rounded-md font-medium bg-transparent group data-[state=active]:bg-blue data-[state=active]:text-white border-none hover:text-white hover:bg-blue transition ease-in-out duration-400"
+                        className="text-font-14 text-left px-3 py-1.5 rounded-md font-medium bg-transparent group data-[state=active]:bg-b2 data-[state=active]:text-white border-none hover:text-b2 hover:bg-b10 transition ease-in-out duration-400"
                         value={GPTTypes.CustomGPT}
                     >
                         Agents
                     </TabsTrigger>
                     <TabsTrigger
-                        className="text-font-14 text-left px-3 py-1.5 rounded-md font-medium bg-transparent group data-[state=active]:bg-blue data-[state=active]:text-white border-none hover:text-white hover:bg-blue transition ease-in-out duration-400"
+                        className="text-font-14 text-left px-3 py-1.5 rounded-md font-medium bg-transparent group data-[state=active]:bg-b2 data-[state=active]:text-white border-none hover:text-b2 hover:bg-b10 transition ease-in-out duration-400"
                         value={GPTTypes.Prompts}
                     >
                         Prompts
                     </TabsTrigger>
                     <TabsTrigger
-                        className="text-font-14 text-left px-3 py-1.5 rounded-md font-medium bg-transparent group data-[state=active]:bg-blue data-[state=active]:text-white border-none hover:text-white hover:bg-blue transition ease-in-out duration-400"
+                        className="text-font-14 text-left px-3 py-1.5 rounded-md font-medium bg-transparent group data-[state=active]:bg-b2 data-[state=active]:text-white border-none hover:text-b2 hover:bg-b10 transition ease-in-out duration-400"
                         value={GPTTypes.Docs}
                     >
                         Docs

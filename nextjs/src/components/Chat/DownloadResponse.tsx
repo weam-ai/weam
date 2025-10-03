@@ -86,7 +86,7 @@ const DownloadResponse: React.FC<DownloadResponseProps> = ({
               disabled={isDownloading}
               className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
             >
-              <DownloadIcon className="w-4 h-4 text-blue-500" fileType="html" />
+              <DownloadIcon className="w-4 h-4 text-b5" fileType="html" />
               HTML
             </button>
             

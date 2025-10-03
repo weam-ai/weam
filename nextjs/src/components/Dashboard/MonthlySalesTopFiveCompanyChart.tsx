@@ -103,7 +103,7 @@ const MonthlySalesTopFiveCompanyChart = () => {
                     <h5 className="text-font-18 font-semibold text-b2 mb-2">
                         Monthly Sales Revenue by Top 5 Companies
                     </h5>
-                    <h4 className="text-font-24 font-semibold text-blue">
+                    <h4 className="text-font-24 font-semibold text-b2">
                         ${totalSales.toFixed(2)}
                     </h4>
                 </div>

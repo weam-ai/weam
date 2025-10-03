@@ -319,7 +319,7 @@ const AddMember = ({ onNext, onPrev }) => {
                     <button
                         type="button"
                         onClick={onPrev}
-                        className="btn btn-blue"
+                        className="btn btn-black"
                     >
                         <ArrowBack
                             className="me-2.5 inline-block align-middle -mt-0.5 fill-b15"
@@ -328,7 +328,7 @@ const AddMember = ({ onNext, onPrev }) => {
                         />
                         Previous
                     </button>
-                    <button type="submit" className="btn btn-blue">
+                    <button type="submit" className="btn btn-black">
                         Next
                         <ArrowNext
                             width="14"

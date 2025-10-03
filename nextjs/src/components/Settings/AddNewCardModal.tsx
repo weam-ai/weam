@@ -38,7 +38,7 @@ const AddNewCardModal = ({open, closeModal}) => {
             <DialogClose asChild>
             <button className='btn btn-outline-gray'>Cancel</button>
             </DialogClose>
-            <button className='btn btn-blue'>Add Card</button>
+            <button className='btn btn-black'>Add Card</button>
         </DialogFooter>
         </DialogContent>
     </Dialog>

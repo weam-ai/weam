@@ -33,40 +33,6 @@ const LoginForm = () => {
         resolver: yupResolver(loginSchemaKeys),
     });
 
-    // const [isAuthenticated, setIsAuthenticated] = useState(false);
-    // const [username, setUsername] = useState('');
-    // const [password, setPassword] = useState('');
-    // const [showAuthPrompt, setShowAuthPrompt] = useState(true);
-    // const router = useRouter();
-
-    // useEffect(() => {
-    //     // Show authentication prompt when component mounts
-    //     if (showAuthPrompt) {
-    //         const usernameInput = prompt('Please enter your username:');
-    //         if (usernameInput== BASIC_AUTH.USERNAME) {
-    //             setUsername(usernameInput);
-    //             const passwordInput = prompt('Please enter your password:');
-    //             if (passwordInput== BASIC_AUTH.PASSWORD) {
-    //                 setPassword(passwordInput);
-    //                 // Simple validation - you can replace this with your actual validation logic
-    //                 if (usernameInput.length > 3 && passwordInput.length > 3) {
-    //                     setIsAuthenticated(true);
-    //                     setShowAuthPrompt(false);
-    //                 } else {
-    //                     alert('Invalid username or password');
-    //                     router.push(routes.login);
-    //                 }
-    //             } else {
-    //                 alert('Authentication required');
-    //                 router.push(routes.login);
-    //             }
-    //         } else {
-    //             alert('Authentication required');
-    //             router.push(routes.login);
-    //         }
-    //     }
-    // }, [showAuthPrompt, router]);
-
     return (
         <form className="w-full" onSubmit={handleSubmit(handleLogin)}>
             <div className="relative mb-4">
@@ -96,7 +62,7 @@ const LoginForm = () => {
             <div className="mb-7 flex items-center justify-end">
                 <Link
                     href="/forgot-password"
-                    className="text-font-14 font-semibold inline-block mb-2.5 text-b2 hover:text-blue"
+                    className="text-font-14 font-semibold inline-block mb-2.5 text-b2 hover:text-b5 underline"
                 >
                     Forgot password?
                 </Link>
@@ -104,7 +70,7 @@ const LoginForm = () => {
 
             <button
                 type="submit"
-                className="btn btn-black py-[14px] w-full"
+                className="btn btn-black w-full"
                 disabled={pending}
             >
                 Sign In
@@ -113,7 +79,7 @@ const LoginForm = () => {
                 Don&apos;t have an account?
                 <Link
                     href={routes.register}
-                    className="font-bold ms-1 text-blue hover:text-b2"
+                    className="font-bold ms-1 text-b2 hover:text-b5 underline"
                 >
                     Sign Up
                 </Link>

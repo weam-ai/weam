@@ -65,7 +65,7 @@ const InlineEditableChatResponse = ({
               handleChange={handleChange}
               handleKeyDown={handleKeyDown}
               isDisable={false}
-              className="min-h-[100px] border-2 border-blue-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 rounded-lg p-3 text-sm leading-relaxed"
+              className="min-h-[100px] border-2 border-b10 focus:border-b2 focus:ring-2 focus:ring-b10 rounded-lg p-3 text-sm leading-relaxed"
               placeholder="Edit your response..."
               ref={textareaRef}
             />

@@ -333,7 +333,7 @@ export default function AgentList() {
                                                 title="Let's build your first Agent!"
                                                 description="Custom Agents can save hours of work for your team. You can easily turn repetitive tasks and workflows into an Agent. Check out the video to learn more."
                                                 subtitle="" 
-                                                note={`Need inspiration? Here's our <a href="custom-templates" class="text-blue font-bold" rel="noreferrer">pre-made Agent Library</a>.`}
+                                                note={`Need inspiration? Here's our <a href="custom-templates" class="text-b2 font-bold" rel="noreferrer">pre-made Agent Library</a>.`}
                                                 videourl="https://www.youtube.com/embed/87QdKNMp1_4?si=HOm4hPcE84Ex-rhF"
                                             />
                                         </div>

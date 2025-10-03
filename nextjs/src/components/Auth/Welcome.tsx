@@ -12,7 +12,7 @@ export const LoginButton = () => {
     return (
         <button
             type="submit"
-            className="btn btn-blue btn-lg px-16 mt-6"
+            className="btn btn-black btn-lg px-16 mt-6"
             onClick={submitChange}
         >
             Login Now
@@ -24,7 +24,7 @@ export const Welcome = () => {
     const data = useSelector((store:any) => store.signup.details);
     return (
         <h2 className="text-center max-w-[550px] mx-auto text-[30px] font-semibold leading-normal mb-4 text-b2">
-            Welcome Aboard, <span className="text-blue">{data.companyNm}</span>
+            Welcome Aboard, <span className="text-b5">{data.companyNm}</span>
             <br /> Thank you for choosing Weam
         </h2>
     );
