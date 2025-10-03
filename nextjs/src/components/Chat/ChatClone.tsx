@@ -26,15 +26,11 @@ import { LINK } from '@/config/config';
 import {
     API_KEY_MESSAGE,
     API_TYPE_OPTIONS,
-    EXPIRED_SUBSCRIPTION_MESSAGE,
     SOCKET_EVENTS,
-    SUBSCRIPTION_STATUS,
     THREAD_MESSAGE_TYPE,
     COMPANY_ADMIN_SUBSCRIPTION_UPDATED,
-    MESSAGE_CREDIT_LIMIT_REACHED,
     AI_MODAL_NAME,
     AI_MODEL_CODE,
-    FREE_TIER_END_MESSAGE,
     getModelImageByName,
     STREAMING_RESPONSE_STATUS,
 } from '@/utils/constant';
@@ -289,14 +285,12 @@ const ChatPage = memo(() => {
             
             // Here you can make an API call to persist the changes
             // await updateResponseInDatabase(messageId, updatedResponse);
-            console.log('Response updated:', { messageId, updatedResponse });
         }
     });
 
     // Page operations
     const { createPageFromResponse, isCreatingPage } = usePageOperations({
         onPageCreated: (pageData, isUpdate) => {
-            console.log('Page operation completed:', { pageData, isUpdate });
         },
         onError: (error) => {
             console.error('Error with page operation:', error);
@@ -365,22 +359,16 @@ const ChatPage = memo(() => {
     }, [handleResponseUpdate, handleCloseEditModal]);
 
     const handleAddToPages = useCallback(async (title: string, message: any) => {
-        console.log('handleAddToPages called with title:', title, 'message:', message);
         try {
             // Get the current brain data
             const currentBrainId = getDecodedObjectId();
-            console.log('Current brain ID:', currentBrainId);
-            console.log('Available brain data:', brainData);
             
             let brain :any = brainData.find((brain: BrainListType) => {
                 return brain._id === currentBrainId
             });
             
-            console.log('Found brain:', brain);
-            
             // If no brain found, create a default brain object
             if (!brain) {
-                console.log('No brain found, creating default brain object');
                 brain = {
                     _id: currentBrainId,
                     title: 'General Brain',
@@ -404,10 +392,8 @@ const ChatPage = memo(() => {
                 responseAPI: message.responseAPI,
                 companyId: companyId
             };
-            
-            console.log('handleAddToPages - pageData being sent:', JSON.stringify(pageData, null, 2));
+
             const result :any = await createPageFromResponse(pageData);
-            console.log('Page result:', result);
             
             // Show appropriate message based on whether it's an update or create
             if (result.isUpdate) {
@@ -554,7 +540,6 @@ const ChatPage = memo(() => {
             apiKey: selectedAIModal.config.apikey,
             usedCredit: modelCredit
         };
-        console.log(newPromptReqBody)
         img_url = handleImageConversation(globalUploadedFile);
         removeSelectedContext();
 
@@ -577,7 +562,6 @@ const ChatPage = memo(() => {
             updatedConversations[updatedConversations.length - 1] = lastConversation;
             return updatedConversations;
         });
-        console.log("Newprompt============",newPromptReqBody)
         //Insert in message table
         // enterNewPrompt(newPromptReqBody, socket);
         setLoading(true);
@@ -585,7 +569,6 @@ const ChatPage = memo(() => {
         // Calculate model credit before sending request
         //const modelCredit = getModelCredit(modalName);
         const matchedModel = userModal.find((el) => el.name === modalName);
-        console.log("Model==============",matchedModel)
         socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
             query: query,
             chatId: params.id,
@@ -606,14 +589,6 @@ const ChatPage = memo(() => {
             proAgentData: serializableProAgentData,
             apiKey: matchedModel.config.apikey,
             brainId: getDecodedObjectId(),
-            usedCredit: modelCredit
-        })
-        console.log("LLM_RESPONSE_SEND============",{
-            query: query,
-            chatId: params.id,
-            model: matchedModel.name,
-            code: selectedAIModal.bot.code,
-            apiKey: selectedAIModal.config.apikey,
             usedCredit: modelCredit
         })
         if (chatTitle == '' || chatTitle === undefined) {
@@ -852,7 +827,6 @@ const ChatPage = memo(() => {
                         block: 'center'
                     });
 
-                    console.log(`Successfully scrolled to message: ${messageId}`);
 
                     // If we want to open edit mode and this is an AI response, trigger the edit
                     if (openEditMode && !isUserMessage) {
@@ -1026,12 +1000,6 @@ const ChatPage = memo(() => {
         setToolCallLoading(defaultToolCallLoading);
         setAnswerMessage(prev => {
             const newMessage = prev + payload.chunk;
-            if (shouldScrollToBottom && contentRef.current) {
-                requestAnimationFrame(() => {
-                    contentRef.current.scrollTop = contentRef.current.scrollHeight;
-                });
-            }
-
             return newMessage;
         });
     }, [shouldScrollToBottom, socket]);
@@ -1162,7 +1130,6 @@ const ChatPage = memo(() => {
 
             socket.on(SOCKET_EVENTS.USER_SUBSCRIPTION_UPDATE, handleUserSubscriptionUpdate);
             socket.on(SOCKET_EVENTS.LLM_RESPONSE_SEND, (data) => {
-                console.log(",====================data===========",data)
                 if (data.chunk) {
                     handleSocketStreaming(data);
                 }
@@ -1369,7 +1336,6 @@ const ChatPage = memo(() => {
                                                         copyToClipboard={copyToClipboard}
                                                         getAgentContent={getAgentContent}
                                                         onAddToPages={async (title: string) => {
-                                                            console.log('onAddToPages prop called for message:', m.id, 'with title:', title);
                                                             await handleAddToPages(title, m);
                                                         }}
                                                         hasBeenEdited={editedResponses.has(m.id)}
@@ -1449,7 +1415,6 @@ const ChatPage = memo(() => {
                                                         showCitations={true}
                                                         citations={m?.citations}
                                                         onAddToPages={async (title: string) => {
-                                                            console.log('onAddToPages prop called for message:', m.id, 'with title:', title);
                                                             await handleAddToPages(title, m);
                                                         }}
                                                         hasBeenEdited={editedResponses.has(m.id)}
