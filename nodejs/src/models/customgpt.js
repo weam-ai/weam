@@ -28,9 +28,10 @@ const schema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'customgpt'
         }],
-        mcpTools: [{
-            type: String // Store MCP tool names/identifiers
-        }],
+        // MCP disabled: remove mcpTools field
+        // mcpTools: [{
+        //     type: String // Store MCP tool names/identifiers
+        // }],
         responseModel: {
             name: {
                 type: String,

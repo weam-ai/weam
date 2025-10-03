@@ -14,5 +14,6 @@ router.get('/:id', authentication, checkPermission, customgptController.viewCust
 router.delete('/delete/:id', authentication, checkPermission, customgptController.deleteCustomGpt).descriptor('customgpt.delete');
 router.post('/list', authentication, checkPromptLimit, customgptController.getAll).descriptor('customgpt.list');
 router.patch('/partial/:id', validate(partialUpdateKeys), authentication, checkPermission, customgptController.partialUpdate).descriptor('country.partialupdate');
+router.get('/agents/:brainId', authentication, customgptController.getAgents);
 
 module.exports = router;

@@ -46,7 +46,7 @@ const createCustomGptKeys = joi.object({
     brain: joi.object(brainSchemaKeys).required(),
     imageEnable: joi.boolean().optional(),
     charimg: joi.string().optional(),
-    mcpTools: joi.array().items(joi.string()).optional()
+    // mcpTools: joi.array().items(joi.string()).optional()
 }).unknown(true);
 
 const updateCustomGptKeys = joi.object({
@@ -87,7 +87,7 @@ const updateCustomGptKeys = joi.object({
     imageEnable: joi.boolean().optional(),
     removeDoc: joi.string().optional(),
     charimg: joi.string().optional(),
-    mcpTools: joi.array().items(joi.string()).optional()
+    // mcpTools: joi.array().items(joi.string()).optional()
 });
 
 const assignDefaultGpt = joi.object({

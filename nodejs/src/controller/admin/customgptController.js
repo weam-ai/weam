@@ -55,11 +55,20 @@ const partialUpdate = catchAsync(async (req, res) => {
     return util.successResponse(result, res);
 })
 
+const getAgents = catchAsync(async (req, res) => {
+    const result = await customGptService.getAgents(req);
+    if (result) {
+        return util.successResponse(result, res);
+    }
+    return util.failureResponse(_localize('module.getError', req, CUSTOM_GPT), res);
+})
+
 module.exports = {
     addCustomGpt,
     updateCustomGpt,
     viewCustomGpt,
     deleteCustomGpt,
     getAll,
-    partialUpdate
+    partialUpdate,
+    getAgents
 }

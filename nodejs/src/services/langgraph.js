@@ -821,7 +821,7 @@ async function buildGraph(model, data, agentDetails = null) {
     // Check if this is a supervisor agent with agents
     if (agentDetails && agentDetails.type === 'supervisor' && agentDetails.Agents && agentDetails.Agents.length > 0) {
         // Build supervisor agent workflow
-        return await buildSupervisorGraph(workflow, model, data, agentDetails, mcpTools);
+        return await buildSupervisorGraph(workflow, model, data, agentDetails);
     } else {
         // Build regular agent workflow
         const toolExecutor = (state) => callTool(state, agentDetails, data.user);
@@ -1809,7 +1809,7 @@ async function enhancePromptByLLM(payload) {
 }
 
 // Helper function to build supervisor agent workflow
-async function buildSupervisorGraph(workflow, model, data, supervisorAgent, mcpTools) {
+async function buildSupervisorGraph(workflow, model, data, supervisorAgent) {
     try {
         // Fetch agent details
         const agentDetails = await Promise.all(

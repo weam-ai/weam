@@ -657,14 +657,14 @@ const getFileExtension = (filename) => {
 const parseFormData = (req, res, next) => {
     try {
         // Parse mcpTools if it exists and is a string
-        if (req.body.mcpTools && typeof req.body.mcpTools === 'string') {
-            try {
-                req.body.mcpTools = JSON.parse(req.body.mcpTools);
-            } catch (parseError) {
-                // If parsing fails, keep it as string and let validation handle it
-                console.warn('Failed to parse mcpTools JSON:', parseError.message);
-            }
-        }
+        // if (req.body.mcpTools && typeof req.body.mcpTools === 'string') {
+        //     try {
+        //         req.body.mcpTools = JSON.parse(req.body.mcpTools);
+        //     } catch (parseError) {
+        //         // If parsing fails, keep it as string and let validation handle it
+        //         console.warn('Failed to parse mcpTools JSON:', parseError.message);
+        //     }
+        // }
 
         // Parse Agents if it exists and is a string
         if (req.body.Agents && typeof req.body.Agents === 'string') {
