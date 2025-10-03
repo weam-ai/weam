@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { getCurrentUser, getCompanyId } from '@/utils/handleAuth';
 import { decodedObjectId, encodedObjectId } from '@/utils/helper';
 import { usePageOperations } from '@/hooks/chat/usePageOperations';
@@ -15,6 +15,7 @@ import { RootState } from '@/lib/store';
 import { format } from 'date-fns';
 import Toast from '@/utils/toast';
 import  { useRouter } from 'next/navigation';
+import { ClickableBreadcrumb } from '@/components/Header/Header';
 
 type Page = {
     _id: string;
@@ -34,6 +35,7 @@ type Page = {
 }
 
 const PagesPage = () => {
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
     const currentUser = useMemo(() => getCurrentUser(), []);
@@ -319,15 +321,24 @@ const PagesPage = () => {
                 <div className="size-[30px] flex items-center justify-center rounded-full p-1">
                     <DocumentIcon width={20} height={20} className="fill-b2 object-contain" />
                 </div>
-                <div className="flex items-center space-x-2">
-                    <p className="text-font-16 font-bold">
-                        Pages
-                    </p>
-                    <span className="text-font-16 text-gray-400">/</span>
-                    <p className="text-font-16 font-medium text-gray-600">
-                        {currentBrain ? currentBrain.title : 'Select a brain to view pages'}
-                    </p>
-                </div>
+                {currentBrain ? (
+                    <ClickableBreadcrumb 
+                        brainName={currentBrain.title}
+                        sectionName="Pages"
+                        brainId={brainId}
+                        pathname={pathname}
+                    />
+                ) : (
+                    <div className="flex items-center space-x-2">
+                        <p className="text-font-16 font-bold">
+                            Pages
+                        </p>
+                        <span className="inline-block mx-2.5">/</span>
+                        <p className="text-font-14">
+                            Select a brain to view pages
+                        </p>
+                    </div>
+                )}
             </header>
 
             {/* Main Content */}
