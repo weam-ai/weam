@@ -13,6 +13,7 @@ import NotionIcon from '@/icons/NotionIcon';
 import SlackIcon from '@/icons/SlackIcon';
 import StripeIcon from '@/icons/StripeIcon';
 import ZapierIcon from '@/icons/ZapierIcon';
+import ZoomIcon from '@/icons/ZoomIcon';
 
 export const MCP_CODES = {
     "GITHUB": "GITHUB",
@@ -30,6 +31,7 @@ export const MCP_CODES = {
     "N8N": "N8N",
     "FIGMA": "FIGMA",
     "CALENDLY": "CALENDLY",
+    "ZOOM": "ZOOM",
 }
 
 export const MCP_TOOLS = {
@@ -98,6 +100,15 @@ export const MCP_TOOLS = {
         "github_get_pull_requests",
         "github_get_tags_or_branches",
         "github_global_search"
+    ],
+    [MCP_CODES.ZOOM]: [
+        "getZoomUserInfo",
+        "listZoomMeetings",
+        "createZoomMeeting",
+        "updateZoomMeeting",
+        "deleteZoomMeeting",
+        "listMeetingParticipants",
+        "getMeetingPolls"
     ]
 };
 
@@ -155,6 +166,25 @@ const MCP_OPTIONS = [
         buttonClassName: MCP_BUTTON_CLASSNAME,
     },
     {
+        icon: <ZoomIcon className="size-6" />,
+        title: 'Zoom',
+        code: MCP_CODES.ZOOM,
+        description:
+            'Connect Zoom to manage meetings, participants, and video conferencing workflows.',
+        buttonText: MCP_CONFIGURE_BUTTON_NAME,
+        buttonClassName: MCP_BUTTON_CLASSNAME,
+        tools: ["createZoomMeeting", "listZoomMeetings", "getZoomUserInfo", "listMeetingParticipants"]
+    },
+    {
+        icon: <MongoDBIcon className="size-6" />,
+        title: 'MongoDB',
+        code: MCP_CODES.MONGODB,
+        description:
+            'Connect MongoDB to query, write, and automate database actions.',
+        buttonText: MCP_CONFIGURE_BUTTON_NAME,
+        buttonClassName: MCP_BUTTON_CLASSNAME,
+    },
+    {
         icon: <NotionIcon className="size-6" />,
         title: 'Notion',
         code: MCP_CODES.NOTION,
@@ -196,15 +226,6 @@ const MCP_OPTIONS = [
         code: MCP_CODES.ASANA,
         description:
             'Link Asana to automate task creation and updates with your project workflows.',
-        buttonText: MCP_COMING_SOON_BUTTON_NAME,
-        buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
-    },
-    {
-        icon: <MongoDBIcon className="size-6" />,
-        title: 'MongoDB',
-        code: MCP_CODES.MONGODB,
-        description:
-            'Connect MongoDB to query, write, and automate database actions.',
         buttonText: MCP_COMING_SOON_BUTTON_NAME,
         buttonClassName: MCP_COMING_SOON_BUTTON_CLASSNAME,
     },

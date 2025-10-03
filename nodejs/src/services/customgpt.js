@@ -158,7 +158,7 @@ async function createChatDocs(payload) {
 const addCustomGpt = async (req) => {
     try {
         const { fileData } = require('./uploadFile');
-        const { title, brain, responseModel, goals: reqGoals, instructions: reqInstructions } = req.body;
+        const { title, brain, responseModel } = req.body;
         const { id: brainId } = brain;
         const { company } = responseModel;
 
@@ -211,19 +211,8 @@ const addCustomGpt = async (req) => {
           };
         }
 
-        const goals = JSON.parse(reqGoals) || [];
-        const instructions = [];
-        if (reqInstructions) {
-            for (let instruction of JSON.parse(reqInstructions)) {
-                if (instruction.trim() !== '')
-                    instructions.push(instruction.trim().replace(/\s+/g, ' '));
-            }
-        }
-
         return CustomGpt.create({
             ...createData,
-            goals,
-            instructions,
             owner: formatUser(req.user),
         });
 
@@ -238,26 +227,13 @@ const updateCustomGpt = async (req) => {
         const existingBot = await CustomGpt.findById({ _id: req.params.id }, { doc: 1, coverImg: 1, brain: 1 });
         
         if (!existingBot) throw new Error(_localize('module.notFound', req, 'custom bot'));
-        let instructions = [];
 
-        const { title, responseModel, goals: reqGoals, instructions: reqInstructions,brain } = req.body;
+        const { title, responseModel, brain } = req.body;
         const { company } = responseModel;
 
         let updateBody = {
             ...req.body,
             slug: slugify(title),
-        }
-
-
-        if (reqGoals) {
-            Object.assign(updateBody, { goals: JSON.parse(reqGoals) || [] })
-        }
-        if (reqInstructions) {
-            for (let instruction of JSON.parse(reqInstructions)) {
-                if (instruction.trim() !== '')
-                    instructions.push(instruction.trim().replace(/\s+/g, ' '));
-            }
-            Object.assign(updateBody, { instructions })
         }
 
         if (req.files['coverImg']) {
@@ -528,31 +504,15 @@ const storeVectorData = async (req, payloads) => {
 
 const assignDefaultGpt = async (req) => {
     try {
-        let instructions = [];
-        let goals = [];
-        const { title, brain, responseModel : reqResponseModel, goals: reqgoals, instructions: reqInstructions, selectedBrain } = req.body;
+        const { title, brain, responseModel : reqResponseModel, selectedBrain } = req.body;
         const {isPrivateBrainVisible}=req.user
 
         const bulk = [];
         
         
-        const timestamp = Date.now(); 
+        const timestamp = Date.now();
         const slug = `${slugify(title)}-${timestamp}`;
-        const createData = { ...req.body, slug, coverImg: {}, doc: [] }; 
-
-        if (reqgoals) {
-            for (let goal of JSON.parse(reqgoals)) {
-                if (goal.trim() !== '')
-                    goals.push(goal.trim().replace(/\s+/g, ' '));
-            }
-        }
-
-        if (reqInstructions) {
-            for (let instruction of JSON.parse(reqInstructions)) {
-                if (instruction.trim() !== '')
-                    instructions.push(instruction.trim().replace(/\s+/g, ' '));
-            }
-        }
+        const createData = { ...req.body, slug, coverImg: {}, doc: [] };
 
         const defaultModal = await CompanyModal.findOne({ 'company.id': getCompanyId(req.user), name: MODAL_NAME.GPT_4_1 });
         if (!defaultModal) return false;
@@ -570,8 +530,6 @@ const assignDefaultGpt = async (req) => {
                 
                 bulk.push({
                     ...createData,
-                    goals,
-                    instructions,
                     brain: formatBrain(br),
                     owner: formatUser(req.user),
                     responseModel

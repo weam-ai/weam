@@ -18,4 +18,5 @@ COPY --from=builder /node_modules /node_modules
 WORKDIR /usr/src/app
 COPY . .
 EXPOSE 4050
+EXPOSE 3006
 CMD ["node", "index.js"]

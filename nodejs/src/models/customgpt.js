@@ -16,12 +16,6 @@ const schema = new Schema(
         systemPrompt: {
             type: String,
         },
-        goals: [
-            String,
-        ],
-        instructions: [
-            String,
-        ],
         responseModel: {
             name: {
                 type: String,

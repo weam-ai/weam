@@ -39,8 +39,11 @@ services:
     container_name: node_app
     ports:
       - "4050:4050"
+      - "3006:3006"  # Expose MCP server port
     env_file:
       - .env  # Load environment variables from a .env file
+    environment:
+      - MCP_SERVER_URL=http://localhost:3006  # Override for Docker networking
     volumes:
       - ./nodejs:/usr/src/app        
       - /usr/src/app/node_modules 

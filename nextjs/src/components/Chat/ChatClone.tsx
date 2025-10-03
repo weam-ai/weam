@@ -42,6 +42,7 @@ import { useDispatch } from 'react-redux';
 import { setChatMessageAction, setLastConversationDataAction, setUploadDataAction } from '@/lib/slices/aimodel/conversation';
 import ChatThreadOffcanvas, { TypingTextSection } from '@/components/Chat/ChatThreadOffcanvas';
 import ThreadItem from '@/components/Chat/threadItem';
+import EditResponseModal from '@/components/Chat/EditResponseModal';
 import {
     setAddThreadAction,
     setChatAccessAction,
@@ -129,6 +130,11 @@ const ChatPage = memo(() => {
     const [showAgentList, setShowAgentList] = useState(false);
     const [showPromptList, setShowPromptList] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+
+    // EditResponseModal state
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+    const [editingMessageContent, setEditingMessageContent] = useState<string>('');
     const [toolCallLoading, setToolCallLoading] = useState({
         webSearch: false,
         imageGeneration: false,
@@ -335,6 +341,28 @@ const ChatPage = memo(() => {
     const handleWebSearchClick = useCallback(() => {
         dispatch(setIsWebSearchActive(!isWebSearchActive));
     }, [isWebSearchActive]);
+
+    // EditResponseModal handlers
+    const handleOpenEditModal = useCallback((messageId: string, content: string) => {
+        setEditingMessageId(messageId);
+        setEditingMessageContent(content);
+        setIsEditModalOpen(true);
+    }, []);
+
+    const handleCloseEditModal = useCallback(() => {
+        setIsEditModalOpen(false);
+        setEditingMessageId(null);
+        setEditingMessageContent('');
+    }, []);
+
+    const handleSaveEditModal = useCallback(async (messageId: string, updatedContent: string) => {
+        try {
+            await handleResponseUpdate(messageId, updatedContent);
+            handleCloseEditModal();
+        } catch (error) {
+            console.error('Error saving response:', error);
+        }
+    }, [handleResponseUpdate, handleCloseEditModal]);
 
     const handleAddToPages = useCallback(async (title: string, message: any) => {
         console.log('handleAddToPages called with title:', title, 'message:', message);
@@ -786,13 +814,89 @@ const ChatPage = memo(() => {
     };
 
     const mid = queryParams.get('mid');
+    const editMode = queryParams.get('edit') === 'true';
 
+    // Auto-open EditResponseModal when editMode is true and we have the target message
     useEffect(() => {
-        if (mid != undefined && conversations.length > 0) {
-            const message = conversations.find(conversion => conversion.id === mid);
-                    handleOpenThreadModal(message, queryParams.get('type'));
+        if (editMode && mid && conversations.length > 0) {
+            const targetMessage = conversations.find(m => m.id === mid);
+            if (targetMessage && targetMessage.response) {
+                handleOpenEditModal(mid, targetMessage.response);
+            }
         }
-    }, [queryParams, conversationPagination]);
+    }, [editMode, mid, conversations, handleOpenEditModal]);
+
+    // Function to scroll to a specific message and optionally open edit mode
+    const scrollToMessage = useCallback((messageId: string, openEditMode: boolean = false) => {
+        if (!messageId || !contentRef.current) {
+            console.warn('Cannot scroll to message: missing messageId or contentRef');
+            return;
+        }
+
+        // Wait for the next render cycle to ensure DOM is updated
+        setTimeout(() => {
+            try {
+                // Try to find the user message first
+                let messageElement = contentRef.current?.querySelector(`[data-message-id="${messageId}"]`);
+                let isUserMessage = true;
+
+                // If not found, try to find the AI response
+                if (!messageElement) {
+                    messageElement = contentRef.current?.querySelector(`[data-message-id="${messageId}-response"]`);
+                    isUserMessage = false;
+                }
+
+                if (messageElement) {
+                    messageElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+
+                    console.log(`Successfully scrolled to message: ${messageId}`);
+
+                    // If we want to open edit mode and this is an AI response, trigger the edit
+                    if (openEditMode && !isUserMessage) {
+                        // Find the edit button or trigger edit mode
+                        const editButton = messageElement.querySelector('[data-edit-trigger]');
+                        if (editButton) {
+                            setTimeout(() => {
+                                editButton.click();
+                            }, 500); // Small delay to ensure the element is fully rendered
+                        } else {
+                            // Try to find the clickable area for editing
+                            const clickableArea = messageElement.querySelector('.cursor-pointer');
+                            if (clickableArea) {
+                                setTimeout(() => {
+                                    clickableArea.click();
+                                }, 500);
+                            }
+                        }
+                    }
+                } else {
+                    console.warn(`Message element not found for ID: ${messageId}`);
+                }
+            } catch (error) {
+                console.error('Error scrolling to message:', error);
+            }
+        }, 100);
+    }, []);
+ 
+    useEffect(() => {
+        if (mid && conversations.length > 0) {
+            const message = conversations.find(conversion => conversion.id === mid);
+            if (message) {
+                // If there's a type parameter, open thread modal
+                if (queryParams.get('type')) {
+                            handleOpenThreadModal(message, queryParams.get('type'));
+                } else {
+                    // Otherwise, scroll to the message and optionally open edit mode
+                    scrollToMessage(mid, editMode);
+                }
+            } else {
+                console.warn(`Message with ID ${mid} not found in conversations`);
+            }
+        }
+    }, [queryParams, conversationPagination, mid, editMode, scrollToMessage, conversations]);
 
     // Receive Thread socket event and manage with exisiting conversation and open threads
 
@@ -1248,8 +1352,10 @@ const ChatPage = memo(() => {
                                 return (
                                     <React.Fragment key={i}>
                                         {/* Chat item Start*/}
-                                        <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[90vw] lg:max-w-[40rem] xl:max-w-[48.75rem]">
-                                            <div className="relative group bg-gray-100 flex flex-1 text-font-16 text-b2 ml-auto gap-3 rounded-10 transition ease-in-out duration-150 md:max-w-[30rem] xl:max-w-[36rem] px-3 md:pt-4 pt-3 pb-9">
+                                        <div className="chat-item w-full px-4 lg:gap-6 m-auto md:max-w-[32rem] lg:max-w-[40rem] xl:max-w-[48.75rem]">
+                                            <div
+                                                className="relative group bg-gray-100 flex flex-1 text-font-16 text-b2 ml-auto gap-3 rounded-10 transition ease-in-out duration-150 md:max-w-[30rem] xl:max-w-[36rem] px-3 md:pt-4 pt-3 pb-9"
+                                                data-message-id={m.id}>
                                                 {/* Hover Icons start */}
                                                 {!chatInfo?.brain?.id?.deletedAt && !blockProAgentAction() &&
                                                     <HoverActionIcon
@@ -1323,8 +1429,10 @@ const ChatPage = memo(() => {
                                         </div>
                                         {/* Chat item End*/}
                                         {/* Chat item Start*/}
-                                        <div className="chat-item w-full px-4 lg:py-2 py-2 lg:gap-6 m-auto md:max-w-[90vw] lg:max-w-[40rem] xl:max-w-[48.75rem]">
-                                            <div className="relative group bg-white flex flex-1 text-font-16 text-b2 mx-auto gap-3 px-3 pt-3 pb-9 rounded-10 transition ease-in-out duration-150">
+                                        <div className="chat-item w-full px-4 lg:py-2 py-2 lg:gap-6 m-auto md:max-w-[32rem] lg:max-w-[40rem] xl:max-w-[48.75rem]">
+                                            <div
+                                                className="relative group bg-white flex flex-1 text-font-16 text-b2 mx-auto gap-3 px-3 pt-3 pb-9 rounded-10 transition ease-in-out duration-150"
+                                                data-message-id={`${m.id}-response`}>
                                                 {/* Hover Icons start */}
                                                 {!chatInfo?.brain?.id?.deletedAt && showHoverIcon && !blockProAgentAction() &&
                                                     <HoverActionIcon
@@ -1393,7 +1501,8 @@ const ChatPage = memo(() => {
                                                                         onResponseEdited={(messageId) => {
                                                                             setEditedResponses(prev => new Set([...prev, messageId]));
                                                                         }}
-                                                                                                                                            />
+                                                                        onOpenEditModal={handleOpenEditModal}
+                                                                    />
                                                             }
                                                         </div>
                                                         {/* Thread Replay Start */}
@@ -1735,6 +1844,14 @@ const ChatPage = memo(() => {
                 isBrainDeleted={chatInfo?.brain?.id?.deletedAt}
             />
             {/* Thread Modal End */}
+            {/* EditResponseModal */}
+            <EditResponseModal
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                onSave={handleSaveEditModal}
+                initialContent={editingMessageContent}
+                messageId={editingMessageId || ''}
+            />
         </>
     );
 });
