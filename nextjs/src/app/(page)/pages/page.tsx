@@ -15,7 +15,22 @@ import { RootState } from '@/lib/store';
 import { format } from 'date-fns';
 import Toast from '@/utils/toast';
 import  { useRouter } from 'next/navigation';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { ClickableBreadcrumb } from '@/components/Header/Header';
+import RemoveIcon from '@/icons/RemoveIcon';
+import PencilIcon from '@/icons/PencilIcon';
 
 type Page = {
     _id: string;
@@ -69,6 +84,7 @@ const PagesPage = () => {
 
     const { getAllPages, updatePage, deletePage } = usePageOperations({
         onError: (error) => {
+            console.error('Error loading pages:', error);
             setError(error);
         }
     });
@@ -153,10 +169,13 @@ const PagesPage = () => {
     };
 
     const handlePageClick = (page: Page) => {
+        // Navigate to the original chat where this page was created
+        
         // Try to get brain ID from the page's brain data
         let brainId = page.brain?.id || page.brain?._id || '';
         
         if (!brainId) {
+            console.warn('Brain ID is undefined for page:', page.title);
             // Fallback: try to get brain ID from the current context
             const currentBrainId = searchParams.get('b');
             if (currentBrainId) {
@@ -175,6 +194,7 @@ const PagesPage = () => {
         } else {
             chatUrl = `${routes.chat}/${page.chatId}${page.originalMessageId ? `?mid=${page.originalMessageId}&edit=true` : ''}`;
         }
+        
         router.push(chatUrl, { scroll: false });
     };
 
@@ -190,7 +210,7 @@ const PagesPage = () => {
         if (!editingPage || !editTitle.trim() || isEditing) return;
         
         try {
-            setIsEditing(true);            
+            setIsEditing(true);
             await updatePage(editingPage._id, { title: editTitle.trim() });
             
             // Update local state
@@ -204,9 +224,9 @@ const PagesPage = () => {
             setEditingPage(null);
             setEditTitle('');
             setIsEditing(false);
-            
             Toast('Page updated successfully!', 'success');
         } catch (error) {
+            console.error('Error updating page:', error);
             setIsEditing(false);
             // Show error to user
             Toast('Failed to update page. Please try again.', 'error');
@@ -229,6 +249,7 @@ const PagesPage = () => {
             setDeletingPage(null);
             Toast('Page deleted successfully!', 'success');
         } catch (error) {
+            console.error('Error deleting page:', error);
             setDeletingPage(null);
             Toast('Failed to delete page. Please try again.', 'error');
         }
@@ -278,10 +299,12 @@ const PagesPage = () => {
                     const totalPages = Math.ceil((result.paginator?.itemCount || 0) / 10);
                     setHasMore(totalPages > 1);
                 } else {
+                    
                     setPages([]);
                     setHasMore(false);
                 }
             } catch (error) {
+                console.error('Error loading pages:', error);
                 setError(error instanceof Error ? error.message : 'Failed to load pages');
                 setPages([]);
                 setHasMore(false);
@@ -317,7 +340,7 @@ const PagesPage = () => {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <header className="h-[68px] min-h-[68px] flex items-center space-x-2 py-2 md:pl-[15px] md:pr-[15px] pl-[50px] pr-[15px] max-md:sticky max-md:top-0 z-10 bg-white border-b border-gray-200">
+            <header className="top-header h-[68px] min-h-[68px] flex items-center space-x-2 py-2 md:pl-[30px] pl-[50px] pr-[15px] max-md:sticky max-md:top-0 z-10 bg-white">
                 <div className="size-[30px] flex items-center justify-center rounded-full p-1">
                     <DocumentIcon width={20} height={20} className="fill-b2 object-contain" />
                 </div>
@@ -374,40 +397,58 @@ const PagesPage = () => {
                                     <span className="text-gray-500 text-xs">Select brain</span>
                                 </div>
                             )}
-                            <button
-                                type="button"
-                                id="list-view"
-                                onClick={handleListViewClick}
-                                disabled={!brainId}
-                                className={`inline-block rounded-s-custom rounded-e-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                    !isGridView ? 'active' : ''
-                                }`}
-                            >
-                                <BarIcon
-                                    width={14}
-                                    height={12}
-                                    className="w-[14px] h-3 object-contain mx-auto fill-b6"
-                                />
-                            </button>
-                            <button
-                                type="button"
-                                id="grid-view"
-                                onClick={handleGridViewClick}
-                                disabled={!brainId}
-                                className={`-ms-px inline-block rounded-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                    isGridView ? 'active' : ''
-                                }`}
-                            >
-                                <GridIcon
-                                    width={14}
-                                    height={14}
-                                    className="w-[14px] h-[14px] object-contain mx-auto fill-b6"
-                                />
-                            </button>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            id="list-view"
+                                            onClick={handleListViewClick}
+                                            disabled={!brainId}
+                                            className={`inline-block rounded-s-custom rounded-e-none btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                                !isGridView ? 'active' : ''
+                                            }`}
+                                        >
+                                            <BarIcon
+                                                width={14}
+                                                height={12}
+                                                className="w-[14px] h-3 object-contain mx-auto fill-b6"
+                                            />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="border-none">
+                                        <p className="text-font-14">List view</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            id="grid-view"
+                                            onClick={handleGridViewClick}
+                                            disabled={!brainId}
+                                            className={`-ms-px inline-block rounded-s-none rounded-e-custom btn border border-b10 bg-transparent w-10 h-10 p-2 hover:bg-b12 [&.active]:bg-b12 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                                isGridView ? 'active' : ''
+                                            }`}
+                                        >
+                                            <GridIcon
+                                                width={14}
+                                                height={14}
+                                                className="w-[14px] h-[14px] object-contain mx-auto fill-b6"
+                                            />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="border-none">
+                                        <p className="text-font-14">Grid view</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
 
                         {/* Page Count */}
-                        <div className="text-sm text-gray-500">
+                        <div className="text-font-14 text-gray-500">
                             {brainId ? `${filteredPages.length} page${filteredPages.length !== 1 ? 's' : ''}` : 'Select a brain to view pages'}
                         </div>
                     </div>
@@ -431,7 +472,7 @@ const PagesPage = () => {
                                 </div>
                             ) : loading ? (
                                 <div className="flex items-center justify-center h-64">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-b5"></div>
                                 </div>
                             ) : filteredPages.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-64 text-gray-500">
@@ -459,7 +500,7 @@ const PagesPage = () => {
                                                 {/* Page Title and Model */}
                                                 <div className={`pages-item-title-tag relative flex flex-col gap-2.5`}>
                                                     <div className="flex items-center gap-2.5">
-                                                                                                            <h5 className='text-font-14 font-semibold text-b2 transition duration-150 ease-in-out md:group-hover/item:text-b15 hover:text-blue-600'>
+                                                                                                            <h5 className='text-font-14 font-semibold text-b2 transition duration-150 ease-in-out md:group-hover/item:text-b15 hover:text-b5'>
                                                         {page.title}
                                                     </h5>
                                                         {page.responseModel && (
@@ -468,7 +509,7 @@ const PagesPage = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <span className="text-font-12 text-b5 transition duration-150 ease-in-out md:group-hover/item:text-b15 hover:text-blue-600">
+                                                    <span className="text-font-12 text-b5 transition duration-150 ease-in-out md:group-hover/item:text-b15 hover:text-b5">
                                                         {formatDate(page.createdAt)}
                                                     </span>
                                                 </div>
@@ -482,11 +523,8 @@ const PagesPage = () => {
                                                             handleEditPage(page);
                                                         }}
                                                         className="group-hover/item:opacity-100 md:opacity-0 rounded bg-white flex items-center justify-center w-6 min-w-6 h-6 p-0.5 [&>svg]:w-[11] [&>svg]:h-[11] [&>svg]:fill-b5"
-                                                        title="Edit page"
                                                     >
-                                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="fill-current">
-                                                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                                                        </svg>
+                                                        <PencilIcon width={11} height={11}/>
                                                     </button>
                                                     
                                                     {/* Delete Icon */}
@@ -497,14 +535,11 @@ const PagesPage = () => {
                                                         }}
                                                         disabled={deletingPage === page._id}
                                                         className="group-hover/item:opacity-100 md:opacity-0 rounded bg-white flex items-center justify-center w-6 min-w-6 h-6 p-0.5 [&>svg]:w-[11] [&>svg]:h-[11] [&>svg]:fill-b5"
-                                                        title="Delete page"
                                                     >
                                                         {deletingPage === page._id ? (
                                                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
                                                         ) : (
-                                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="fill-current">
-                                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                                                            </svg>
+                                                            <RemoveIcon width={14} height={14} className='' />
                                                         )}
                                                     </button>
                                                 </div>
@@ -522,11 +557,11 @@ const PagesPage = () => {
                                     <button
                                         onClick={loadMore}
                                         disabled={loadingMore}
-                                        className="px-6 py-3 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                        className="btn btn-black"
                                     >
                                         {loadingMore ? (
                                             <div className="flex items-center space-x-2">
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-b7"></div>
                                                 <span>Loading...</span>
                                             </div>
                                         ) : (
@@ -541,21 +576,27 @@ const PagesPage = () => {
             </div>
 
             {/* Edit Page Modal */}
-            {editingPage && (
-                <div 
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                    onClick={() => {
+            <Dialog 
+                open={!!editingPage} 
+                onOpenChange={(open) => {
+                    if (!open) {
                         setEditingPage(null);
                         setEditTitle('');
                         setIsEditing(false);
-                    }}
-                >
-                    <div 
-                        className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border border-gray-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    }
+                }}
+            >
+                <DialogContent className="max-w-[470px] max-h-[80vh] overflow-y-auto p-6">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-3 font-bold text-font-18 text-b2">Edit Page Title</DialogTitle>
+                        <DialogDescription>
+                            Update the title for your page
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="dialog-body flex flex-col flex-1 relative h-full mt-5">
                         <div className="mb-4">
-                            <label htmlFor="edit-page-title" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="edit-page-title" className="block text-gray-700 text-font-14 font-bold mb-2">
                                 Page Title
                             </label>
                             <input
@@ -568,7 +609,7 @@ const PagesPage = () => {
                                         handleUpdatePage();
                                     }
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="default-form-input default-form-input-border-light default-form-input-md"
                                 placeholder="Enter page title..."
                                 autoFocus
                             />
@@ -580,7 +621,7 @@ const PagesPage = () => {
                             <button
                                 onClick={handleUpdatePage}
                                 disabled={isEditing || !editTitle.trim()}
-                                className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+                                className="btn btn-black"
                             >
                                 Save
                             </button>
@@ -593,53 +634,54 @@ const PagesPage = () => {
                                     setIsEditing(false);
                                 }}
                                 disabled={isEditing}
-                                className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+                                className="btn btn-outline-gray"
                             >
                                 Cancel
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
+                </DialogContent>
+            </Dialog>
 
             {/* Delete Confirmation Modal */}
-            {deletingPage && (
-                <div 
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                    onClick={() => setDeletingPage(null)}
-                >
-                    <div 
-                        className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border border-gray-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Page</h3>
-                            <p className="text-sm text-gray-600">
-                                Are you sure you want to delete this page? This action cannot be undone.
-                            </p>
-                        </div>
-                        
-                        {/* Buttons Container - Same style as Edit Modal */}
+            <Dialog 
+                open={!!deletingPage} 
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDeletingPage(null);
+                    }
+                }}
+            >
+                <DialogContent className="max-w-[470px] max-h-[80vh] overflow-y-auto p-6">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-3 font-bold text-font-18 text-b2">Delete Page</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this page? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="dialog-body flex flex-col flex-1 relative h-full mt-5">
+                        {/* Buttons Container */}
                         <div className="flex justify-end space-x-3">
-                            {/* Confirm Button - First (left side) */}
+                            {/* Cancel Button */}
                             <button
-                                onClick={() => confirmDeletePage(deletingPage)}
-                                className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                onClick={() => setDeletingPage(null)}
+                                className="btn btn-outline-gray"
+                            >
+                                Cancel
+                            </button>
+                            
+                            {/* Confirm Delete Button */}
+                            <button
+                                onClick={() => deletingPage && confirmDeletePage(deletingPage)}
+                                className="btn btn-red"
                             >
                                 Confirm Delete
                             </button>
-                            
-                            {/* Cancel Button - Second (right side) */}
-                            <button
-                                onClick={() => setDeletingPage(null)}
-                                className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                            >
-                                Cancel
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

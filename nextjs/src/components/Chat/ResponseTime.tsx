@@ -54,7 +54,7 @@ const ResponseTime = ({ m, setShowTimer }) => {
                     data.map((el) => (
                         <div key={el.id} className="flex items-center space-x-2 mr-1 mt-1 relative">
                             <RadioGroupItem className="absolute left-0 top-0 opacity-0" value={el.value} id={el.value}/>
-                            <Label className={'text-font-16 block w-9 h-9 bg-ligheter text-black rounded-[6px] text-center leading-9 !m-0 cursor-pointer hover:bg-blue hover:text-white'} htmlFor={el.value} title={el.value} required={false}/>
+                            <Label className={'text-font-16 block w-9 h-9 bg-ligheter text-black rounded-[6px] text-center leading-9 !m-0 cursor-pointer hover:bg-black hover:text-white'} htmlFor={el.value} title={el.value} required={false}/>
                         </div>
                     ))
                 }

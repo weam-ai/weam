@@ -25,7 +25,7 @@ const Step4 = () => {
         />
       </div>
       <div className="max-md:text-center">
-        <h5 className="text-font-14 text-blue">Your Custom AI Agent</h5>
+        <h5 className="text-font-14 text-b2">Your Custom AI Agent</h5>
         <h2 className="md:text-[36px] text-font-20 font-bold text-black">
           Create Your Own Agent & Prompt Library
         </h2>

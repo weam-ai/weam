@@ -32,14 +32,14 @@ const TwoFactorAuthModal = ({open, closeModal}) => {
                               onto your phone or tablet, such as{' '}
                               <Link
                                   href="https://authy.com/"
-                                  className="text-blue hover:underline"
+                                  className="text-b2 hover:underline"
                               >
                                   Authy
                               </Link>
                               or
                               <Link
                                   href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en_IN&pli=1"
-                                  className="text-blue hover:underline"
+                                  className="text-b2 hover:underline"
                               >
                                   Authenticator.
                               </Link>
@@ -74,7 +74,7 @@ const TwoFactorAuthModal = ({open, closeModal}) => {
                                       Cancel
                                   </button>
                               </DialogClose>
-                              <button className="btn btn-blue btn-lg flex-1">
+                              <button className="btn btn-black btn-lg flex-1">
                                   Set Up Two-Factor Now
                               </button>
                           </div>

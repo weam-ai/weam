@@ -318,31 +318,31 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
 
         const listOptions = [
             {
-                icon: <ChatIcon width={18} height={18}  className="fill-b6 w-4 h-auto"/>,
+                icon: <ChatIcon width={18} height={18}  className="fill-b6 group-hover:fill-white w-4 h-auto"/>,
                 text: 'Chats',
                 id: 1,
                 href: routes.chat,
             },
             {
-                icon: <PromptIcon width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <PromptIcon width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Prompts',
                 id: 2,
                 href: routes.prompts,
             },
             {
-                icon: <Customgpt width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <Customgpt width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Agents',
                 id: 3,
                 href: routes.customGPT,
             },
             {
-                icon: <DocumentIcon width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <DocumentIcon width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Docs',
                 id: 4,
                 href: routes.docs,
             },
             {
-                icon: <DocumentIcon width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <DocumentIcon width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Pages',
                 id: 5,
                 href: routes.pages,
@@ -354,13 +354,13 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                 {listOptions.map((option) => (
                     <button
                         key={option.id}
-                        className="border rounded-md px-4 py-2 md:py-3 text-font-14 justify-center flex items-center gap-x-2 bg-white hover:bg-b12 cursor-pointer transition-colors"
+                        className="btn btn-outline-gray flex items-center justify-center gap-x-2 group"
                         onClick={() => handleNavigation(option.href)}
                     >
                         <div className="flex items-center justify-center">
                             {option.icon}
                         </div>
-                        <span className="text-b3 transition-all ease-in-out duration-500 text-font-12 md:text-font-14 font-medium sm:block">{option.text}</span>
+                        <span className="">{option.text}</span>
                     </button>
                 ))}
             </>
@@ -762,12 +762,12 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     return (
         <div className="w-full h-full overflow-y-auto flex justify-center">
             <div className={`w-full flex flex-col max-lg:flex-col-reverse mx-auto px-5 md:max-w-[90%] lg:max-w-[980px] xl:max-w-[1100px] ${isNavigating ? 'opacity-50' : ''}`}>
-                <div className='flex items-center justify-between'>
-                    <h2 className='hidden lg:block text-font-14 font-bold mt-5 mb-3'>Fresh AI Picks</h2>
+                <div className='flex items-center justify-between mt-5 mb-3'>
+                    <h2 className='hidden lg:block text-font-14 font-medium'>Fresh AI Picks</h2>
                     <p className="text-right hidden lg:block">
                         <button 
                             onClick={handleSeeMoreClick}
-                            className='text-font-14 text-blue2 underline hover:text-blue transition-colors'
+                            className='text-font-14 text-b4 underline hover:text-b2 transition-colors'
                         >
                             See More
                         </button>
@@ -780,8 +780,8 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                             className='border rounded-md p-5 bg-white hover:bg-b12 cursor-pointer transition-colors'
                             onClick={() => handleCustomPromptClick(prompt)}
                         >
-                            <h3 className='text-font-14 font-bold mb-2'>{prompt.title}</h3>
-                            <p className='text-font-14 text-b6'>
+                            <h3 className='text-font-16 font-medium mb-2'>{prompt.title}</h3>
+                            <p className='text-font-14 text-b6 font-normal'>
                                 {truncateText(prompt.content, 350)}
                             </p>
                         </div>

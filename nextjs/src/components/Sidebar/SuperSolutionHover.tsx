@@ -142,7 +142,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
 
             {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-b7"></div>
                     <span className="ml-2 text-font-14 text-gray-500">
                         Loading Apps...
                     </span>
@@ -163,7 +163,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                             }
                             className="group flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-xl transition-all duration-200 hover:scale-105"
                         >
-                            <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-all duration-200">
                                 {ROLE_TYPE.USER === user?.roleCode
                                     ? (() => {
                                           const IconComponent =
@@ -186,7 +186,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                                       })()
                                 }
                             </div>
-                            <span className="text-font-14 text-gray-700 text-center font-medium group-hover:text-blue-600 transition-colors">
+                            <span className="text-font-14 text-gray-700 text-center font-medium group-hover:text-b2 transition-colors">
                                 {ROLE_TYPE.USER === user?.roleCode
                                     ? solution?.appId?.name
                                     : solution?.name}
@@ -203,7 +203,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                         className={'w-6 h-auto object-contain fill-b5'} 
                         />
                     </div>
-                    <p className="text-sm text-gray-500 mb-2">
+                    <p className="text-font-14 text-gray-500 mb-2">
                         No Apps available
                     </p>
                     <p className="text-xs text-gray-400">

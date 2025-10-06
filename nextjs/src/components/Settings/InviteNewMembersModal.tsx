@@ -63,7 +63,7 @@ const InviteNewMembersModal = ({open, closeModal}) => {
             <DialogClose asChild>
             <button className='btn btn-outline-gray'>Cancel</button>
             </DialogClose>
-            <button className='btn btn-blue' disabled>Send Invitations</button>
+            <button className='btn btn-black' disabled>Send Invitations</button>
         </DialogFooter>
         </DialogContent>
     </Dialog>

@@ -96,14 +96,14 @@ const DropdownMenuRadioItem = React.forwardRef(({ className, children, ...props 
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "group relative flex cursor-pointer select-none items-center py-2.5 pr-8 pl-4 text-[14px] font-normal text-b2 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 border-b border-b10 last:border-b-0 bg-b15 hover:bg-b12 focus:bg-b12 [&[data-state=checked]]:bg-b12 [&[data-state=checked]>.check-item]:border-blue [&[data-state=checked]>.check-item]:visible [&[data-state=checked]>.check-item]:opacity-100",
+      "group relative flex cursor-pointer select-none items-center py-2.5 pr-8 pl-4 text-[14px] font-normal text-b2 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 border-b border-b10 last:border-b-0 bg-b15 hover:bg-b12 focus:bg-b12 [&[data-state=checked]]:bg-b12 [&[data-state=checked]>.check-item]:border-b2 [&[data-state=checked]>.check-item]:visible [&[data-state=checked]>.check-item]:opacity-100",
       className
     )}
     {...props}>
     {children}
     <span className="check-item absolute right-2 flex h-[18px] w-[18px] items-center justify-center border border-b10 rounded-full opacity-0 invisible group-hover:opacity-100 group-hover:visible">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Circle className="h-3 w-3 fill-blue stroke-blue" />
+        <Circle className="h-3 w-3 fill-b2 stroke-b2" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
   </DropdownMenuPrimitive.RadioItem>

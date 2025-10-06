@@ -15,7 +15,7 @@ const GetApiKey = ({ name, code }) => {
   return (
     <div className='my-4'>
         <p className='text-font-14 text-b6'>
-        Get your API key from  <Link href={link} className='underline hover:text-blue' target='_blank'>{name}</Link>.</p>
+        Get your API key from  <Link href={link} className='underline hover:text-b5' target='_blank'>{name}</Link>.</p>
     </div>
   );
 };

@@ -30,7 +30,7 @@ const DocumentProcessing = () => {
 		  <div className="page pageFlip"></div>
 			<div className="page pageFlip"></div>
 		</div>
-            <div className="bg-blue px-5 py-3 rounded-lg shadow-lg text-center max-w-md animate-[fade-in_0.3s_both]">
+            <div className="bg-black px-5 py-3 rounded-lg shadow-lg text-center max-w-md animate-[fade-in_0.3s_both]">
                 <p className="text-white">{messages[currentMessage]}</p>
             </div>
         </div>

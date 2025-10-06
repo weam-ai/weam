@@ -101,13 +101,15 @@ const CompanyUsage = ({ startDate, endDate, model, searchValue, isPaid, paginati
     }, [searchValue]);
 
     return (
-        <div className='overflow-x-auto max-w-[100vw]'>
-            <Datatable table={table} loading={loading} />
-            <DataTablePagination
-                table={table}
-                pagination={pagination}
-                handlePageSizeChange={handlePageSizeChange}
-            />
+        <div className='md:max-w-full max-w-[100vw] overflow-x-auto'>
+          <div className='overflow-x-auto max-w-full'>
+              <Datatable table={table} loading={loading} />
+              <DataTablePagination
+                  table={table}
+                  pagination={pagination}
+                  handlePageSizeChange={handlePageSizeChange}
+              />
+          </div>
         </div>
     );
 };

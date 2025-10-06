@@ -120,7 +120,7 @@ const GrossSalesChart = () => {
       <div className='flex items-start justify-between mb-8'>
         <div className='me-3'>
           <h5 className='text-font-18 font-semibold text-b2 mb-2'>Gross Sales Amount</h5>
-          <h4 className='text-font-24 font-semibold text-blue'>{chartData.grossSalesAmount}</h4>
+          <h4 className='text-font-24 font-semibold text-b2'>{chartData.grossSalesAmount}</h4>
         </div>
         <Select
           options={GrossSalesChartOptions}

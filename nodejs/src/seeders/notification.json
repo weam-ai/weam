@@ -28,5 +28,10 @@
         "title": "Mentioned In Thread",
         "body": "Hi {name} mentioned you in the thread {chat} of {brain}",
         "code": "THREAD_MENTIONE"
+    },
+    {
+        "title": "Prompt Scraping Complete",
+        "body": "Your prompt \"{prompt}\" has been successfully updated with website information.",
+        "code": "PROMPT_SCRAPING"
     }
 ]

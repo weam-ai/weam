@@ -37,7 +37,7 @@ const PaginationLink = ({
 }:any) => (
   <a
     aria-current={isActive ? "page" : undefined}
-    className={cn("w-6 h-6 min-w-6 flex items-center justify-center rounded-custom text-font-14 font-normal", { 'bg-blue text-b15': isActive, 'bg-b12 text-b2': !isActive } , className)}
+    className={cn("w-6 h-6 min-w-6 flex items-center justify-center rounded-custom text-font-14 font-normal", { 'bg-black text-white': isActive, 'bg-b12 text-b2': !isActive } , className)}
     
     {...props} />
 )

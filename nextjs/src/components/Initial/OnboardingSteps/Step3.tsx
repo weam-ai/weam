@@ -7,7 +7,7 @@ const Step3 = () => {
   return (
     <>
     <div className='md:max-w-[420px] max-md:text-center'>
-        <h5 className="text-font-14 text-blue">Learn, test, and share</h5>
+        <h5 className="text-font-14 text-b2">Learn, test, and share</h5>
         <h2 className="md:text-[34px] text-font-20 font-bold text-black">
           Build Your Own Solutions
         </h2>

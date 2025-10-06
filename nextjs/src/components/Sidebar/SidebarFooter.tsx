@@ -10,10 +10,8 @@ import Notification from './Notification';
 import NotificationDot from './NotificationDot';
 import UserProfile from './UserProfile';
 import { TemplateLibrary } from './SettingSelection';
+import SettingsLink from './SettingsLink';
 import { useSidebar } from '@/context/SidebarContext';
-import dynamic from 'next/dynamic';
-
-const SettingsLink = dynamic(() => import('./SettingsLink'), { ssr: false });
 
 const SidebarFooter = () => {
     const { isCollapsed } = useSidebar();
@@ -22,7 +20,7 @@ const SidebarFooter = () => {
     const tooltipSide = isCollapsed ? "right" : "top";
     
     return (
-        <div className="flex items-center justify-between px-5 py-1 mt-auto border-t bg-white sidebar-footer">
+        <div className="flex items-center justify-between px-5 py-1 mt-auto border-t sidebar-footer">
             <div className="relative inline-block hover:bg-b5 hover:bg-opacity-[0.2] w-10 h-10 rounded-full text-center">
                 <UserProfile />
             </div>
