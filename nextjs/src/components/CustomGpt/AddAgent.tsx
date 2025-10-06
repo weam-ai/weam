@@ -16,6 +16,7 @@ const AddGptForm = () => {
         maxItr: 0,
         itrTimeDuration: '',
         doc: [],
+        removeCoverImg: false,
         imageEnable: false,
         charimg: ''
     });
