@@ -29,7 +29,7 @@ const LinkExpiredPage = () => {
                 <p className="mt-2 text-center text-font-16 text-b2">
                     The requested action couldn’t be completed as the link has expired. Please click below to resend for verification.
                 </p>
-                <button className='btn btn-blue mt-5' onClick={handleResendLink} disabled={loading}>Resend Link</button>
+                <button className='btn btn-black mt-5' onClick={handleResendLink} disabled={loading}>Resend Link</button>
             </div>
         </div>
     );

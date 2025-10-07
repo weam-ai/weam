@@ -196,7 +196,7 @@ const FileItem = ({ brdoc, isGridView, openDeleteModal, setDeleteItem, favourite
                             <RemoveIcon
                                 width={14}
                                 height={14}
-                                className={` fill-blue ${isGridView ? '' : ''
+                                className={` fill-red ${isGridView ? '' : ''
                                 }`}                            
                             />
                         </span>

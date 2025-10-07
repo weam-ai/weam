@@ -12,6 +12,16 @@ const wordCount = (value, helpers, maxWords) => {
 const createCustomGptKeys = joi.object({
     title: joi.string().required(),
     systemPrompt: joi.string().required(),
+    type: joi.string().valid('agent', 'supervisor').required().default('agent'),
+    description: joi.string().required(),
+    Agents: joi.when('type', {
+        is: 'supervisor',
+        then: joi.alternatives().try(
+            joi.string(),
+            joi.array().items(joi.string())
+        ).required(),
+        otherwise: joi.forbidden()
+    }),
     coverImg: joi.alternatives().try(
         joi.array(),
         joi.valid(null),
@@ -33,18 +43,24 @@ const createCustomGptKeys = joi.object({
         .required(),
     maxItr: joi.number().optional().allow(null),
     itrTimeDuration: joi.string().allow('').optional(),
-    goals: joi
-        .string()
-        .required(),
-    instructions: joi
-        .string()
-        .optional(),
     brain: joi.object(brainSchemaKeys).required(),
-    imageEnable: joi.boolean().optional()
+    imageEnable: joi.boolean().optional(),
+    charimg: joi.string().optional(),
+    // mcpTools: joi.array().items(joi.string()).optional()
 }).unknown(true);
 
 const updateCustomGptKeys = joi.object({
     title: joi.string().required(),
+    type: joi.string().valid('agent', 'supervisor').optional(),
+    description: joi.string().required(),
+    Agents: joi.when('type', {
+        is: 'supervisor',
+        then: joi.alternatives().try(
+            joi.string(),
+            joi.array().items(joi.string())
+        ).required(),
+        otherwise: joi.forbidden()
+    }),
     coverImg: joi.alternatives().try(
         joi.array(),
         joi.valid(null),
@@ -67,16 +83,11 @@ const updateCustomGptKeys = joi.object({
         .required(),
     maxItr: joi.number().optional().allow(null),
     itrTimeDuration: joi.string().allow('').optional(),
-    goals: joi
-        .string()
-        .required(),
-    instructions: joi
-        .string()
-        .optional(),
     brain: joi.object(brainSchemaKeys).required(),
     imageEnable: joi.boolean().optional(),
     removeDoc: joi.string().optional(),
-    charimg: joi.string().optional()
+    charimg: joi.string().optional(),
+    // mcpTools: joi.array().items(joi.string()).optional()
 });
 
 const assignDefaultGpt = joi.object({
@@ -91,12 +102,6 @@ const assignDefaultGpt = joi.object({
         .required(),
     maxItr: joi.number().optional().allow(null),
     itrTimeDuration: joi.string().allow('').optional(),
-    goals: joi
-        .string()
-        .required(),
-    instructions: joi
-        .string()
-        .optional(),
     selectedBrain: joi.array()
         .items(brainSchemaKeys)
         .min(1)

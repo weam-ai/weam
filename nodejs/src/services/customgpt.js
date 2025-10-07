@@ -158,12 +158,17 @@ async function createChatDocs(payload) {
 const addCustomGpt = async (req) => {
     try {
         const { fileData } = require('./uploadFile');
-        const { title, brain, responseModel, goals: reqGoals, instructions: reqInstructions } = req.body;
+        const { title, brain, responseModel } = req.body;
         const { id: brainId } = brain;
         const { company } = responseModel;
 
         const slug = slugify(title);
-        const createData = { ...req.body, slug, coverImg: {}, doc: [] }; 
+        const createData = { 
+            ...req.body, 
+            slug, 
+            coverImg: {}, 
+            doc: [],
+        }; 
 
         const existing = await CustomGpt.findOne({ slug, 'brain.id': brainId });
         if (existing) throw new Error(_localize('module.alreadyExists', req, 'custom gpt'));
@@ -211,19 +216,8 @@ const addCustomGpt = async (req) => {
           };
         }
 
-        const goals = JSON.parse(reqGoals) || [];
-        const instructions = [];
-        if (reqInstructions) {
-            for (let instruction of JSON.parse(reqInstructions)) {
-                if (instruction.trim() !== '')
-                    instructions.push(instruction.trim().replace(/\s+/g, ' '));
-            }
-        }
-
         return CustomGpt.create({
             ...createData,
-            goals,
-            instructions,
             owner: formatUser(req.user),
         });
 
@@ -235,29 +229,16 @@ const addCustomGpt = async (req) => {
 const updateCustomGpt = async (req) => {
     try {
         const { removeExistingDocument, removeExistingImage, fileData } = require('./uploadFile');
-        const existingBot = await CustomGpt.findById({ _id: req.params.id }, { doc: 1, coverImg: 1, brain: 1 });
+        const existingBot = await CustomGpt.findById({ _id: req.params.id }, { doc: 1, coverImg: 1, brain: 1, type: 1 });
         
         if (!existingBot) throw new Error(_localize('module.notFound', req, 'custom bot'));
-        let instructions = [];
 
-        const { title, responseModel, goals: reqGoals, instructions: reqInstructions,brain } = req.body;
+        const { title, responseModel } = req.body;
         const { company } = responseModel;
 
         let updateBody = {
             ...req.body,
             slug: slugify(title),
-        }
-
-
-        if (reqGoals) {
-            Object.assign(updateBody, { goals: JSON.parse(reqGoals) || [] })
-        }
-        if (reqInstructions) {
-            for (let instruction of JSON.parse(reqInstructions)) {
-                if (instruction.trim() !== '')
-                    instructions.push(instruction.trim().replace(/\s+/g, ' '));
-            }
-            Object.assign(updateBody, { instructions })
         }
 
         if (req.files['coverImg']) {
@@ -365,7 +346,19 @@ const viewCustomGpt = async (req) => {
 }
 
 const deleteCustomGpt = async (req) => {
-    try {  
+    try {
+        // Check if this agent is used by any supervisor agents
+        const supervisorAgents = await CustomGpt.findOne({
+            type: 'supervisor',
+            Agents: req.params.id,
+            'brain.id': { $exists: true }
+        });
+
+        if (supervisorAgents) {
+            const supervisorNames = supervisorAgents.title;
+            throw new Error(`Cannot delete agent. It is currently being used by supervisor agent(s): ${supervisorNames}`);
+        }
+
         return CustomGpt.deleteOne({ _id: req.params.id });
     } catch (error) {
         handleError(error, 'Error - deleteCustomGpt');
@@ -528,31 +521,15 @@ const storeVectorData = async (req, payloads) => {
 
 const assignDefaultGpt = async (req) => {
     try {
-        let instructions = [];
-        let goals = [];
-        const { title, brain, responseModel : reqResponseModel, goals: reqgoals, instructions: reqInstructions, selectedBrain } = req.body;
+        const { title, brain, responseModel : reqResponseModel, selectedBrain } = req.body;
         const {isPrivateBrainVisible}=req.user
 
         const bulk = [];
         
         
-        const timestamp = Date.now(); 
+        const timestamp = Date.now();
         const slug = `${slugify(title)}-${timestamp}`;
-        const createData = { ...req.body, slug, coverImg: {}, doc: [] }; 
-
-        if (reqgoals) {
-            for (let goal of JSON.parse(reqgoals)) {
-                if (goal.trim() !== '')
-                    goals.push(goal.trim().replace(/\s+/g, ' '));
-            }
-        }
-
-        if (reqInstructions) {
-            for (let instruction of JSON.parse(reqInstructions)) {
-                if (instruction.trim() !== '')
-                    instructions.push(instruction.trim().replace(/\s+/g, ' '));
-            }
-        }
+        const createData = { ...req.body, slug, coverImg: {}, doc: [] };
 
         const defaultModal = await CompanyModal.findOne({ 'company.id': getCompanyId(req.user), name: MODAL_NAME.GPT_4_1 });
         if (!defaultModal) return false;
@@ -570,8 +547,6 @@ const assignDefaultGpt = async (req) => {
                 
                 bulk.push({
                     ...createData,
-                    goals,
-                    instructions,
                     brain: formatBrain(br),
                     owner: formatUser(req.user),
                     responseModel
@@ -626,6 +601,19 @@ const favoriteCustomGpt = async (req) => {
     }
 };
 
+const getAgents = async (req) => {
+    try {
+        const { brainId } = req.params;
+        const agents = await CustomGpt.find({
+            'brain.id': brainId,
+            type: 'agent'
+        });
+        return agents;
+    } catch (error) {
+        handleError(error, "Error - getAgents");
+    }
+};
+
 module.exports = {
     addCustomGpt,
     updateCustomGpt,
@@ -636,5 +624,6 @@ module.exports = {
     storeVectorData,
     assignDefaultGpt,
     usersWiseGetAll,
-    favoriteCustomGpt
+    favoriteCustomGpt,
+    getAgents
 }

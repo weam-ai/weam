@@ -8,6 +8,7 @@ const Brain = require("../models/brains");
 const { createDefaultBrain, shareBrainWithUser } = require('./brain');
 const WorkSpace = require('../models/workspace');
 const { DEFAULT_NAME } = require('../config/constants/common');
+const { enhancePromptByLLM } = require('./langgraph');
 
 const addChat = async (req) => {
     try {
@@ -421,6 +422,15 @@ async function initializeChat(payload) {
         handleError(error, 'Error - initializeChat');
     }
 }
+const enhancePrompt = async (req) => {
+    try {
+        const { query, apiKey } = req.body;
+        const result = await enhancePromptByLLM({ query, apiKey });
+        return result;
+    } catch (error) {
+        handleError(error, 'Error - enhancePrompt');
+    }
+}
 
 module.exports = {
     addChat,
@@ -431,5 +441,6 @@ module.exports = {
     updateChat,
     checkChatAccess,
     socketFetchChatById,
-    initializeChat
+    initializeChat,
+    enhancePrompt
 };

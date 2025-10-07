@@ -116,7 +116,7 @@ const MentionInput = ({ users, setContent, content, onTyping, handleSubmit }) =>
                     renderSuggestion={renderUserSuggestion}
                     appendSpaceOnAdd={true}
                     
-                    className="text-blue font-bold relative z-[1] rounded-custom"
+                    className="text-b2 font-bold relative z-[1] rounded-custom"
                 />
             </MentionsInput>
 

@@ -20,7 +20,7 @@ const LogOutModal = ({open, closeModal}) => {
                         <DialogClose asChild>
                             <button className='btn btn-outline-gray'>Cancel</button>
                         </DialogClose>
-                        <button className='btn btn-blue' onClick={handleLogout}>Confirm</button>
+                        <button className='btn btn-black' onClick={handleLogout}>Confirm</button>
                     </div>
                 </div> 
             </div>

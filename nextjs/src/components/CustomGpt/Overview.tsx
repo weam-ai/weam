@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/tooltip';
 import TooltipIcon from '@/icons/TooltipIcon';
 import CharacterSelectionDialog from './CharacterSelectionDialog';
+import AgentSelector from './AgentSelector';
+// import MCPToolsSelector from './MCPToolsSelector';
 import Select from 'react-select';
 import useAssignModalList from '@/hooks/aiModal/useAssignModalList';
 import { AI_MODAL_NAME, API_TYPE_OPTIONS, MODULES, MODULE_ACTIONS, FILE } from '@/utils/constant';
@@ -108,6 +110,20 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                 const formData = new FormData();
                 formData.append('title', submissionData.title);
                 formData.append('systemPrompt', submissionData.systemPrompt);
+                formData.append('type', submissionData.type || 'agent');
+                
+                if (submissionData.description) {
+                    formData.append('description', submissionData.description);
+                }
+                
+                if (submissionData.Agents && submissionData.Agents.length > 0) {
+                    formData.append('Agents', JSON.stringify(submissionData.Agents));
+                }
+                
+                // if (submissionData.mcpTools && submissionData.mcpTools.length > 0) {
+                //     formData.append('mcpTools', JSON.stringify(submissionData.mcpTools));
+                // }
+                
                 if (submissionData.charimg) {
                     formData.append('charimg', submissionData.charimg);
                 }
@@ -281,6 +297,76 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                     {touched.title && <FormikError errors={errors} field={'title'} />}
                 </div>
 
+                {/* Agent Type Selection - Only show for new agents */}
+                {!values.id && (
+                    <div className="relative w-full mb-5">
+                        <Label htmlFor={'agent-type'} title={'Agent Type'} />
+                        <Select
+                            options={[
+                                { value: 'agent', label: 'Agent' },
+                                { value: 'supervisor', label: 'Supervisor Agent' }
+                            ]}
+                            value={{ value: values.type, label: values.type === 'agent' ? 'Agent' : 'Supervisor Agent' }}
+                            onChange={(selectedOption: any) => {
+                                setFieldValue('type', selectedOption.value);
+                                // Reset agents when switching types
+                                if (selectedOption.value === 'agent') {
+                                    setFieldValue('Agents', []);
+                                }
+                            }}
+                            className="react-select-container"
+                            classNamePrefix="react-select"
+                            placeholder="Select agent type..."
+                            isSearchable={false}
+                        />
+                        {touched.type && <FormikError errors={errors} field={'type'} />}
+                    </div>
+                )}
+
+                {/* Description - Required for both agent types */}
+                <div className="relative w-full mb-5">
+                    <Label htmlFor={values.type === 'agent' ? 'agent-description' : 'agent-description'} title={'Description'} />
+                    <textarea
+                        className="default-form-input"
+                        id={values.type === 'agent' ? 'agent-description' : 'agent-description'}
+                        placeholder={values.type === 'agent' ? 'Describe what this agent does...' : 'Describe what this supervisor agent does...'}
+                        name="description"
+                        rows={2}
+                        value={values.description}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                    />
+                    {touched.description && <FormikError errors={errors} field={'description'} />}
+                </div>
+
+                {/* Agents Selection for Supervisor */}
+                {values.type === 'supervisor' && (
+                    <div className="relative w-full mb-5">
+                        <div className="flex items-center mb-2">
+                            <Label htmlFor="tool-agents" title="Agents" required={true} />
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="ml-1 cursor-help">
+                                            <TooltipIcon />
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Select the agents that this supervisor agent will manage</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <AgentSelector
+                            selectedAgents={values.Agents || []}
+                            onSelectionChange={(selectedIds) => 
+                                setFieldValue('Agents', selectedIds)
+                            }
+                        />
+                        {touched.Agents && <FormikError errors={errors} field={'Agents'} />}
+                    </div>
+                )}
+
                 {/* Model Selection */}
                 {userModals && (
                     <div className="relative mb-5">
@@ -426,6 +512,22 @@ const Overview: React.FC<OverviewProps> = ({ customGptData, setCustomGptData }) 
                         }
                         </> : <FormikError errors={errors} field={'doc'} />}
                 </div>
+
+                {/* MCP Tools Selection - Only for agents (optional) */}
+                {/* {values.type === 'agent' && (
+                    <div className="relative w-full mb-5">
+                        <Label htmlFor={'mcp-tools'} title={'MCP Tools (optional)'} required={false} />
+                        <div className="text-sm text-gray-600 mb-2">
+                            Select the MCP tools that this tool agent can use
+                        </div>
+                        <MCPToolsSelector
+                            selectedTools={values.mcpTools || []}
+                            onSelectionChange={(selectedTools) => {
+                                setFieldValue('mcpTools', selectedTools);
+                            }}
+                        />
+                    </div>
+                )} */}
 
                 {/* Submit */}
                 <div className="flex mt-5">

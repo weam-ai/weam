@@ -80,8 +80,11 @@ const useCustomGpt = (b?: string) => {
                 module: MODULES.CUSTOM_GPT,
                 common: true
             })
-            Toast(response.message);
-            setCustomGptList(customgptList.filter(custom => custom._id !== id))
+            // Only show success toast and update list if deletion was successful
+            if (response.code === 'SUCCESS') {
+                Toast(response.message);
+                setCustomGptList(customgptList.filter(custom => custom._id !== id))
+            }
         } catch (error) {
             console.error('error: ', error);
         }

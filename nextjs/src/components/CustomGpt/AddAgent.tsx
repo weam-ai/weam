@@ -8,11 +8,16 @@ const AddGptForm = () => {
         previewCoverImg: null,
         title: '',
         systemPrompt: '',
-        responseModel:null,
+        type: 'agent',
+        description: '',
+        Agents: [],
+        // mcpTools: [],
+        responseModel: null,
         maxItr: 0,
         itrTimeDuration: '',
         doc: [],
         removeCoverImg: false,
+        imageEnable: false,
         charimg: ''
     });
 

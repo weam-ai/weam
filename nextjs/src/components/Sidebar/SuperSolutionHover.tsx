@@ -15,7 +15,7 @@ import useSuperSolution from '@/hooks/superSolution/useSuperSolution';
 import { getCurrentUser } from '@/utils/handleAuth';
 import Link from 'next/link';
 import { ROLE_TYPE } from '@/utils/constant';
-import { LINK } from '@/config/config';
+import { LINK, NODE_API_PREFIX } from '@/config/config';
 import { getIconComponent } from '@/utils/iconMapping';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import DashboardIcon from '@/icons/DashboardIcon';
@@ -41,6 +41,7 @@ type SolutionData = {
 
 const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
     const [solutions, setSolutions] = useState<SolutionData[]>([]);
+    const [installedSolutions, setInstalledSolutions] = useState<{ [key: string]: boolean }>({});
     const [isLoading, setIsLoading] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,14 +49,67 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
     const user = getCurrentUser();
     const isMobile = useMediaQuery('(max-width: 1024px)');
 
+    // Mapping from app names to solution types
+    const getSolutionTypeFromAppName = (appName: string): string => {
+        const mapping: { [key: string]: string } = {
+            'AI Docs': 'ai-doc-editor',
+            'AI Recruiter': 'ai-recruiter',
+            'AI Landing Page Generator': 'ai-landing-page-generator',
+            'SEO Content Gen': 'seo-content-gen'
+        };
+        return mapping[appName] || '';
+    };
+
+    // Check installation status for all solutions
+    const checkInstallationStatus = async (solutions: SolutionData[]) => {
+        const solutionTypes = solutions.map(solution => {
+            const appName = ROLE_TYPE.USER === user?.roleCode ? solution?.appId?.name : solution?.name;
+            return getSolutionTypeFromAppName(appName);
+        }).filter(Boolean);
+        
+        const installedStatus: { [key: string]: boolean } = {};
+        
+        for (const solutionType of solutionTypes) {
+            try {
+                const baseUrl = `${LINK.COMMON_NODE_API_URL}${NODE_API_PREFIX}`;
+                const healthUrl = `${baseUrl}/web/solution-install-progress/health?solutionType=${encodeURIComponent(solutionType)}`;
+                const response = await fetch(healthUrl);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    installedStatus[solutionType] = data.status === 'running';
+                } else {
+                    installedStatus[solutionType] = false;
+                }
+            } catch (error) {
+                console.log(`Health check error for ${solutionType}:`, error);
+                installedStatus[solutionType] = false;
+            }
+        }
+        
+        setInstalledSolutions(installedStatus);
+        return installedStatus;
+    };
+
     const fetchUserSolutions = async () => {
         if (!user?._id || hasLoaded) return;
 
         try {
             setIsLoading(true);
             const data = await getSolutionAppByUserId(user._id);
+            const solutionsData = data || [];
+            
+            // Check installation status for all solutions
+            const installedStatus = await checkInstallationStatus(solutionsData);
+            
+            // Filter solutions to only show installed ones
+            const installedSolutionsData = solutionsData.filter(solution => {
+                const appName = ROLE_TYPE.USER === user?.roleCode ? solution?.appId?.name : solution?.name;
+                const solutionType = getSolutionTypeFromAppName(appName);
+                return installedStatus[solutionType] === true;
+            });
 
-            setSolutions(data || []);
+            setSolutions(installedSolutionsData);
             setHasLoaded(true);
         } catch (error) {
             console.error('Error fetching user solutions:', error);
@@ -88,7 +142,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
 
             {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-b7"></div>
                     <span className="ml-2 text-font-14 text-gray-500">
                         Loading Apps...
                     </span>
@@ -109,7 +163,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                             }
                             className="group flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-xl transition-all duration-200 hover:scale-105"
                         >
-                            <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-all duration-200">
                                 {ROLE_TYPE.USER === user?.roleCode
                                     ? (() => {
                                           const IconComponent =
@@ -132,7 +186,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                                       })()
                                 }
                             </div>
-                            <span className="text-font-14 text-gray-700 text-center font-medium group-hover:text-blue-600 transition-colors">
+                            <span className="text-font-14 text-gray-700 text-center font-medium group-hover:text-b2 transition-colors">
                                 {ROLE_TYPE.USER === user?.roleCode
                                     ? solution?.appId?.name
                                     : solution?.name}
@@ -149,7 +203,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                         className={'w-6 h-auto object-contain fill-b5'} 
                         />
                     </div>
-                    <p className="text-sm text-gray-500 mb-2">
+                    <p className="text-font-14 text-gray-500 mb-2">
                         No Apps available
                     </p>
                     <p className="text-xs text-gray-400">

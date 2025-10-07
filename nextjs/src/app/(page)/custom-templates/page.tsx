@@ -7,7 +7,7 @@ import TemplateIcon from '@/icons/TemplateIcon';
 const CustomTemplate = () => {
     return (
         <>
-            <header className="h-[68px] min-h-[68px] flex items-center space-x-2 py-2 md:pl-[15px] md:pr-[15px] pl-[50px] pr-[15px] max-md:sticky max-md:top-0 z-10 bg-white">
+            <header className="h-[68px] min-h-[68px] flex items-center space-x-2 py-2 md:pl-[30px] md:pr-[15px] pl-[50px] pr-[15px] max-md:sticky max-md:top-0 z-10 bg-white">
                 <div className="size-[30px] flex items-center justify-center rounded-full p-1">
                     <TemplateIcon width={20} height={20} className={"fill-b2 object-contain"} />
                 </div>

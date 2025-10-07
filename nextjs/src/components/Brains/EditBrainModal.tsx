@@ -30,6 +30,8 @@ import useServerAction from '@/hooks/common/useServerActions';
 import { addBrainMemberAction, deleteBrainAction, deleteShareTeamToBrainAction, removeBrainMemberAction, shareTeamToBrainAction, updateBrainAction } from '@/actions/brains';
 import Toast from '@/utils/toast';
 import ExitIcon from '@/icons/ExitIcon';
+import TooltipIcon from '@/icons/TooltipIcon';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AddNewMemberModal = ({
     brain,
@@ -37,7 +39,7 @@ const AddNewMemberModal = ({
     open,
     refetchMemebrs,
     memberList,
-}): any => {
+}: any) => {
     const { handleSubmit, errors, control, setFormValue } = useBrains({
         isShare: false,
         addMember: true,
@@ -164,7 +166,7 @@ const AddTeamMemberModal = ({
     open,
     refetchTeams,
     brainAddedTeam,
-}:any) => {
+}: any) => {
     const { handleSubmit, errors, control, setFormValue, reset } = useBrains({
         addTeam: true,
     });
@@ -332,7 +334,7 @@ const MemberItem = ({
     isOwner,
     currentUser,
     brain,
-}): any => {
+}: any) => {
     const isRemoval =
         (currentUser.roleCode === ROLE_TYPE.USER &&
             brain?.user?.id === currentUser._id) ||
@@ -362,7 +364,7 @@ const MemberItem = ({
             <div className="flex items-center space-x-2.5">
             
                 {member.role == ROLE_TYPE.OWNER && (
-                    <span className="bg-ligheter text-b2 text-xs font-medium me-2 px-2.5 py-0.5 rounded text-font-14">
+                    <span className="bg-b12 text-b2 text-xs font-medium me-2 px-2.5 py-0.5 rounded text-font-14">
                         {member.role}
                     </span>
                 )}
@@ -380,7 +382,7 @@ const MemberItem = ({
     );
 };
 
-const TeamItem = ({ team, handleRemoveTeam, brain }): any => {
+const TeamItem = ({ team, handleRemoveTeam, brain }: any) => {
 
     return (
         <div className="group/item user-item flex justify-between py-1.5 px-0 border-b border-b11">
@@ -394,6 +396,33 @@ const TeamItem = ({ team, handleRemoveTeam, brain }): any => {
                 <p className="m-0 text-font-14 leading-[22px] font-normal text-b2 ml-2">
                     ({team?.id?.teamUsers.length} Members)
                 </p>
+                
+                {/* Info button with tooltip showing team member details */}
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="ml-2 cursor-pointer hover:opacity-70 transition-opacity">
+                                <TooltipIcon width={16} height={16} className="fill-b5 hover:fill-b2" />
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                            <div className="space-y-2">
+                                <p className="font-semibold text-sm">Team Members:</p>
+                                <div className="space-y-1">
+                                    {team?.id?.teamUsers?.map((member, index) => (
+                                        <div key={member._id || index} className="text-xs">
+                                            <p className="font-medium">
+                                                {member.fname} {member.lname}
+                                            </p>
+                                            <p className="text-b5">{member.email}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                
             </div>
             <div className="flex items-center space-x-2.5 text-font-14">
                 {
@@ -408,7 +437,7 @@ const TeamItem = ({ team, handleRemoveTeam, brain }): any => {
     );
 };
 
-const EditBrainModal = ({ open, closeModal, brain }):any => {
+const EditBrainModal = ({ open, closeModal, brain }: any) => {
     const currentUser = getCurrentUser();
     const isOwner = currentUser?._id == brain?.user?.id;
 
@@ -439,6 +468,7 @@ const EditBrainModal = ({ open, closeModal, brain }):any => {
             role: ROLE_TYPE.ADMIN,
         };
 
+        console.log("🚀 ~ EditBrainModal ~ brainAddedTeam:", brainAddedTeam)
         setTeamList(brainAddedTeam);
 
         if (brainMembers?.length) {
@@ -509,8 +539,8 @@ const EditBrainModal = ({ open, closeModal, brain }):any => {
         Toast(response?.message);
         closeModal();
     };
-    
-  const handleUpdateCustomInstruction = async () => {
+
+    const handleUpdateCustomInstruction = async () => {
         const data = {
             title: brain.title,
             customInstruction,
@@ -569,12 +599,12 @@ const EditBrainModal = ({ open, closeModal, brain }):any => {
                                 />
                                 {brain.title}
                             </DialogTitle>
-                          <div className='flex items-center'>
-                          <DialogDescription className="small-description text-font-14 max-md:text-font-12 leading-[24px] text-b5 font-normal ml-9">
-                                        <span className='mr-0.5'>Created By: </span>
-                                        {`${displayName(brain?.user)} on ${dateDisplay(
-                                            brain?.createdAt
-                                        )}`}
+                            <div className='flex items-center'>
+                            <DialogDescription className="small-description text-font-14 max-md:text-font-12 leading-[24px] text-b5 font-normal ml-9">
+                                <span className='mr-0.5'>Created By: </span>
+                                {`${displayName(brain?.user)} on ${dateDisplay(
+                                    brain?.createdAt
+                                )}`}
                             </DialogDescription>
                             <div className="ml-auto">
                                 <AboutBrainDetails
@@ -599,7 +629,7 @@ const EditBrainModal = ({ open, closeModal, brain }):any => {
                                             value={customInstruction}
                                             onChange={(e) => setCustomInstruction(e.target.value)}
                                             placeholder="Enter custom instruction for this brain..."
-                                            className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md resize-vertical focus:outline-none focus:ring-2 focus:ring-b10 focus:border-transparent"
                                         />
                                         <div className="flex gap-2">
                                             <button
@@ -622,7 +652,7 @@ const EditBrainModal = ({ open, closeModal, brain }):any => {
                                             {customInstruction ? (
                                                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{customInstruction}</p>
                                             ) : (
-                                                <p className="text-sm text-gray-500 italic">No custom instruction set</p>
+                                                <p className="text-font-14 text-gray-500 italic">No custom instruction set</p>
                                             )}
                                         </div>
                                         <button
@@ -658,68 +688,62 @@ const EditBrainModal = ({ open, closeModal, brain }):any => {
                                             <SearchIcon className="w-4 h-[17px] fill-b7" />
                                         </span>
                                     </div>
-                                    {/* Add Member start */}
-                                    {((currentUser.roleCode ===
+                                    
+                                </div>
+                                {/* Add Member start */}
+                                {((currentUser.roleCode ===
                                         ROLE_TYPE.USER &&
                                         brain?.user?.id ===
                                             currentUser._id) ||
                                         currentUser.roleCode !==
                                             ROLE_TYPE.USER) && (
-                                
-                                        <Dialog>
-                                            <DialogTrigger asChild>
-                                                <div>
-                                                    <span
-                                                        className="inline-flex items-center cursor-pointer mr-1 px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150 md:mb-0 mb-1"
-                                                        onClick={() =>
-                                                            setAddMemberModal(
-                                                                true
-                                                            )
-                                                        }
-                                                    >
-                                                        <AddUser
-                                                            width={
-                                                                16
-                                                            }
-                                                            height={
-                                                                18
-                                                            }
-                                                            className="w-[26px] h-[18px] object-contain fill-b5 mr-1"
-                                                        />
-                                                        <span className="text-font-14 font-semibold text-b2">
-                                                            Add
-                                                            Member
-                                                        </span>
-                                                    </span>
-                                
-                                                    <span
-                                                        className="inline-flex items-center cursor-pointer mr-1 px-3 py-2 rounded-md bg-white border border-b8 hover:bg-b11 transition ease-in-out duration-150 md:mb-0 mb-1"
-                                                        onClick={() =>
-                                                            setAddTeamModal(
-                                                                true
-                                                            )
-                                                        }
-                                                    >
-                                                        <AddTeam
-                                                            width={
-                                                                18
-                                                            }
-                                                            height={
-                                                                18
-                                                            }
-                                                            className="w-[26px] h-[18px] object-contain fill-b5 mr-1"
-                                                        />
-                                                        <span className="text-font-14 font-semibold text-b2">
-                                                            Add a Team
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                            </DialogTrigger>
-                                        </Dialog>
-                                        
+                                        <div className='flex items-center gap-x-1 mb-2'>
+                                            <span
+                                                className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
+                                                onClick={() =>
+                                                    setAddMemberModal(
+                                                        true
+                                                    )
+                                                }
+                                            >
+                                                <AddUser
+                                                    width={
+                                                        16
+                                                    }
+                                                    height={
+                                                        18
+                                                    }
+                                                    className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
+                                                />
+                                                <span>
+                                                    Add Member
+                                                </span>
+                                            </span>
+                        
+                                            <span
+                                                className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
+                                                onClick={() =>
+                                                    setAddTeamModal(
+                                                        true
+                                                    )
+                                                }
+                                            >
+                                                <AddTeam
+                                                    width={
+                                                        18
+                                                    }
+                                                    height={
+                                                        18
+                                                    }
+                                                    className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
+                                                />
+                                                <span>
+                                                    Add a Team
+                                                </span>
+                                            </span>
+                                        </div>
                                     )}
                                 {/* Add Member End */}
-                                </div>
 
                                 <div
                                     className="font-normal"

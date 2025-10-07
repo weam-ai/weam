@@ -210,8 +210,8 @@ const CharacterSelectionDialog: React.FC<CharacterSelectionDialogProps> = ({
                     <Tabs defaultValue="characters" className="w-full">
                         <div className='w-full border-b pb-2'>
                         <TabsList className="flex w-full max-w-[200px] border-none p-0 gap-x-2">
-                            <TabsTrigger value="characters" className="rounded-md border px-3 py-1.5 text-font-14 data-[state=active]:border-blue data-[state=active]:bg-[#F5F5FF] ">Characters</TabsTrigger>
-                            <TabsTrigger value="upload" className="rounded-md border px-3 py-1.5 text-font-14 data-[state=active]:border-blue data-[state=active]:bg-[#F5F5FF] ">Upload</TabsTrigger>
+                            <TabsTrigger value="characters" className="rounded-md border px-3 py-1.5 text-font-14 data-[state=active]:border-b10 data-[state=active]:bg-gray-100 ">Characters</TabsTrigger>
+                            <TabsTrigger value="upload" className="rounded-md border px-3 py-1.5 text-font-14 data-[state=active]:border-b10 data-[state=active]:bg-gray-100 ">Upload</TabsTrigger>
                         </TabsList>
                         </div>
 
@@ -251,8 +251,8 @@ const CharacterSelectionDialog: React.FC<CharacterSelectionDialogProps> = ({
                                                     className="w-16 h-16 object-cover mx-auto"
                                                 />
                                                 {currentImage === character.image && (
-                                                    <div className="absolute inset-0 bg-blue/20 rounded-lg flex items-center justify-center">
-                                                        <div className="bg-blue text-white rounded-full p-1">
+                                                    <div className="absolute inset-0 bg-b8/20 rounded-lg flex items-center justify-center">
+                                                        <div className="bg-b2 text-white rounded-full p-1">
                                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                             </svg>
@@ -272,7 +272,7 @@ const CharacterSelectionDialog: React.FC<CharacterSelectionDialogProps> = ({
                                 <div
                                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                                         dragActive
-                                            ? 'border-blue bg-blue/5'
+                                            ? 'border-black bg-gray-100'
                                             : 'border-b10 hover:border-b2'
                                     }`}
                                     onDragEnter={handleDrag}

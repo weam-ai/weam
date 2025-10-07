@@ -33,7 +33,7 @@ export const TemplateLibrary = () => {
     return (
         <Link href={routes.customTemplates}
             className=
-            {`group relative w-10 h-10 flex items-center justify-center rounded-full ease-in-out duration-150  hover:bg-b5 hover:bg-opacity-[0.2] ${pathname == routes.customTemplates ? 'bg-b10' : ''
+            {`group relative w-10 h-10 flex items-center justify-center rounded-full ease-in-out duration-150  hover:bg-b5 hover:bg-opacity-[0.2] ${pathname == routes.customTemplates ? 'bg-b11' : ''
                 }`}
             onClick={closeSidebar}
             >

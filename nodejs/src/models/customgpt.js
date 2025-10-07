@@ -13,15 +13,25 @@ const schema = new Schema(
         slug: {
             type: String,
         },
+        type: {
+            type: String,
+            enum: ['agent', 'supervisor'],
+            default: 'agent',
+        },
+        description: {
+            type: String,
+        },
         systemPrompt: {
             type: String,
         },
-        goals: [
-            String,
-        ],
-        instructions: [
-            String,
-        ],
+        Agents: [{
+            type: Schema.Types.ObjectId,
+            ref: 'customgpt'
+        }],
+        // MCP disabled: remove mcpTools field
+        // mcpTools: [{
+        //     type: String // Store MCP tool names/identifiers
+        // }],
         responseModel: {
             name: {
                 type: String,

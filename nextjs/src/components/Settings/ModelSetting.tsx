@@ -159,7 +159,7 @@ export const AddNewModel = ({ isAddAiModel }) => {
                         <>
                         <div style={{display:"flex", justifyContent:"space-between"}}>
                             <span>{m.title}</span>
-                            <span className="text-blue">
+                            <span className="text-b2">
                                 {' '}
                                 Coming soon
                             </span>
@@ -296,7 +296,7 @@ export const AddNewModel = ({ isAddAiModel }) => {
                         </button>
                     )}
                     {keystatus && showCancelAPI && (
-                        <button className="btn btn-blue" onClick={handleClear}>
+                        <button className="btn btn-black" onClick={handleClear}>
                             {cleartitle ? 'Cancel' : 'Clear API key'}
                         </button>
                     )}

@@ -16,7 +16,7 @@ const Step2 = () => {
         />
       </div>
       <div className="max-md:mt-5 max-md:text-center">
-        <h5 className="text-font-14 text-blue">Pick your AI brain</h5>
+        <h5 className="text-font-14 text-b2">Pick your AI brain</h5>
         <h2 className="md:text-[36px] text-font-20 font-bold text-black">
           Use Multiple LLM Models
         </h2>

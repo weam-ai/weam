@@ -2,45 +2,34 @@ const SOLUTION_CONFIGS = {
     'ai-doc-editor': {
         repoUrl: 'https://github.com/weam-ai/ai-doc-editor.git',
         repoName: 'ai-doc-editor',
-        imageName: 'ai-doc-editor-img',
-        containerName: 'ai-doc-editor-container',
-        port: '3002',
+        imageName: ['ai-doc-editor-img'],
+        containerName: ['ai-doc-editor-container'],
         branchName: 'main',
-        installType: 'docker-compose', // docker or docker-compose
         envFile: 'env.example'
     },
     'ai-recruiter': {
         repoUrl: 'https://github.com/weam-ai/ai-recruiter.git',
         repoName: 'ai-recruiter',
-        imageName: 'ai-recruiter-img',
-        containerName: 'ai-recruiter-container',
-        port: '4000',
+        imageName: ['ai-recruiter-foloup'],
+        containerName: ['ai-recruiter-foloup-1'],
         branchName: 'main',
-        installType: 'docker-compose', // docker or docker-compose
-        envFile: '.env.example', // Has .env.example file that needs to be converted to .env
-        additionalPorts: [] // No additional ports specified
+        envFile: '.env.example'
     },
     'ai-landing-page-generator': {
         repoUrl: 'https://github.com/weam-ai/landing-page-content-generator.git',
         repoName: 'landing-page-content-generator',
-        imageName: 'landing-page-content-generator-img',
-        containerName: 'landing-page-content-generator-container',
-        port: '4001',
+        imageName: ['landing-page-content-generator-frontend','landing-page-content-generator-backend'],
+        containerName: ['landing-page-frontend','landing-page-backend'],
         branchName: 'devops',
-        installType: 'docker-compose', // docker or docker-compose
-        envFile: 'example.env', // Has .env.example file that needs to be converted to .env
-        additionalPorts: [] // No additional ports specified
+        envFile: 'example.env'
     },
     'seo-content-gen': {
         repoUrl: 'https://github.com/weam-ai/seo-content-gen.git',
         repoName: 'seo-content-gen',
-        imageName: 'seo-content-gen-img',
-        containerName: 'seo-content-gen-container',
-        port: '3001',
+        imageName: ['seo-content-gen-frontend','seo-content-gen-node-backend','seo-content-gen-backend-python'],
+        containerName: ['seo-frontend','seo-node-backend','seo-backend-python'],
         branchName: 'devops',
-        installType: 'docker-compose', // docker or docker-compose
-        envFile: '.env.example', // No env file needed for docker-compose
-        additionalPorts: ['3001', '9002', '3003'] // Additional ports for docker-compose services
+        envFile: '.env.example'
     },
 };
 

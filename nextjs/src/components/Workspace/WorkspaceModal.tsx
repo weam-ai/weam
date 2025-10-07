@@ -186,7 +186,7 @@ const AddWorkspaceModal = ({ open, close }) => {
                                             <div className="flex justify-center mt-5 mb-5">
                                                 <button
                                                     type="submit"
-                                                    className="btn btn-blue"
+                                                    className="btn btn-black"
                                                     disabled={isPending}
                                                 >
                                                     {isPending ? 'Adding...' : 'Add a Workspace'}

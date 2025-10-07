@@ -12,5 +12,6 @@ router.delete('/delete/:id', authentication, chatController.removeChat);
 router.get('/:id', authentication, chatController.getChatById);
 router.post('/fork', validate(createForkChatKeys), authentication, chatController.forkChat);
 router.post('/check-access', authentication, chatController.checkChatAccess);
+router.post('/enhance-prompt', authentication, chatController.enhancePrompt);
 
 module.exports = router;

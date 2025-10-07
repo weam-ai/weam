@@ -102,7 +102,7 @@ export const ModelCodeGroup = ({ botCode }: ModelCodeGroupProps) => {
                 <div className="text-rose-500 font-bold text-font-12">
                     <Link
                         href="/login"
-                        className="text-b2 hover:text-blue font-semibold ml-1"
+                        className="text-b2 hover:text-b5 font-semibold ml-1"
                     >
                     </Link>
                 </div>
