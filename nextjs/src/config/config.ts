@@ -3,7 +3,6 @@ export const LINK = {
     DOMAIN_URL: process.env.NEXT_PUBLIC_DOMAIN_URL,
     AWS_S3_URL: process.env.NEXT_PUBLIC_AWS_S3_URL,
     OPENAI_PLATFORM_URL: process.env.NEXT_PUBLIC_OPENAI_PLATFORM_URL,
-    FRESHDESK_SUPPORT_URL: process.env.NEXT_PUBLIC_FRESHDESK_SUPPORT_URL || 'https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue',
     WEAM_PRICING_URL: process.env.NEXT_PUBLIC_WEAM_PRICING_URL || 'https://weam.ai/pricing',
     SERVER_NODE_API_URL: process.env.NEXT_PUBLIC_SERVER_NODE_API_URL,
     COMMON_NODE_API_URL: process.env.NEXT_PUBLIC_COMMON_NODE_API_URL,
@@ -50,10 +49,6 @@ export const RECAPTCHA = {
     SECRET_KEY_V3: process.env.NEXT_PUBLIC_RECAPTCHA_SECRET_KEY_V3,
     SITE_KEY_V2: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY_V2,
     SECRET_KEY_V2: process.env.NEXT_PUBLIC_RECAPTCHA_SECRET_KEY_V2
-}
-
-export const FREE_TRIAL = {
-    DAYS: process.env.NEXT_PUBLIC_FREE_TRIAL_DAYS
 }
 
 export const BASIC_AUTH = {

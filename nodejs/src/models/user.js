@@ -72,7 +72,7 @@ const schema = new Schema(
         },
         msgCredit: {
             type: Number,
-            default: 0
+            default: 1000
         },
         profile: fileSchema, // profile image of an user,
         mfa: {

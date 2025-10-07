@@ -11,7 +11,7 @@ const bcrypt = require('bcrypt');
 const Role = require('../models/role');
 const UserBot = require('../models/userBot');
 const { OPENAI_MODAL, AI_MODAL_PROVIDER, PINECORN_STATIC_KEY, MODAL_NAME, ANTHROPIC_MODAL, GEMINI_MODAL, PERPLEXITY_MODAL, OPENROUTER_PROVIDER, DEEPSEEK_MODAL, LLAMA4_MODAL, GROK_MODAL, QWEN_MODAL } = require('../config/constants/aimodal');
-const { LINK, FRESHDESK_SUPPORT_URL, API, SERVER } = require('../config/config');
+const { LINK, API, SERVER, EMAIL } = require('../config/config');
 const mongoose = require('mongoose');
 const Bot = require('../models/bot');
 const { isBlockedDomain, isDisposableEmail } = require('../utils/validations/emailValidation');
@@ -450,7 +450,7 @@ const resendVerification = async (req) => {
         const existingUser = await User.findOne({ email: req.body.email }); 
         if (!existingUser) throw new Error(_localize('auth.link_expire', req, 'verification'));
         const inviteLink = await createVerifyLink(existingUser, {}, req.body.minutes);
-        getTemplate(EMAIL_TEMPLATE.RESEND_VERIFICATION_LINK, { link: inviteLink, support: FRESHDESK_SUPPORT_URL }).then(
+        getTemplate(EMAIL_TEMPLATE.RESEND_VERIFICATION_LINK, { link: inviteLink, support: EMAIL?.SENDER_EMAIL }).then(
             async(template) => {
                 await sendSESMail(existingUser.email, template.subject, template.body);
             }
@@ -1036,7 +1036,7 @@ const sendManualInviteEmail = async (req) => {
         const emailPromise = [];
         existingUser.forEach(async (user) => {
             const inviteLink = await createVerifyLink(user, {}, minutes);
-            emailPromise.push(getTemplate(EMAIL_TEMPLATE.VERIFICATION_LINK, { link: inviteLink, support: FRESHDESK_SUPPORT_URL }).then(
+            emailPromise.push(getTemplate(EMAIL_TEMPLATE.VERIFICATION_LINK, { link: inviteLink, support: EMAIL?.SENDER_EMAIL }).then(
                 async(template) => {
                     await sendSESMail(user.email, template.subject, template.body);
                 }
