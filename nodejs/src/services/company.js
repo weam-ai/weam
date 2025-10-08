@@ -410,7 +410,7 @@ const checkApiKey = async (req) => {
             [AI_MODAL_PROVIDER.ANTHROPIC]: anthropicApiChecker,
             [AI_MODAL_PROVIDER.GEMINI]: geminiApiKeyChecker,
             // [AI_MODAL_PROVIDER.PERPLEXITY]: perplexityApiChecker,
-            // [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
+            [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
         }
         const provider = await providerObj[code](req);
         return provider;
@@ -1057,6 +1057,92 @@ const addBlockedDomain = async (req) => {
         return blockedDomain;
     } catch (error) {
         handleError(error, 'Error - addBlockedDomain');     
+    }
+}
+
+async function openRouterApiChecker(req) {
+    try {
+        const companyId = getCompanyId(req.user);
+        const companydetails = req.user.company;
+        const response = await fetch(`${LINK.OPEN_ROUTER_API_URL}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${req.body.key}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: MODAL_NAME.GPT_4O_MINI,
+                messages: [
+                    { role: 'user', content: 'What is the meaning of life?' }
+                ]
+            })
+        });
+        console.log('openRouterApiChecker',response.status);
+        if (!response.ok) return false;
+        const query = Object.keys(OPENROUTER_PROVIDER);
+        const [openRouterBot, existing] = await Promise.all([
+            Bot.find({ code: { $in: query } }, { title: 1, code: 1 }),
+            UserBot.find({ 'company.id': companyId, 'bot.code': { $in: query } })
+        ]);
+        const updates = [];
+        const inserts = [];
+        const encryptedKey = encryptedData(req.body.key);
+        const commonConfig = {
+            company: companydetails,
+            config: {
+                apikey: encryptedKey,
+            },
+            isActive: true,
+            extraConfig: {
+                stream: true,
+                temperature: 0.7,
+                topP: 0.9,
+                topK: 10
+            },
+        }
+        const processModalBots = (modalList, providerKey, providerName) => {
+            const botMeta = openRouterBot.find(bot => bot.code === providerKey);
+            modalList.forEach((element) => {
+                const existingBot = existing.find(bot => bot.name === element.name);
+                const modelConfig = {
+                    name: element.name,
+                    bot: formatBot(botMeta),
+                    modelType: element.type,
+                    provider: providerName,
+                    ...commonConfig,
+                };
+                if (existingBot) {
+                    updates.push({
+                        updateOne: {
+                            filter: {
+                                name: element.name,
+                                'company.id': companyId,
+                                'bot.code': providerKey
+                            },
+                            update: {
+                                $set: modelConfig,
+                                $unset: { deletedAt: 1 }
+                            }
+                        }
+                    });
+                } else {
+                    inserts.push(modelConfig);
+                }
+            });
+        };
+        processModalBots(DEEPSEEK_MODAL, AI_MODAL_PROVIDER.DEEPSEEK, OPENROUTER_PROVIDER.DEEPSEEK);
+        processModalBots(LLAMA4_MODAL, AI_MODAL_PROVIDER.LLAMA4, OPENROUTER_PROVIDER.LLAMA4);
+        processModalBots(QWEN_MODAL, AI_MODAL_PROVIDER.QWEN, OPENROUTER_PROVIDER.QWEN);
+        processModalBots(GROK_MODAL, AI_MODAL_PROVIDER.GROK, OPENROUTER_PROVIDER.GROK);
+        if (updates.length) {
+            return UserBot.bulkWrite(updates);
+        }
+        if (inserts.length) {
+            return UserBot.insertMany(inserts);
+        }
+        return existing;
+    } catch (error) {
+        handleError(error, 'Error - openRouterApiChecker');
     }
 }
 
