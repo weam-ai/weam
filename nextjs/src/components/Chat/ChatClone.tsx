@@ -551,7 +551,7 @@ const ChatPage = memo(() => {
             companyId: companyId,
             user: formatMessageUser(currentUser),
             isPaid: true,
-            apiKey: selectedAIModal.config.apikey,
+            apiKey: selectedAIModal?.config?.apikey || 'http://host.docker.internal:11434',
             usedCredit: modelCredit
         };
         console.log(newPromptReqBody)
@@ -604,7 +604,7 @@ const ChatPage = memo(() => {
             isPaid: true,
             responseAPI: API_TYPE,
             proAgentData: serializableProAgentData,
-            apiKey: matchedModel.config.apikey,
+            apiKey: matchedModel.config?.apikey || 'http://host.docker.internal:11434',
             brainId: getDecodedObjectId(),
             usedCredit: modelCredit
         })
@@ -613,7 +613,7 @@ const ChatPage = memo(() => {
             chatId: params.id,
             model: matchedModel.name,
             code: selectedAIModal.bot.code,
-            apiKey: selectedAIModal.config.apikey,
+            apiKey: selectedAIModal?.config?.apikey || 'http://host.docker.internal:11434',
             usedCredit: modelCredit
         })
         if (chatTitle == '' || chatTitle === undefined) {
@@ -621,7 +621,7 @@ const ChatPage = memo(() => {
                 query: query,
                 chatId: params.id,
                 code: selectedAIModal.bot.code,
-                apiKey: selectedAIModal.config.apikey
+                apiKey: selectedAIModal?.config?.apikey || 'http://host.docker.internal:11434',
             })
         }
     };
@@ -1168,6 +1168,24 @@ const ChatPage = memo(() => {
                 }
             });
             
+            // Add explicit handler for llmresponsedone event to properly handle Ollama responses
+            socket.on('llmresponsedone', (data) => {
+                console.log("Received llmresponsedone event:", data);
+                // Handle the completion of the response
+                handleSocketStreamingStop({ 
+                    proccedMsg: data.text,
+                    userId: currentUser._id
+                });
+                // Re-fetch messages to ensure database updates are reflected
+                socket.emit(SOCKET_EVENTS.MESSAGE_LIST, { 
+                    chatId: params.id, 
+                    companyId, 
+                    userId: currentUser._id, 
+                    offset: conversationPagination?.offset || 0, 
+                    limit: conversationPagination?.perPage || 10 
+                });
+            });
+            
             socket.emit(SOCKET_EVENTS.MESSAGE_LIST, { chatId: params.id, companyId, userId: currentUser._id, offset: conversationPagination?.offset || 0, limit: conversationPagination?.perPage || 10 });
 
             socket.on(SOCKET_EVENTS.MESSAGE_LIST, ({ messageList }) => {
@@ -1215,6 +1233,7 @@ const ChatPage = memo(() => {
                 socket.off(SOCKET_EVENTS.MESSAGE_LIST, socketAllConversation);
                 socket.off(SOCKET_EVENTS.USER_SUBSCRIPTION_UPDATE, handleUserSubscriptionUpdate);
                 socket.off(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, handleGenerateTitleByLLM);
+                socket.off('llmresponsedone'); // Clean up the llmresponsedone event handler
             });
 
             return () => {

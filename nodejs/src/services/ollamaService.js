@@ -3,12 +3,14 @@ const { Ollama } = require('ollama');
 const Company = require('../models/company');
 const User = require('../models/user');
 const ollamaAnalytics = require('./ollamaAnalytics');
+const fs = require('fs');
 
 class OllamaService {
     constructor() {
         this.defaultBaseUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
         this.timeout = 180000;  
         this.ollamaClient = null;
+        this.composePath = process.env.OLLAMA_COMPOSE_PATH; // optional override
     }
 
     getOllamaClient(baseUrl, apiKey) {
@@ -204,35 +206,53 @@ class OllamaService {
 
     async pullModel(model, baseUrl, onProgress) {
         const ollamaUrl = baseUrl || this.defaultBaseUrl;
-        
+
         try {
+            // Try direct pull via API first (if Ollama is running)
+            await this.testConnectivity(ollamaUrl);
             const ollamaClient = this.getOllamaClient(ollamaUrl);
-            
+
             if (onProgress && typeof onProgress === 'function') {
                 const stream = await ollamaClient.pull({ model, stream: true });
+                let lastProgress = 0;
                 
                 for await (const part of stream) {
-                    onProgress(part);
+                    // Calculate and normalize progress percentage
+                    if (part.total && part.completed) {
+                        const progressPercent = Math.floor((part.completed / part.total) * 100);
+                        
+                        // Only send updates when progress changes by at least 1%
+                        if (progressPercent > lastProgress) {
+                            lastProgress = progressPercent;
+                            onProgress({
+                                ...part,
+                                progressPercent: progressPercent
+                            });
+                        }
+                    } else {
+                        // For parts without progress info, pass through
+                        onProgress(part);
+                    }
                 }
-                
-                return {
-                    success: true,
-                    message: `Model ${model} pulled successfully`,
-                    model
-                };
-            } else {
-                await ollamaClient.pull({ model });
-                
-                return {
-                    success: true,
-                    message: `Model ${model} pulled successfully`,
-                    model
-                };
+                return { success: true, message: `Model ${model} pulled successfully`, model };
             }
+            await ollamaClient.pull({ model });
+            return { success: true, message: `Model ${model} pulled successfully`, model };
 
-        } catch (error) {
-            logger.error(`Ollama pull model error for ${model}:`, error.message);
-            throw new Error(`Failed to pull model: ${error.message}`);
+        } catch (apiError) {
+            // If API fails (server not running), try starting container with compose and pulling
+            logger.warn(`Ollama API pull failed, attempting Docker compose pull: ${apiError.message}`);
+            const started = await this.ensureOllamaContainer();
+            if (!started) {
+                throw new Error(`Failed to start Ollama container: ${apiError.message}`);
+            }
+            // If enabled, use the setup profile to trigger compose-driven pull of the selected model
+            if (process.env.OLLAMA_PULL_USE_SETUP === 'true') {
+                await this.pullViaComposeSetup(model);
+            } else {
+                await this.pullViaCompose(model);
+            }
+            return { success: true, message: `Model ${model} pulled successfully`, model };
         }
     }
 
@@ -256,6 +276,139 @@ class OllamaService {
                 status: 502
             };
         }
+    }
+
+    // --- Compose orchestration helpers ---
+    getComposeFilePath() {
+        if (this.composePath) return this.composePath;
+        const path = require('path');
+        // Try known locations in the monorepo and mounted workspace
+        const candidates = [
+            // Workspace mount from docker-compose (root of repo)
+            '/workspace/nextjs/docker-compose.ollama.yml',
+            // Relative to node service src directory
+            path.resolve(__dirname, '../../../nextjs/docker-compose.ollama.yml'),
+        ];
+        for (const p of candidates) {
+            try {
+                if (fs.existsSync(p)) return p;
+            } catch (_) {}
+        }
+        // Fallback to the relative path even if it may not exist
+        return candidates[1];
+    }
+
+    async ensureOllamaContainer() {
+        const { exec } = require('child_process');
+        const composeFile = this.getComposeFilePath();
+        const profile = process.env.OLLAMA_GPU === 'true' ? 'gpu' : 'cpu';
+
+        const tryExec = (cmd) => new Promise((resolve) => {
+            exec(cmd, { timeout: 180000 }, (error, stdout, stderr) => {
+                if (error) {
+                    logger.error(`Failed to start Ollama with command: ${cmd}`);
+                    logger.error(stderr || error.message);
+                    return resolve(false);
+                }
+                logger.info(`Ollama start command succeeded: ${cmd}`);
+                resolve(true);
+            });
+        });
+
+        // Prefer docker compose v2 if available
+        const composeCmd = `docker compose -f "${composeFile}" --profile ${profile} up -d`;
+        const okCompose = await tryExec(composeCmd);
+        if (okCompose) return true;
+
+        // Fallback to legacy docker-compose v1
+        const legacyComposeCmd = `docker-compose -f "${composeFile}" --profile ${profile} up -d`;
+        const okLegacy = await tryExec(legacyComposeCmd);
+        if (okLegacy) return true;
+
+        // Final fallback: run Ollama container directly without compose
+        logger.warn('Compose not available or failed; attempting direct docker run for Ollama');
+
+        // Ensure volume exists
+        await tryExec('docker volume create ollama-models');
+
+        const gpuEnv = process.env.OLLAMA_GPU === 'true' ? 'true' : 'false';
+        const runCmd = [
+            'docker run -d --name ollama --restart unless-stopped',
+            '-p 11434:11434',
+            `-e OLLAMA_GPU=${gpuEnv}`,
+            '-e OLLAMA_KEEP_ALIVE=3600',
+            '-v ollama-models:/root/.ollama',
+            'ollama/ollama:latest'
+        ].join(' ');
+
+        const okRun = await tryExec(runCmd);
+        return okRun;
+    }
+
+    async pullViaCompose(model) {
+        const { exec } = require('child_process');
+        const composeFile = this.getComposeFilePath();
+        const tryExec = (cmd) => new Promise((resolve, reject) => {
+            exec(cmd, { timeout: 600000 }, (error, stdout, stderr) => {
+                if (error) return reject(new Error(stderr || error.message));
+                logger.info(`Command succeeded: ${cmd}`);
+                resolve(true);
+            });
+        });
+
+        const cmdV2 = `docker compose -f "${composeFile}" exec ollama ollama pull ${model}`;
+        try {
+            await tryExec(cmdV2);
+            return true;
+        } catch (e1) {
+            logger.warn('docker compose exec failed for pull; trying legacy or direct docker exec');
+        }
+
+        const cmdV1 = `docker-compose -f "${composeFile}" exec ollama ollama pull ${model}`;
+        try {
+            await tryExec(cmdV1);
+            return true;
+        } catch (e2) {
+            logger.warn('docker-compose exec failed for pull; trying direct docker exec');
+        }
+
+        const cmdDirect = `docker exec ollama ollama pull ${model}`;
+        await tryExec(cmdDirect);
+        return true;
+    }
+
+    async pullViaComposeSetup(model) {
+        const { exec } = require('child_process');
+        const composeFile = this.getComposeFilePath();
+        const tryExec = (cmd) => new Promise((resolve, reject) => {
+            exec(cmd, { timeout: 600000 }, (error, stdout, stderr) => {
+                if (error) return reject(new Error(stderr || error.message));
+                logger.info(`Command succeeded: ${cmd}`);
+                resolve(true);
+            });
+        });
+
+        // Compose v2
+        const cmdV2 = `OLLAMA_DEFAULT_MODEL=${model} docker compose -f "${composeFile}" --profile setup up -d`;
+        try {
+            await tryExec(cmdV2);
+            return true;
+        } catch (e1) {
+            logger.warn('docker compose setup failed; trying legacy compose');
+        }
+
+        // Compose v1
+        const cmdV1 = `OLLAMA_DEFAULT_MODEL=${model} docker-compose -f "${composeFile}" --profile setup up -d`;
+        try {
+            await tryExec(cmdV1);
+            return true;
+        } catch (e2) {
+            logger.warn('docker-compose setup failed; falling back to direct pull');
+        }
+
+        // Direct pull inside an already running container
+        await tryExec(`docker exec ollama ollama pull ${model}`);
+        return true;
     }
 
     async testConnectivity(baseUrl, apiKey) {
@@ -348,8 +501,18 @@ class OllamaService {
         const ollamaUrl = baseUrl || this.defaultBaseUrl;
         
         try {
+            // 1. Delete the model from Ollama
             const ollamaClient = this.getOllamaClient(ollamaUrl);
             await ollamaClient.delete({ model: modelName });
+            
+            // 2. Remove the model from database
+            const UserBot = require('../models/userBot');
+            await UserBot.deleteOne({
+                name: modelName,
+                'bot.code': 'OLLAMA'
+            });
+            
+            logger.info(`Model ${modelName} deleted successfully from Ollama and database`);
 
             return {
                 success: true,
@@ -423,6 +586,13 @@ class OllamaService {
                 category: 'general'
             },
             {
+                name: 'llama3.2:1b',
+                description: 'Llama 3.2 model with 1B parameters - lightweight and fast',
+                size: '1.3GB',
+                recommended: true,
+                category: 'general'
+            },
+            {
                 name: 'llama3:8b',
                 description: 'Llama 3 model with 8B parameters - stable and reliable',
                 size: '4.7GB',
@@ -460,9 +630,18 @@ class OllamaService {
                 throw new Error('Company not found');
             }
 
+            // Ensure teamSettings is properly initialized if it doesn't exist
+            const currentSettings = company.ollamaSettings || {};
+            const currentTeamSettings = currentSettings.teamSettings || {
+                allowModelPulling: false,
+                allowModelDeletion: false
+            };
+
             company.ollamaSettings = {
-                ...company.ollamaSettings,
+                ...currentSettings,
                 ...settings,
+                // Preserve existing teamSettings if not provided in the update
+                teamSettings: settings.teamSettings || currentTeamSettings,
                 updatedAt: new Date()
             };
 

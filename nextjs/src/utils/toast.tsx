@@ -1,15 +1,33 @@
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 type ToastType = 'success' | 'error' | 'custom';
 
 const Toast = (message: string, type: ToastType = 'success', config = {}) => {
-    toast[type](message, {
-        duration: 2000,
-        position: 'top-right',
-        style: { borderRadius: '8px', minWidth: '250px' },
-        className: '',
-        ...config,
-    });
+    if (type === 'success') {
+        toast.success(message, {
+            duration: 2000,
+            position: 'top-right',
+            style: { borderRadius: '8px', minWidth: '250px' },
+            className: '',
+            ...config,
+        });
+    } else if (type === 'error') {
+        toast.error(message, {
+            duration: 2000,
+            position: 'top-right',
+            style: { borderRadius: '8px', minWidth: '250px' },
+            className: '',
+            ...config,
+        });
+    } else {
+        toast(message, {
+            duration: 2000,
+            position: 'top-right',
+            style: { borderRadius: '8px', minWidth: '250px' },
+            className: '',
+            ...config,
+        });
+    }
 }
 
 export const NotificationToast = (payload, notificationData) => {

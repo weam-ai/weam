@@ -7,6 +7,8 @@ export default async function Home() {
     const [aiModals] = await Promise.all([
         fetchAiModal()
     ])
+    console.log("aiModals",aiModals)
+        
     const modelSequence = aiModals.status === RESPONSE_STATUS.SUCCESS && aiModals.data.length > 0 ? aiModals.data : [];
     return (
         <div className="h-full flex flex-col">

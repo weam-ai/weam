@@ -47,6 +47,7 @@ export async function fetchAiModal(): Promise<APIResponseType<AiModalType[]>> {
         }, []).flat();
 
 
+        console.log("orderedList",orderedList)
         const modelNameMap = new Map<string, AiModalType>();
         orderedList.forEach((item: AiModalType) => {
             modelNameMap.set(item.name, item);

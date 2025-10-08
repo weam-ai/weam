@@ -60,8 +60,8 @@ Visit our comprehensive [**Documentation**](https://docs.weam.ai/).
 
 #### 💬 Chat System
 - **Multi-LLM Support:** OpenAI, Anthropic, Gemini, Llama, Perplexity, DeepSeek, Open Router, Hugging Face, Grok, and more  
-- **Intelligent Context:** Full conversation history maintains coherent, context-aware discussions  
-- **Local Model Support:** Connect to self-hosted models (coming soon)  
+a- **Intelligent Context:** Full conversation history maintains coherent, context-aware discussions  
+- **Local Model Support (Ollama):** Connect to self-hosted models via Ollama — no API key required.  
 - **Conversation Management:** Fork chats to explore different directions  
 - **Voice Input:** Speak instead of type with built-in voice-to-text  
 
@@ -232,3 +232,19 @@ SaaS-style deployment of our open source project requires a commercial license. 
   <a href="https://discord.com/invite/EyUbyUxf4n">Join our Discord</a> • 
   <a href="https://weam.ai">Visit our Website</a>
 </p>
+
+### Use Local Models with Ollama
+
+You can run local models using [Ollama](https://ollama.com/) and connect them directly:
+
+- Install Ollama and start it (default `http://localhost:11434`).
+  - macOS/Linux: `curl -fsSL https://ollama.com/install.sh | sh`
+  - Windows: Use the official installer.
+  - Or use our helper scripts: `nodejs/setup-ollama.sh` (mac/linux), `nodejs/setup-ollama.bat` (windows)
+- In Weam, go to `Settings → Models → Ollama` and enter your `Base URL`.
+- Click `Configure`. No API key is needed.
+- If running in Docker, see `docker/ollama` and `nodejs/OLLAMA_README.md` for setup details.
+
+Troubleshooting:
+- If configuration fails, ensure Ollama is running and accessible at the `Base URL`.
+- Common default: `http://localhost:11434`.

@@ -76,12 +76,15 @@ const makeResponse = (response: APIResponseType<any>) => {
 
 const handleErrorToast = (errorToast: boolean) => (error: AxiosError) => { 
     if (Object.getPrototypeOf(error).toString() !== 'Cancel') {
-        const { data = {}, status } = error.response as AxiosResponse || {};
+        const { data = {}, status, config: reqConfig } = error.response as AxiosResponse || {};
+        const requestUrl = (reqConfig && (reqConfig as any).url) || '';
         if (status === RESPONSE_STATUS.FORBIDDEN && [RESPONSE_STATUS_CODE.CSRF_TOKEN_NOT_FOUND, RESPONSE_STATUS_CODE.INVALID_CSRF_TOKEN].includes(data.code)) {
             Toast('Your request has been blocked for security reasons.', 'error');
             return;
         }
-        if ([RESPONSE_STATUS.FORBIDDEN, RESPONSE_STATUS.UNAUTHENTICATED].includes(status) || data.code === RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND ) {
+        // Avoid auto-logout for Ollama endpoints to prevent disruption during local configuration
+        const isOllamaRequest = requestUrl.includes('/ollama/');
+        if (!isOllamaRequest && ([RESPONSE_STATUS.FORBIDDEN, RESPONSE_STATUS.UNAUTHENTICATED].includes(status) || data.code === RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND )) {
             handleLogout();
         }
         // else if(status === RESPONSE_STATUS.UNAUTHENTICATED ){
@@ -131,7 +134,8 @@ const getUrl = (config: ConfigOptions, resourceUrl: string, query?: string) => {
     // Building finalUrl
     let finalUrl = `${baseUrl}${appendUrl || ''}`;
     if (query) {
-        finalUrl = finalUrl + `?${query}`;
+        // Support both raw query strings and ones already starting with '?'
+        finalUrl = finalUrl + (query.startsWith('?') ? query : `?${query}`);
     }
     return finalUrl;
 };
@@ -164,14 +168,25 @@ export const getHeaders = async (config: ConfigOptions, fetchConfig: FetchConfig
 };
 
 export function serialize(obj: Record<string, any>) {
-    const qs = Object.keys(obj)
-        .reduce(function (a, k) {
-            a.push(k + '=' + encodeURIComponent(obj[k]));
-            return a;
-        }, [])
-        .join('&');
-    if (qs) return '?' + qs;
-    else return '';
+    const pairs: string[] = [];
+    Object.keys(obj).forEach((k) => {
+        const v = (obj as any)[k];
+        if (v === undefined || v === null) return;
+        let enc: string;
+        if (typeof v === 'object') {
+            try {
+                enc = encodeURIComponent(JSON.stringify(v));
+            } catch (_) {
+                // Skip non-serializable values
+                return;
+            }
+        } else {
+            enc = encodeURIComponent(String(v));
+        }
+        pairs.push(`${k}=${enc}`);
+    });
+    // Return raw query string without leading '?'. Caller decides whether to prepend.
+    return pairs.length ? pairs.join('&') : '';
 }
 
 const streamlineUrl = (url: string) => {
@@ -271,6 +286,13 @@ const commonApi = async ({
                 // csrfTokenRaw: decryptedCsrfTokenRaw,
                 'x-brain-id': config?.['x-brain-id']
             });
+
+            console.log("commonApi",{
+                type: api.method,
+                url: api.url(...parameters as string[]),
+                data: data,
+                config
+            })
             const response = await fetchUrl({
                 type: api.method,
                 url: api.url(...parameters as string[]),

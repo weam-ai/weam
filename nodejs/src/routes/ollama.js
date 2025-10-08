@@ -12,6 +12,16 @@ const ollamaController = require('../controller/ollamaController');
 
 router.get('/health', ollamaController.healthCheck);
 
+// Allow model pulls and settings without authentication to simplify local setup
+router.post('/pull', 
+    validateOllamaRequest(ollamaValidation.pullRequest), 
+    ollamaController.pullModel
+);
+
+// Save settings endpoint for Ollama (local model doesn't require authentication)
+router.post('/save-settings', authentication, ollamaController.saveOllamaSettings);
+
+// All routes below this line require authentication
 router.use(authentication);
 
 router.post('/chat', 
@@ -27,10 +37,6 @@ router.post('/generate',
 );
 
 router.get('/tags', ollamaController.listModels);
-router.post('/pull', 
-    validateOllamaRequest(ollamaValidation.pullRequest), 
-    ollamaController.pullModel
-);
 router.post('/validate', ollamaController.validateModel);
 router.get('/model/:modelName', 
     validateOllamaParams({ modelName: ollamaValidation.modelName }), 
@@ -70,6 +76,5 @@ router.get('/analytics/overview', ollamaController.getCompanyOverview);
 
 // New endpoints for API key and settings management
 router.post('/test-connection-with-key', ollamaController.testConnectionWithApiKey);
-router.post('/save-settings', ollamaController.saveOllamaSettings);
 
 module.exports = router;

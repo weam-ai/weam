@@ -63,7 +63,11 @@ async function deleteUserBot(req) {
 
 async function getAll(req) {
     try {
-        return dbService.getAllDocuments(UserBot, req.body.query || {}, req.body.options || {});
+        console.log("req.body.query",req.body.query)
+        console.log("req.body.options",req.body.options)
+        const result = await dbService.getAllDocuments(UserBot, req.body.query || {}, req.body.options || {});
+        console.log("result",result)
+        return result;
     } catch (error) {
         handleError(error, 'Error - getAll')
     }
@@ -89,7 +93,7 @@ const viewApiKey = async (req) => {
 }
 
 async function fetchModalList (companyId) {
-    return await UserBot.find(
+    const result = await UserBot.find(
         {
             'company.id': companyId,
             modelType: { $ne: 1 },
@@ -105,6 +109,8 @@ async function fetchModalList (companyId) {
             provider:1,
         }
     ).lean();
+    console.log("result111",result)
+    return result;
 }
 
 module.exports = {

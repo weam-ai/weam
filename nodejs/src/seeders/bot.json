@@ -63,5 +63,10 @@
         "title": "Grok",
         "code": "GROK",
         "seq": 13
+    },
+    {
+        "title": "Ollama",
+        "code": "OLLAMA",
+        "seq": 14
     }
 ]

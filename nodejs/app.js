@@ -76,7 +76,7 @@ app.use('/queues', require('./src/jobs').queuesRouter);
 // app.use(rateLimitMiddleware);
 app.set('trust proxy', true);
 app.use(cors({
-    origin: "*",
+    origin: ["http://localhost:3000"],
     allowedHeaders: [
         'Origin',
         'X-Requested-with',

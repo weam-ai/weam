@@ -17,6 +17,7 @@ const RenderModelList = async () => {
         acc.push(model);
         return acc;
     }, []);
+    console.log("Model list :", modelList)
     if (!modelList.length) return <div className="text-font-14 mt-5">No model added yet</div>
     return (
         <div className="flex flex-col text-font-14 mt-5">
@@ -25,16 +26,21 @@ const RenderModelList = async () => {
                     return (
                         <div className="border-b px-2 py-3 last:border-none flex items-center gap-2" key={model._id}>
                             <DynamicImage
-                                src={getModelImageByName(model.name)}
+                                src={model.bot.code === 'OLLAMA' ? '/ollama-model.svg' : getModelImageByName(model.name)}
                                 alt={'API Key Placeholder'}
                                 width={40}
                                 height={40}
                                 className="w-6 h-6 rounded-full object-cover "
                             />
                             {model.bot.title}
-                            {
-                                model?.provider && <span className="text-font-12 text-font-gray-500">{`(${MODAL_NAME_CONVERSION.OPEN_ROUTER})`}</span>
-                            }
+                            {model?.provider && (
+                                <span className="text-font-12 text-font-gray-500">
+                                    {model.bot.code === 'OLLAMA' 
+                                        ? `(Local)` 
+                                        :"2222"
+                                    }
+                                </span>
+                            )}
                             <ModelDeleteButton modelCode={model.bot.code} />
                         </div>
                     )

@@ -33,7 +33,7 @@ const useAiModal = () => {
                     }
                 }
             });
-            const sequence = ['OPEN_AI', 'GEMINI', 'ANTHROPIC', 'PERPLEXITY', 'DEEPSEEK', 'LLAMA4'];
+            const sequence = ['OPEN_AI', 'GEMINI', 'ANTHROPIC', 'PERPLEXITY', 'DEEPSEEK', 'OLLAMA', 'LLAMA4'];
             
             const orderedList = response.data.reduce((acc:any, item:any) => {
                 const index = sequence.indexOf(item.bot.code);

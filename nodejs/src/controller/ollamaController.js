@@ -1,5 +1,41 @@
 const ollamaService = require('../services/ollamaService');
 const ollamaAnalytics = require('../services/ollamaAnalytics');
+const fs = require('fs');
+
+// Resolve a usable Ollama base URL across host and Docker environments
+function resolveOllamaCandidates(inputUrl) {
+    const provided = inputUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    const candidates = [provided];
+
+    // Detect Docker container environment
+    let inDocker = false;
+    try { inDocker = fs.existsSync('/.dockerenv'); } catch (_) { /* noop */ }
+
+    // If inside Docker and pointing at localhost, try host.docker.internal
+    const localhostRe = /^(https?:)\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
+    if (inDocker && localhostRe.test(provided)) {
+        candidates.push(provided.replace(localhostRe, '$1//host.docker.internal$3'));
+    }
+    // Always include host.docker.internal when running inside Docker
+    if (inDocker) {
+        const hostInternal = provided.replace(localhostRe, '$1//host.docker.internal$3');
+        if (!candidates.includes(hostInternal)) {
+            candidates.push(hostInternal);
+        }
+        // Also include explicit default port on host.docker.internal
+        const defaultPort = 'http://host.docker.internal:11434';
+        if (!candidates.includes(defaultPort)) {
+            candidates.push(defaultPort);
+        }
+    }
+
+    // Add common Docker Compose service fallback
+    candidates.push('http://localhost:11434');
+    candidates.push('http://ollama:11434');
+
+    // De-duplicate while preserving order
+    return [...new Set(candidates)];
+}
 
 class OllamaController {
     async chat(req, res) {
@@ -162,25 +198,83 @@ class OllamaController {
     async pullModel(req, res) {
         try {
             const { model, baseUrl } = req.body;
-            const userId = req.user.id;
-            const companyId = req.user.company_id;
+            const streaming = req.body?.stream === true || req.query?.stream === '1';
+            // Attempt across multiple base URLs for seamless local/Docker setups
+            const candidates = resolveOllamaCandidates(baseUrl);
+            let lastError;
 
-            const isAdmin = await ollamaService.checkAdminPermission(userId, companyId);
-            if (!isAdmin) {
-                return res.status(403).json({
-                    code: 'ADMIN_REQUIRED',
-                    message: 'Admin permission required to pull models'
+            if (streaming) {
+                res.setHeader('Content-Type', 'text/plain');
+                res.setHeader('Transfer-Encoding', 'chunked');
+                const writeEvt = (evt) => {
+                    try { res.write(JSON.stringify(evt) + '\n'); } catch (_) {}
+                };
+                writeEvt({ status: 'starting', model, timestamp: Date.now() });
+                for (const url of candidates) {
+                    try {
+                        writeEvt({ status: 'connecting', baseUrl: url });
+                        const result = await ollamaService.pullModel(model, url, (part) => {
+                            // Forward ollama pull events with progress percentage
+                            writeEvt(part);
+                        });
+                        writeEvt({ status: 'completed', success: true, model, baseUrl: url });
+                        res.end();
+                        return;
+                    } catch (err) {
+                        lastError = err;
+                        writeEvt({ status: 'retrying', baseUrl: url, error: err?.message });
+                        continue;
+                    }
+                }
+                logger.error('Ollama pull model failed across candidates:', lastError);
+                writeEvt({
+                    status: 'error',
+                    code: 'OLLAMA_UNAVAILABLE',
+                    message: 'Failed to reach Ollama to pull model',
+                    details: lastError?.message,
+                    suggestions: [
+                        'Ensure Ollama is installed and running',
+                        'Start service: ollama serve or use Docker Compose',
+                        'Verify baseUrl and port (default http://localhost:11434)',
+                        'If backend runs in Docker, try baseUrl http://host.docker.internal:11434',
+                        `Try pulling via CLI: ollama pull ${model || 'llama3.1:8b'}`
+                    ]
+                });
+                res.end();
+                return;
+            } else {
+                for (const url of candidates) {
+                    try {
+                        const result = await ollamaService.pullModel(model, url);
+                        return res.json(result);
+                    } catch (err) {
+                        lastError = err;
+                    }
+                }
+                logger.error('Ollama pull model failed across candidates:', lastError);
+                return res.status(503).json({
+                    code: 'OLLAMA_UNAVAILABLE',
+                    message: 'Failed to reach Ollama to pull model',
+                    details: lastError?.message,
+                    suggestions: [
+                        'Ensure Ollama is installed and running',
+                        'Start service: ollama serve or use Docker Compose',
+                        'Verify baseUrl and port (default http://localhost:11434)',
+                        'If backend runs in Docker, try baseUrl http://host.docker.internal:11434',
+                        `Try pulling via CLI: ollama pull ${model || 'llama3.1:8b'}`
+                    ]
                 });
             }
-
-            const result = await ollamaService.pullModel(model, baseUrl);
-            
-            res.json(result);
         } catch (error) {
             logger.error('Ollama pull model error:', error);
             res.status(500).json({
                 code: 'OLLAMA_ERROR',
-                message: error.message || 'Failed to pull model'
+                message: error.message || 'Failed to pull model',
+                suggestions: [
+                    'Check network connectivity and retry',
+                    'Verify sufficient disk space and permissions',
+                    `Try CLI: ollama pull ${req.body?.model || 'llama3.1:8b'}`
+                ]
             });
         }
     }
@@ -467,22 +561,85 @@ class OllamaController {
     async healthCheck(req, res) {
         try {
             const { baseUrl, apiKey } = req.query;
-            const testUrl = baseUrl || 'http://localhost:11434';
-            
-            const startTime = Date.now();
-            await ollamaService.testConnectivity(testUrl, apiKey);
-            const responseTime = Date.now() - startTime;
-            
-            const models = await ollamaService.listModels(testUrl, null, apiKey);
-            
-            res.json({
-                success: true,
-                status: 'healthy',
-                url: testUrl,
-                responseTime: `${responseTime}ms`,
-                modelCount: models.length,
-                models: models.slice(0, 5).map(m => ({ name: m.name, size: m.size })),
-                timestamp: new Date().toISOString()
+            const candidates = resolveOllamaCandidates(baseUrl);
+
+            let selectedUrl = candidates[0];
+            let models = [];
+            let responseTime = 0;
+            let lastError;
+
+            // First pass: try existing candidates directly
+            for (const url of candidates) {
+                try {
+                    const start = Date.now();
+                    await ollamaService.testConnectivity(url, apiKey);
+                    responseTime = Date.now() - start;
+                    models = await ollamaService.listModels(url, null, apiKey);
+                    selectedUrl = url;
+                    return res.json({
+                        success: true,
+                        status: 'healthy',
+                        url: selectedUrl,
+                        responseTime: `${responseTime}ms`,
+                        modelCount: models.length,
+                        models: models.slice(0, 5).map(m => ({ name: m.name, size: m.size })),
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+
+            // If direct connectivity failed, attempt to auto-start Ollama via Docker Compose
+            try {
+                const started = await ollamaService.ensureOllamaContainer();
+                if (started) {
+                    // Poll for readiness across candidates, including the compose service name
+                    const pollCandidates = [...candidates, 'http://localhost:11434', 'http://ollama:11434'];
+                    const deadline = Date.now() + 20000; // up to ~20s
+                    while (Date.now() < deadline) {
+                        for (const url of pollCandidates) {
+                            try {
+                                const start = Date.now();
+                                await ollamaService.testConnectivity(url, apiKey);
+                                responseTime = Date.now() - start;
+                                models = await ollamaService.listModels(url, null, apiKey);
+                                selectedUrl = url;
+                                return res.json({
+                                    success: true,
+                                    status: 'healthy',
+                                    url: selectedUrl,
+                                    responseTime: `${responseTime}ms`,
+                                    modelCount: models.length,
+                                    models: models.slice(0, 5).map(m => ({ name: m.name, size: m.size })),
+                                    timestamp: new Date().toISOString()
+                                });
+                            } catch (err) {
+                                lastError = err;
+                            }
+                        }
+                        // brief backoff before retrying
+                        await new Promise(r => setTimeout(r, 800));
+                    }
+                }
+            } catch (composeErr) {
+                lastError = composeErr;
+            }
+
+            logger.error('Ollama health check error:', lastError);
+            res.status(503).json({
+                success: false,
+                status: 'unhealthy',
+                url: selectedUrl,
+                error: lastError?.message,
+                timestamp: new Date().toISOString(),
+                suggestions: [
+                    'Ensure Ollama is installed and running',
+                    'Check if the service is running: ollama serve',
+                    'Verify the URL is correct',
+                    'If running backend in Docker, try baseUrl http://host.docker.internal:11434',
+                    'Install at least one model: ollama pull llama3.1:8b'
+                ]
             });
         } catch (error) {
             logger.error('Ollama health check error:', error);
@@ -496,6 +653,7 @@ class OllamaController {
                     'Ensure Ollama is installed and running',
                     'Check if the service is running: ollama serve',
                     'Verify the URL is correct',
+                    'If running backend in Docker, try baseUrl http://host.docker.internal:11434',
                     'Install at least one model: ollama pull llama3.1:8b'
                 ]
             });
@@ -528,11 +686,129 @@ class OllamaController {
         }
     }
 
+    /**
+     * Save an Ollama model to the database
+     * @param {string} modelName - The name of the Ollama model
+     * @param {string|null} companyId - The company ID, can be null for unauthenticated requests
+     * @param {string} baseUrl - The Ollama base URL
+     * @returns {Promise<Object>} - The saved model
+     */
+    async saveOllamaModelToDatabase(modelName, companyId, baseUrl = 'http://localhost:11434') {
+        try {
+            console.log("modelName111",modelName)
+            console.log("companyId11",companyId)
+            console.log("baseUr1111l",baseUrl)
+            // Skip saving if no valid company ID is available
+            if (!companyId) {
+                logger.info('Skipping model save - no valid company ID available');
+                return null;
+            }
+            
+            // const { Model } = require('../models');
+            const UserBot = require('../models/userBot');
+            const Bot = require('../models/bot');
+            
+            // Check if model already exists for this company
+            // const existingModel = await Model.findOne({
+            //     name: modelName,
+            //     company_id: companyId,
+            //     provider: 'OLLAMA'
+            // });
+            
+            // Save to Model collection
+            // let savedModel = existingModel;
+            // if (!existingModel) {
+            //     // Create a new model entry
+            //     const newModel = new Model({
+            //         name: modelName,
+            //         display_name: `${modelName} (Local)`,
+            //         provider: 'OLLAMA',
+            //         company_id: companyId,
+            //         is_active: true,
+            //         created_at: new Date(),
+            //         updated_at: new Date()
+            //     });
+                
+            //     savedModel = await newModel.save();
+            // }
+            
+            // Now save to userBot collection
+            try {
+                // Get the Ollama bot information
+                const ollamaBot = await Bot.findOne({ code: 'OLLAMA' });
+                console.log("ollamaBot",ollamaBot)
+                // if (!ollamaBot) {
+                //     logger.warn('Ollama bot not found in database');
+                //     return savedModel;
+                // }
+                
+                // Check if model already exists in userBot collection
+                const existingUserBot = await UserBot.findOne({
+                    name: modelName,
+                    'company.id': companyId,
+                    'bot.code': 'OLLAMA'
+                });
+                
+                if (existingUserBot) {
+                    logger.info(`Ollama model ${modelName} already exists in userBot collection`);
+                    // return savedModel;
+                }
+                
+                // Create a new userBot entry
+                const company = await require('../models/company').findById(companyId);
+                console.log("company",company)
+                if (!company) {
+                    logger.warn(`Company with ID ${companyId} not found`);
+                    return savedModel;
+                }
+                
+                const newUserBot = new UserBot({
+                    name: modelName,
+                    bot: {
+                        id: ollamaBot._id,
+                        code: ollamaBot.code,
+                        title: ollamaBot.title
+                    },
+                    company: {
+                        id: company._id,
+                        name: company.name
+                    },
+                    config: {
+                        apikey: baseUrl // Store the baseUrl in the apikey field
+                    },  
+                    modelType: 2, // 2 for chat model
+                    isActive: true,
+                    stream: true, // Ollama supports streaming
+                    tool: false, // Ollama doesn't support tools by default
+                    provider: 'OLLAMA',
+                    extraConfig: {
+                        temperature: 0.7
+                    }
+                });
+
+                console.log("newUserBot",newUserBot)
+                
+                await newUserBot.save();
+                logger.info(`Saved Ollama model ${modelName} to userBot collection`);
+            } catch (userBotError) {
+                logger.error('Error saving Ollama model to userBot collection:', userBotError);
+                // Continue even if userBot save fails
+            }
+            
+            return savedModel;
+        } catch (error) {
+            logger.error('Error saving Ollama model to database:', error);
+            throw error;
+        }
+    }
+
     async saveOllamaSettings(req, res) {
         try {
-            const { baseUrl, apiKey, provider } = req.body;
-            const userId = req.user.id;
-            const companyId = req.user.company_id;
+            const { baseUrl, apiKey, provider, model } = req.body;
+            // Use a valid ObjectId for company if no authentication
+            const userId = req.user?.id || null;
+            console.log(req.user,"usersresrers")
+            const companyId = req.user?.company?.id || null;
 
             try {
                 await ollamaService.testConnectivity(baseUrl, apiKey);
@@ -551,7 +827,31 @@ class OllamaController {
                 updatedAt: new Date()
             };
 
-            const updatedSettings = await ollamaService.updateCompanyOllamaSettings(companyId, settings);
+            // Skip company settings update if no valid company ID is available
+            let updatedSettings = null;
+            // if (companyId) {
+            //     try {
+            //         updatedSettings = await ollamaService.updateCompanyOllamaSettings(companyId, settings);
+            //     } catch (settingsError) {
+            //         logger.warn('Could not update company settings, continuing with model save:', settingsError.message);
+            //     }
+            // }
+            
+            // If model is provided and we have a valid companyId, save it to the models collection
+            console.log('companyId:', companyId);
+            console.log('model:', model);
+
+            if (model && companyId) {
+                try {
+                    // Call the method directly without using this or ollamaController
+                    await module.exports.saveOllamaModelToDatabase(model, companyId, baseUrl);
+                } catch (modelError) {
+                    logger.error('Failed to save Ollama model to database:', modelError);
+                    // Continue with settings save even if model save fails
+                }
+            } else if (model) {
+                logger.info('Skipping model save - no valid company ID available');
+            }
             
             res.json({
                 success: true,
