@@ -2,10 +2,10 @@ const { ChatOpenAI } = require('@langchain/openai');
 const { StateGraph, END } = require('@langchain/langgraph');
 const { ToolMessage, HumanMessage, SystemMessage } = require('@langchain/core/messages');
 const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription, IS_MCP_TOOLS } = require('../config/constants/llm');
-const { SOCKET_EVENTS } = require('../config/constants/socket');
+const { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } = require('../config/constants/socket');
 const Messages = require('../models/thread');
 const Brain = require('../models/brains');
-const { decryptedData } = require('../utils/helper');
+const { decryptedData, catchSocketAsync } = require('../utils/helper');
 const { LINK } = require('../config/config');
 const { AI_MODAL_PROVIDER, MODAL_NAME , ANTHROPIC_MAX_TOKENS } = require('../config/constants/aimodal');
 const { ChatAnthropic } = require('@langchain/anthropic');
@@ -1519,13 +1519,38 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 }
             },
         };
+        // Helper to check if a stop has been requested for this chat
+        let sockets = global.io.sockets;
+        let stopRequested = false;
+
+        const forceStopHandler = catchSocketAsync((value) => {
+            if (value.chatId === data.chatId) {
+                const roomName = `${SOCKET_ROOM_PREFIX.CHAT}${value.chatId}`;
+                sockets.to(roomName).emit(SOCKET_EVENTS.FORCE_STOP, { proccedMsg: value.proccedMsg, userId: value.userId });
+                stopRequested = true;
+            }
+        });
+
+        // Listen once for stop; upon receiving, mark and break the stream loop
+        socket.once(SOCKET_EVENTS.FORCE_STOP, forceStopHandler);
+
         for await (const chunk of app.streamEvents(inputs, {
             streamMode: 'messages',
             version: 'v2',
         })) {
+            if (stopRequested) {
+                logger.info('isStopRequested', stopRequested);
+                break;
+            }
+
             const handler = eventHandlers[chunk.event];
             if (handler) {
                 handler(chunk);
+            }
+
+            if (stopRequested) {
+                logger.info('isStopRequested post-chunk', stopRequested);
+                break;
             }
         }
     } catch (error) {
@@ -1541,11 +1566,34 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 await createLLMConversation({ 
                     ...data, 
                     answer: proccedMsg, 
-                    usedCredit:  data.usedCredit || 1 
+                    usedCredit: data.usedCredit || 1 
                 });
             } catch (saveError) {
                 logger.error('❌ Error saving conversation to database:', saveError);
             }
+        } else {
+            try {
+                await createLLMConversation({ 
+                    ...data, 
+                    answer: '', 
+                    usedCredit: data.usedCredit || 1 
+                });
+            } catch (saveError) {
+                logger.error('❌ Error saving conversation to database:', saveError);
+            }
+        }
+
+        // Clean up stop listeners if they never fired
+        try {
+            if (typeof forceStopHandler === 'function') {
+                socket.off(SOCKET_EVENTS.FORCE_STOP, forceStopHandler);
+            }
+            if (typeof stopStreamingHandler === 'function') {
+                socket.off(SOCKET_EVENTS.STOP_STREAMING, stopStreamingHandler);
+            }
+        } catch (cleanupError) {
+            // Non-fatal: log and continue
+            logger.warn('Stop listener cleanup warning:', cleanupError?.message || cleanupError);
         }
         proccedMsg = '';
         
@@ -1671,7 +1719,6 @@ function mapProviderCode(code) {
 async function toolExecutor(data, socket) {
     try {
         let apiKey, model, app, agentDetails = null;
-        
 
         // Map the provider code to the correct constant
         const mappedProvider = mapProviderCode(data.code);

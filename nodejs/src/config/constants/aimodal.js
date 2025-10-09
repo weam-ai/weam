@@ -104,6 +104,7 @@ const AI_MODAL_PROVIDER = {
     LLAMA4: 'LLAMA4',
     GROK: 'GROK',
     QWEN: 'QWEN',
+    OPEN_ROUTER: 'OPEN_ROUTER',
 }
 
 const OPENROUTER_PROVIDER = {

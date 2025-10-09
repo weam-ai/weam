@@ -77,7 +77,7 @@ import useDebounce from '@/hooks/common/useDebounce';
 import RenderAIModalImage from './RenderAIModalImage';
 import AttachMentToolTip from './AttachMentToolTip';
 import WebSearchToolTip from './WebSearchToolTip';
-import { TextAreaFileInput, TextAreaSubmitButton } from './ChatInput';
+import { TextAreaFileInput, TextAreaSubmitButton, StopStreamSubmitButton } from './ChatInput';
 import TextAreaBox from '@/widgets/TextAreaBox';
 import DrapDropUploader from '../Shared/DrapDropUploader';
 import ProAgentQuestion from './ProAgentQuestion';
@@ -1067,6 +1067,20 @@ const ChatPage = memo(() => {
         }
     }, [socket]);
 
+    const handleStopStreaming = useCallback(() => {
+        if (!socket) return;
+        try {
+            socket.emit(SOCKET_EVENTS.FORCE_STOP, {
+                chatId: params.id,
+                proccedMsg: answerMessage || '',
+                userId: currentUser._id,
+            });
+        } catch (error) {
+            console.error('Failed to emit FORCE_STOP:', error);
+        }
+    }, [socket, params.id, answerMessage, currentUser]);
+
+
     const handleDisableInput = useCallback(() => {
         disabledInput.current = true;
     }, [socket]);
@@ -1124,6 +1138,8 @@ const ChatPage = memo(() => {
 
             socket.on(SOCKET_EVENTS.STOP_STREAMING, handleSocketStreamingStop);
 
+            socket.on(SOCKET_EVENTS.FORCE_STOP, handleSocketStreamingStop);
+
             socket.on(SOCKET_EVENTS.ON_QUERY_TYPING, handleOnQueryTyping);
 
             socket.on(SOCKET_EVENTS.DISABLE_QUERY_INPUT, handleDisableInput);
@@ -1172,6 +1188,7 @@ const ChatPage = memo(() => {
                 socket.off(SOCKET_EVENTS.USER_QUERY, handleUserQuery);
                 socket.off(SOCKET_EVENTS.START_STREAMING, handleSocketStreaming);
                 socket.off(SOCKET_EVENTS.STOP_STREAMING, handleSocketStreamingStop);
+                socket.off(SOCKET_EVENTS.FORCE_STOP, handleSocketStreamingStop);
                 socket.off(SOCKET_EVENTS.ON_QUERY_TYPING, handleOnQueryTyping);
                 socket.off(SOCKET_EVENTS.DISABLE_QUERY_INPUT, handleDisableInput);
                 // socket.off(SOCKET_EVENTS.SUBSCRIPTION_STATUS, handleSubscriptionStatus);
@@ -1782,13 +1799,16 @@ const ChatPage = memo(() => {
                                             handleFileChange={handleFileChange}
                                             multiple
                                         />
-                                        <TextAreaSubmitButton
-                                            disabled={isSubmitDisabled}
-                                            handleSubmit={handleSubmitPrompt}
-                                            loading={loading}
-                                            isActivelyStreaming={isActivelyStreaming}
-                                            onStopStreaming={() => stopStreaming(params?.id)}
-                                        />
+                                        {((loading) || isStreamingLoading || (answerMessage && answerMessage.length > 0)) ? (
+                                            <StopStreamSubmitButton
+                                                handleStop={handleStopStreaming}
+                                            />
+                                        ) : (
+                                            <TextAreaSubmitButton
+                                                disabled={isSubmitDisabled}
+                                                handleSubmit={handleSubmitPrompt}
+                                            />
+                                        )}
                                 </div>
                             </div>
                             <p className='text-font-12 mt-1 text-b7 text-center'>Weam can make mistakes. Consider checking the following information.</p>
