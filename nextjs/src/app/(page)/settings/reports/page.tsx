@@ -5,7 +5,7 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { Calendar } from 'react-date-range';
 import { DateRangePicker, defaultStaticRanges } from 'react-date-range';
-import Select from 'react-select';
+import MultiSelect from '@/components/ui/multi-select';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -177,17 +177,11 @@ export default function DashboardReport() {
                                     )}
                                 </div>
                                 <div className="max-w-40 md:min-w-[150px]">
-                                    <Select placeholder="Select Model" 
-                                        options={modelOptions} 
-                                        menuPlacement='auto' 
-                                        id="selectModelYourDeployment" 
-                                        className="react-select-container" 
-                                        classNamePrefix="react-select"                                     
-                                        onChange={(selectedOptions) => {
-                                            setSelectModel(selectedOptions.map(option => option.value)); // Store an array of values
-                                        }}
-                                        isMulti={true}
-                                        value={modelOptions.filter(option => selectModel.includes(option.value))}
+                                    <MultiSelect
+                                        options={modelOptions}
+                                        value={selectModel}
+                                        onChange={setSelectModel}
+                                        placeholder="Select Model"
                                     />
                                 </div>
                                 <DropdownMenu>
