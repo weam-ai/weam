@@ -31,7 +31,7 @@ function resolveOllamaCandidates(inputUrl) {
 
     // Add common Docker Compose service fallback
     candidates.push('http://localhost:11434');
-    candidates.push('http://ollama:11434');
+    candidates.push('http://host.docker.internal:11434');
 
     // De-duplicate while preserving order
     return [...new Set(candidates)];
@@ -595,7 +595,7 @@ class OllamaController {
                 const started = await ollamaService.ensureOllamaContainer();
                 if (started) {
                     // Poll for readiness across candidates, including the compose service name
-                    const pollCandidates = [...candidates, 'http://localhost:11434', 'http://ollama:11434'];
+                    const pollCandidates = [...candidates, 'http://localhost:11434', 'http://host.docker.internal:11434'];
                     const deadline = Date.now() + 20000; // up to ~20s
                     while (Date.now() < deadline) {
                         for (const url of pollCandidates) {

@@ -315,13 +315,13 @@ class OllamaService {
             });
         });
 
-        // Prefer docker compose v2 if available
-        const composeCmd = `docker compose -f "${composeFile}" --profile ${profile} up -d`;
+        // Prefer docker compose v2 if available - fix flag format
+        const composeCmd = `docker compose --file "${composeFile}" --profile ${profile} up -d`;
         const okCompose = await tryExec(composeCmd);
         if (okCompose) return true;
 
         // Fallback to legacy docker-compose v1
-        const legacyComposeCmd = `docker-compose -f "${composeFile}" --profile ${profile} up -d`;
+        const legacyComposeCmd = `docker-compose --file "${composeFile}" --profile ${profile} up -d`;
         const okLegacy = await tryExec(legacyComposeCmd);
         if (okLegacy) return true;
 
@@ -330,10 +330,17 @@ class OllamaService {
 
         // Ensure volume exists
         await tryExec('docker volume create ollama-models');
-
+        
+        // Check if container already exists and remove it if needed
+        await tryExec('docker rm -f ollama 2>/dev/null || true');
+        
+        // Generate a unique container name with timestamp to avoid conflicts
+        const timestamp = new Date().getTime();
+        const containerName = `ollama-${timestamp}`;
+        
         const gpuEnv = process.env.OLLAMA_GPU === 'true' ? 'true' : 'false';
         const runCmd = [
-            'docker run -d --name ollama --restart unless-stopped',
+            `docker run -d --name ${containerName} --restart unless-stopped`,
             '-p 11434:11434',
             `-e OLLAMA_GPU=${gpuEnv}`,
             '-e OLLAMA_KEEP_ALIVE=3600',
@@ -356,7 +363,7 @@ class OllamaService {
             });
         });
 
-        const cmdV2 = `docker compose -f "${composeFile}" exec ollama ollama pull ${model}`;
+        const cmdV2 = `docker compose --file "${composeFile}" exec ollama ollama pull ${model}`;
         try {
             await tryExec(cmdV2);
             return true;
@@ -364,7 +371,7 @@ class OllamaService {
             logger.warn('docker compose exec failed for pull; trying legacy or direct docker exec');
         }
 
-        const cmdV1 = `docker-compose -f "${composeFile}" exec ollama ollama pull ${model}`;
+        const cmdV1 = `docker-compose --file "${composeFile}" exec ollama ollama pull ${model}`;
         try {
             await tryExec(cmdV1);
             return true;
@@ -372,8 +379,24 @@ class OllamaService {
             logger.warn('docker-compose exec failed for pull; trying direct docker exec');
         }
 
-        const cmdDirect = `docker exec ollama ollama pull ${model}`;
-        await tryExec(cmdDirect);
+        // Find any running Ollama container
+        try {
+            const findContainer = "docker ps --filter name=ollama -q";
+            exec(findContainer, (error, stdout) => {
+                if (!error && stdout.trim()) {
+                    const containerId = stdout.trim();
+                    const cmdDirect = `docker exec ${containerId} ollama pull ${model}`;
+                    return tryExec(cmdDirect);
+                }
+                throw new Error('No running Ollama container found');
+            });
+        } catch (e3) {
+            logger.warn('No running Ollama container found, attempting to start one');
+            await this.ensureOllamaContainer();
+            // Try one more time with any container
+            const cmdDirect = `docker exec $(docker ps --filter name=ollama -q | head -n1) ollama pull ${model}`;
+            await tryExec(cmdDirect);
+        }
         return true;
     }
 
@@ -389,7 +412,7 @@ class OllamaService {
         });
 
         // Compose v2
-        const cmdV2 = `OLLAMA_DEFAULT_MODEL=${model} docker compose -f "${composeFile}" --profile setup up -d`;
+        const cmdV2 = `OLLAMA_DEFAULT_MODEL=${model} docker compose --file "${composeFile}" --profile setup up -d`;
         try {
             await tryExec(cmdV2);
             return true;
@@ -398,7 +421,7 @@ class OllamaService {
         }
 
         // Compose v1
-        const cmdV1 = `OLLAMA_DEFAULT_MODEL=${model} docker-compose -f "${composeFile}" --profile setup up -d`;
+        const cmdV1 = `OLLAMA_DEFAULT_MODEL=${model} docker-compose --file "${composeFile}" --profile setup up -d`;
         try {
             await tryExec(cmdV1);
             return true;
@@ -406,8 +429,24 @@ class OllamaService {
             logger.warn('docker-compose setup failed; falling back to direct pull');
         }
 
-        // Direct pull inside an already running container
-        await tryExec(`docker exec ollama ollama pull ${model}`);
+        // Find any running Ollama container
+        try {
+            const findContainer = "docker ps --filter name=ollama -q";
+            exec(findContainer, (error, stdout) => {
+                if (!error && stdout.trim()) {
+                    const containerId = stdout.trim();
+                    const cmdDirect = `docker exec ${containerId} ollama pull ${model}`;
+                    return tryExec(cmdDirect);
+                }
+                throw new Error('No running Ollama container found');
+            });
+        } catch (e3) {
+            logger.warn('No running Ollama container found, attempting to start one');
+            await this.ensureOllamaContainer();
+            // Try one more time with any container
+            const cmdDirect = `docker exec $(docker ps --filter name=ollama -q | head -n1) ollama pull ${model}`;
+            await tryExec(cmdDirect);
+        }
         return true;
     }
 
