@@ -1,4 +1,5 @@
 const reportService = require('../../services/report');
+const aiAdoptionService = require('../../services/aiAdoption');
 
 const getCompanyUsage = catchAsync(async (req, res) => {
     const result = await reportService.getCompanyUsage(req);
@@ -30,8 +31,19 @@ const getWeeklyUsage = catchAsync(async (req, res) => {
     return util.recordNotFound(null, res);
 })
 
+const getAiAdoption = catchAsync(async (req, res) => {
+    const result = await aiAdoptionService.getAiAdoption(req);
+    if (result) {
+        res.message = _localize('module.list', req, 'ai adoption');
+        return util.successListResponse(result, res);
+    }
+    res.message = _localize('module.notFound', req, 'ai adoption');
+    return util.recordNotFound(null, res);
+})
+
 module.exports = {
     getCompanyUsage,
     getUserUsage,
-    getWeeklyUsage
+    getWeeklyUsage,
+    getAiAdoption
 }

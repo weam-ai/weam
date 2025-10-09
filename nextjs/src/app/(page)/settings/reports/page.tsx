@@ -24,6 +24,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import FilterIcon from "@/icons/FilterIcon";
+import FiltersAnalytics from "@/components/Dashboard/FiltersAnalytics";
 
 
 export default function DashboardReport() {
@@ -123,8 +124,8 @@ export default function DashboardReport() {
                         <h5 className="text-font-18 font-bold text-b2">
                             { 
                                 isCompanyAdminOrManager(user)
-                                ? 'Usage of ' + user?.company?.name
-                                : 'Usage'
+                                ? 'AI Adoption Report of ' + user?.company?.name
+                                : 'AI Adoption Report'
                             }                            
                         </h5>
                         <p className="text-font-15 font-normal text-b5 mb-2 flex md:items-center justify-between max-md:flex-col">
@@ -139,6 +140,9 @@ export default function DashboardReport() {
                                 </Link>
                             }
                         </p>
+                        {/* Filters & Analytics Component - Only for Company Admin/Manager */}
+                        {isCompanyAdminOrManager(user) && <FiltersAnalytics />}
+                        
                         <div className='hidden md:flex my-3 items-center'>
                             {
                                 isCompanyAdminOrManager(user) && (
@@ -226,7 +230,7 @@ export default function DashboardReport() {
                                     <ExportIcon width={18}
                                         height={18}
                                         className="w-[26px] h-[18px] object-contain fill-white mr-1" />
-                                    <span className="text-font-14 font-semibold ">
+                                    <span className="text-sm font-semibold ">
                                         Export
                                     </span>
                                 </span> */}
