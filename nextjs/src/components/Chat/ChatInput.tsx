@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import UpLongArrow from '@/icons/UpLongArrow';
+import StopStreamButton from '@/icons/StopStreamButton';
 import Toast from '@/utils/toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { setIsWebSearchActive, setSelectedAIModal } from '@/lib/slices/aimodel/assignmodelslice';
@@ -98,44 +99,14 @@ type TextAreaFileInputProps = {
     multiple: boolean;
 };
 
+type StopStreamSubmitButtonProps = {
+    handleStop: () => void;
+};
+
 export const TextAreaSubmitButton = ({
     disabled,
     handleSubmit,
-    loading = false,
-    onStopStreaming,
-    isActivelyStreaming = false,
 }: TextAreaSubmitButtonProps) => {
-    // Show stop button when actively streaming - use isActivelyStreaming as primary indicator
-    if (isActivelyStreaming && onStopStreaming) {
-        return (
-            <div className="flex items-center ml-2">
-                <button
-                    className="chat-submit group bg-gray-800 hover:bg-gray-900 active:bg-black w-[32px] z-20 h-[32px] flex items-center justify-center rounded-full transition-all duration-200 shadow-lg border-2 border-gray-600 hover:border-gray-500"
-                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-                        event.preventDefault();
-                        onStopStreaming();
-                    }}
-                    title="Stop generating"
-                    style={{
-                        boxShadow: '0 0 10px rgba(31, 41, 55, 0.6)',
-                        animation: 'pulse 2s infinite'
-                    }}
-                >
-                    <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 14 14"
-                        className="fill-white drop-shadow-sm"
-                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5))' }}
-                    >
-                        <rect x="2" y="2" width="10" height="10" rx="1" />
-                    </svg>
-                </button>
-            </div>
-        );
-    }
-
-    // Show regular submit button
     return (
         <button
             className={`chat-submit ml-2 group bg-b2 w-[32px] z-10 h-[32px] flex items-center justify-center rounded-full transition-colors ${
@@ -152,6 +123,20 @@ export const TextAreaSubmitButton = ({
                 height="19"
                 className="fill-b15 group-disabled:fill-b7"
             />
+        </button>
+    );
+};
+
+export const StopStreamSubmitButton = ({ handleStop }: StopStreamSubmitButtonProps) => {
+    return (
+        <button
+            className="chat-submit ml-2 group bg-white w-[32px] h-[32px] z-10 flex items-center justify-center rounded-full transition-colors border border-gray-600 hover:border-gray-500 shadow-md"
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                event.preventDefault();
+                handleStop();
+            }}
+        >
+            <StopStreamButton width="30" height="30" />
         </button>
     );
 };

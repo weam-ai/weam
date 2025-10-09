@@ -39,6 +39,7 @@ const SOCKET_EVENTS = {
     FILE_UPLOAD_PROGRESS: 'fileuploadprogress',
     FILE_EMBED_PROGRESS: 'fileembedprogress',
     GENERATE_TITLE_BY_LLM: 'generatetitlebyllm',
+    FORCE_STOP: 'forcestop',
 }
 
 module.exports = {

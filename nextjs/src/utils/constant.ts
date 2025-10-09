@@ -336,6 +336,7 @@ export const SOCKET_EVENTS = {
     FETCH_SUBSCRIPTION: 'fetchsubscription',
     LLM_RESPONSE_SEND: 'llmresponsesend',
     GENERATE_TITLE_BY_LLM: 'generatetitlebyllm',
+    FORCE_STOP: 'forcestop',
 }
 
 export const THREAD_MESSAGE_TYPE = {
