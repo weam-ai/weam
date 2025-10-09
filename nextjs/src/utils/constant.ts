@@ -1514,11 +1514,23 @@ export const MODEL_NAME_BY_CODE = {
 }
 
 export const getModelImageByName = (name: string) => {
+    // Check if it's an Ollama model (local model)
+    if (name) {
+        // For models that are run locally through Ollama
+        if (name.includes('(Local)') || 
+            (name.toLowerCase().includes('llama') && !name.toLowerCase().includes('meta')) ||
+            name.toLowerCase().includes('mistral') ||
+            name.toLowerCase().includes('phi') ||
+            name.toLowerCase().includes('gemma')) {
+            return MODEL_IMAGE_BY_CODE['OLLAMA'];
+        }
+    }
+    
     const code = MODEL_NAME_BY_CODE[name];
     if (code) {
         return MODEL_IMAGE_BY_CODE[code];
     }
-    return null;
+    return MODEL_IMAGE_BY_CODE['OPEN_AI']; // Default fallback
 }
 
 export const SUBSCRIPTION_PLAN_CREDITS = {
