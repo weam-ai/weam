@@ -28,24 +28,38 @@ const SolutionApp = require('../models/solutionApp');
 const seedRole = async function () {
     try {
         const roleJSON = require('../seeders/role.json');
-        const existingRoles = await Role.find();
-
         const bulkRole = [];
 
         for (const iterator of roleJSON) {
-            const checkExistingRole = checkByCode(existingRoles, iterator);
-            if (!checkExistingRole) {
-                bulkRole.push({ insertOne: { document: iterator } });
-            }
+            // Use upsert to handle existing roles gracefully
+            bulkRole.push({
+                updateOne: {
+                    filter: { code: iterator.code },
+                    update: { 
+                        $setOnInsert: {
+                            name: iterator.name,
+                            code: iterator.code,
+                            isActive: iterator.isActive !== undefined ? iterator.isActive : true,
+                            canDel: iterator.canDel !== undefined ? iterator.canDel : true
+                        }
+                    },
+                    upsert: true
+                }
+            });
         }
 
         if (bulkRole.length) {
-            await Role.bulkWrite(bulkRole);
+            const result = await Role.bulkWrite(bulkRole);
+            const insertedCount = result.upsertedCount || 0;
+            const modifiedCount = result.modifiedCount || 0;
+            const matchedCount = result.matchedCount || 0;
+            
+            logger.info(`Roles seeded successfully! - Inserted: ${insertedCount}, Modified: ${modifiedCount}, Matched: ${matchedCount}`);
         }
 
-        logger.info('Roles seeded successfully! 👨‍⚕️👨‍🔧👨‍🚀')
     } catch (error) {
         logger.error('Error in seedRole function ', error);
+        throw error; // Re-throw to ensure proper error handling upstream
     }
 }
 
