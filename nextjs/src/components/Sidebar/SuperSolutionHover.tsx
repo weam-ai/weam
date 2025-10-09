@@ -280,7 +280,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
             </HoverCardTrigger>
             <HoverCardContent
                 side="right"
-                className="border-none bg-white shadow-xl rounded-xl p-6 min-w-[320px] max-w-[400px] z-50 rounded mt-[15px]"
+                className="border-none bg-white shadow-xl rounded-xl p-6 min-w-[320px] max-w-[400px] z-50 rounded mt-[55px]"
                 sideOffset={18}
             >
                 {renderContent()}
