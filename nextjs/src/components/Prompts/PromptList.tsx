@@ -96,7 +96,7 @@ const PromptList: React.FC<PromptListProps> = ({ isGridView, loading, promptList
                                             }}
                                             className="group-hover/item:opacity-100 md:opacity-0 rounded bg-white flex items-center justify-center w-6 min-w-6 h-6 p-0.5 [&>svg]:w-[11] [&>svg]:h-[11] [&>svg]:fill-b5"
                                         >
-                                            <RemoveIcon width={14} height={14} className="w-[14] h-4 object-contain fill-b4 me-2.5" />
+                                            <RemoveIcon width={14} height={14} className="" />
                                         </Link>
                                         <Link
                                             href={'#'}

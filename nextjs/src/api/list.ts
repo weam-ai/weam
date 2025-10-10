@@ -135,8 +135,11 @@ const apiList = {
     assigngpt: {
         url: () => `${WEB}/customgpt/assigngpt`,
         method: 'POST'
-       },   
-       
+    },
+    agents: {
+        url: (brainId: string) => `${WEB}/customgpt/agents/${brainId}`,
+        method: 'GET'
+    },
     chatTeamDelete:{
         url: (id: string)=>  `${WEB}/teamBrain/chat/delete/${id}`,
         method:'DELETE'  

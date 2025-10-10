@@ -11,6 +11,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { setModalStatus, setToPrivateBrain } from '@/lib/slices/brain/brainlist';
 import { useSidebar } from '@/context/SidebarContext';
+import AddBrainIcon from '@/icons/AddBrainIcon';
 const AddBrainButton = memo(({ text, isPrivate }) => {
     const dispatch = useDispatch();
     const { isCollapsed } = useSidebar();
@@ -38,7 +39,7 @@ const AddBrainButton = memo(({ text, isPrivate }) => {
                             <SharedBrainIcon width={18} height={(18 * 20) / 22} className="fill-b6 collapsed-icon h-auto hover:fill-b2" />
                         )}
                     </span>
-                    <span className='font-medium whitespace-nowrap text-font-12 px-2 py-1 rounded-[12px] bg-blue3 text-blue2 collapsed-text'>+ Add</span>
+                    <AddBrainIcon width={18} height={(18 * 151) / 160} className="fill-b6 w-[18px] h-[18px] collapsed-text hover:fill-b2" />
                 </button>
                 </TooltipTrigger>
                 <TooltipContent side={tooltipSide} className="border-none">

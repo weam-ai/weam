@@ -163,7 +163,12 @@ const addCustomGpt = async (req) => {
         const { company } = responseModel;
 
         const slug = slugify(title);
-        const createData = { ...req.body, slug, coverImg: {}, doc: [] }; 
+        const createData = { 
+            ...req.body, 
+            slug, 
+            coverImg: {}, 
+            doc: [],
+        }; 
 
         const existing = await CustomGpt.findOne({ slug, 'brain.id': brainId });
         if (existing) throw new Error(_localize('module.alreadyExists', req, 'custom gpt'));
@@ -224,11 +229,11 @@ const addCustomGpt = async (req) => {
 const updateCustomGpt = async (req) => {
     try {
         const { removeExistingDocument, removeExistingImage, fileData } = require('./uploadFile');
-        const existingBot = await CustomGpt.findById({ _id: req.params.id }, { doc: 1, coverImg: 1, brain: 1 });
+        const existingBot = await CustomGpt.findById({ _id: req.params.id }, { doc: 1, coverImg: 1, brain: 1, type: 1 });
         
         if (!existingBot) throw new Error(_localize('module.notFound', req, 'custom bot'));
 
-        const { title, responseModel, brain } = req.body;
+        const { title, responseModel } = req.body;
         const { company } = responseModel;
 
         let updateBody = {
@@ -341,7 +346,19 @@ const viewCustomGpt = async (req) => {
 }
 
 const deleteCustomGpt = async (req) => {
-    try {  
+    try {
+        // Check if this agent is used by any supervisor agents
+        const supervisorAgents = await CustomGpt.findOne({
+            type: 'supervisor',
+            Agents: req.params.id,
+            'brain.id': { $exists: true }
+        });
+
+        if (supervisorAgents) {
+            const supervisorNames = supervisorAgents.title;
+            throw new Error(`Cannot delete agent. It is currently being used by supervisor agent(s): ${supervisorNames}`);
+        }
+
         return CustomGpt.deleteOne({ _id: req.params.id });
     } catch (error) {
         handleError(error, 'Error - deleteCustomGpt');
@@ -584,6 +601,19 @@ const favoriteCustomGpt = async (req) => {
     }
 };
 
+const getAgents = async (req) => {
+    try {
+        const { brainId } = req.params;
+        const agents = await CustomGpt.find({
+            'brain.id': brainId,
+            type: 'agent'
+        });
+        return agents;
+    } catch (error) {
+        handleError(error, "Error - getAgents");
+    }
+};
+
 module.exports = {
     addCustomGpt,
     updateCustomGpt,
@@ -594,5 +624,6 @@ module.exports = {
     storeVectorData,
     assignDefaultGpt,
     usersWiseGetAll,
-    favoriteCustomGpt
+    favoriteCustomGpt,
+    getAgents
 }

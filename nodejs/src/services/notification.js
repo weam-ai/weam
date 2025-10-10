@@ -93,6 +93,7 @@ const sendCommonNotification = async (code, users, requestUser, replacedata) => 
             [NOTIFICATION_TYPE.BRAIN_INVITATION]: { name: '{name}', brain: '{brain}' },
             [NOTIFICATION_TYPE.WORKSPACE_INVITATION]: { name: '{name}', workspace: '{workspace}' },
             [NOTIFICATION_TYPE.CHAT_INVITATION]: { name: '{name}', chat: '{chat}' },
+            [NOTIFICATION_TYPE.PROMPT_SCRAPING]: { prompt: '{prompt}' },
         };
 
         const targetTemplate = notificationTemplates[code];
@@ -120,7 +121,9 @@ const sendCommonNotification = async (code, users, requestUser, replacedata) => 
             if (targetTemplate.workspace) {
                 notificationBody = notificationBody.replace(targetTemplate.workspace, replacedata.workspace);
             }
-
+            if (targetTemplate.prompt) {
+                notificationBody = notificationBody.replace(targetTemplate.prompt, replacedata.prompt);
+            }
             if (match.fcmTokens.length) {
                 if (user.id.toString() !== requestUser._id.toString())
                     fcmTokens.push(...match.fcmTokens);

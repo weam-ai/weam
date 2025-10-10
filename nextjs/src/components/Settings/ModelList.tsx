@@ -58,7 +58,7 @@ const ModelList = async () => {
                     <Close className={'fill-gray-600 size-2'} />
                 </button>
             </div> */}
-            <div className="mt-4 overflow-y-auto md:max-h-[550px] max-h-full md:grid-cols-3 md:grid">
+            <div className="mt-4 overflow-y-auto md:max-h-full max-h-full md:grid-cols-3 md:grid">
                 {status == RESPONSE_STATUS.SUCCESS && modelSequence.length > 0 ? modelSequence.map((model) => <ModalItem model={model} key={model._id} />) : <ModalNotFound />}
             </div>
         </TabsContent>

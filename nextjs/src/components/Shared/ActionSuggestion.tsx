@@ -15,7 +15,7 @@ const ActionSuggestion = ({ title, description, subtitle, note, linktext, href, 
                 {subtitle && <h3 className='font-bold mt-3'>{subtitle}</h3>}
                 {note && <p className="text-font-14 text-b5" dangerouslySetInnerHTML={{ __html: note }} />}
                 {linktext && href && (
-                    <Link className="text-font-14 text-blue mt-3 inline-block font-bold" href={href}>
+                    <Link className="text-font-14 text-b2 mt-3 inline-block font-bold" href={href}>
                         {linktext}
                     </Link>
                 )}

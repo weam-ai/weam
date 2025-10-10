@@ -123,7 +123,7 @@ const VideoCall = ({ onBackHandler, setDialogOpen, handleSubmitPrompt }: VideoPr
             
             {isLoading && (
                 <div className="w-full max-w-[99%] h-1 mb-2 bg-gray-300 rounded overflow-hidden">
-                    <div className="h-full bg-blue animate-progress"></div>
+                    <div className="h-full bg-black animate-progress"></div>
                 </div>
             )}            
             

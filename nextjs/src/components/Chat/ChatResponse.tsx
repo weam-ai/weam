@@ -1,24 +1,14 @@
 import { LINK } from '@/config/config';
 import React, { useState, useRef, useEffect } from 'react';
 import { MarkOutPut } from './MartOutput';
-import ThreeDotLoader from '../Loader/ThreeDotLoader';
 import StreamLoader from '../Loader/StreamLoader';
 import { API_TYPE_OPTIONS, WEB_RESOURCES_DATA } from '@/utils/constant';
 import DocumentProcessing from '../Loader/DocumentProcess';
 import PreviewImage from '../ui/PreviewImage';
-import AgentAnalyze from '../Loader/AgentAnalyze';
 import PageSpeedResponse from './PageSpeedResponse';
 import { PAGE_SPEED_RECORD_KEY } from '@/hooks/conversation/useConversation';
-import WebAgentLoader from '../Loader/WebAgentLoader';
-import VideoCallAgentLoader from '../Loader/VideoCallAgentLoader';
-import SalesCallLoader from '../Loader/SalesCallLoader';
 import ShowResources from './ShowResources';
 import TextAreaBox from '@/widgets/TextAreaBox';
-import Lottie from "lottie-react";
-import loaderAnimation from '../loader.json';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 import useCanvasInput from '@/hooks/chat/useCanvasInput';
 import CanvasInput from './CanvasInput';
 type ResponseLoaderProps = {
@@ -129,10 +119,6 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
             .replace(/\n\s*\n\s*\n/g, '\n\n')
             .trim();
 
-        console.log('Markdown to formatted text conversion:', {
-            input: markdown.substring(0, 100),
-            output: formattedText.substring(0, 100)
-        });
 
         return formattedText;
     };
@@ -148,208 +134,18 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
             if (viewMode === 'markdown') {
                 // Store the current markdown content as the original
                 setOriginalMarkdown(editContent);
-                console.log('Switched to plain text mode - Stored markdown as original:', editContent.substring(0, 100));
             }
             // Plain text mode shows read-only preview, so we don't need to change editContent
-            console.log('Switched to plain text mode - Showing read-only plain text preview');
         } else {
             // Switching to markdown mode - show markdown content for editing
             if (originalMarkdown) {
                 setEditContent(originalMarkdown);
-                console.log('Switched to markdown mode - Showing original markdown:', originalMarkdown.substring(0, 100));
             } else {
                 // Fallback: use current content
-                console.log('Switched to markdown mode - Using current content');
             }
         }
 
         setViewMode(mode);
-    };
-
-    // Function to merge plain text changes into original markdown structure
-    const mergePlainTextIntoOriginalMarkdown = (plainText: string, originalMarkdown: string) => {
-        if (!plainText || !originalMarkdown) return plainText;
-
-        console.log('Merging plain text into original markdown...');
-        console.log('Original markdown:', originalMarkdown.substring(0, 200));
-        console.log('Edited plain text:', plainText.substring(0, 200));
-
-        // Convert original markdown to plain text for comparison
-        const originalPlainText = markdownToPlainText(originalMarkdown);
-        console.log('Original as plain text:', originalPlainText.substring(0, 200));
-
-        // If no changes were made, return original markdown
-        if (plainText.trim() === originalPlainText.trim()) {
-            console.log('No changes detected, returning original markdown');
-            return originalMarkdown;
-        }
-
-        // Start with the original markdown as base
-        let result = originalMarkdown;
-
-        // Find the differences between original plain text and edited plain text
-        const originalWords = originalPlainText.split(/(\s+)/);
-        const editedWords = plainText.split(/(\s+)/);
-
-        // Create a mapping of changes
-        const changes: { [key: string]: string } = {};
-
-        // Find changed words
-        for (let i = 0; i < Math.max(originalWords.length, editedWords.length); i++) {
-            const originalWord = originalWords[i] || '';
-            const editedWord = editedWords[i] || '';
-
-            if (originalWord !== editedWord && originalWord.trim() && editedWord.trim()) {
-                changes[originalWord] = editedWord;
-                console.log(`Word changed: "${originalWord}" → "${editedWord}"`);
-            }
-        }
-
-        // Apply changes to the original markdown
-        for (const [originalWord, newWord] of Object.entries(changes)) {
-            // Use word boundary regex to ensure we only replace exact words
-            const regex = new RegExp(`\\b${originalWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
-            result = result.replace(regex, newWord);
-        }
-
-        console.log('Final merged markdown:', result.substring(0, 200));
-        return result;
-    };
-
-    // Function to merge changes within a single line while preserving markdown structure
-    const mergeLineChanges = (editedLine: string, originalPlainLine: string, originalMarkdownLine: string) => {
-        if (!editedLine.trim()) return editedLine;
-
-        // If the original markdown line is empty, apply basic formatting
-        if (!originalMarkdownLine.trim()) {
-            return applyBasicMarkdownFormatting(editedLine);
-        }
-
-        // Split lines into words for word-by-word comparison
-        const editedWords = editedLine.split(/(\s+)/);
-        const originalPlainWords = originalPlainLine.split(/(\s+)/);
-        const originalMarkdownWords = originalMarkdownLine.split(/(\s+)/);
-
-        const resultWords: string[] = [];
-
-        // Process each word/space
-        for (let i = 0; i < editedWords.length; i++) {
-            const editedWord = editedWords[i];
-            const originalPlainWord = originalPlainWords[i] || '';
-            const originalMarkdownWord = originalMarkdownWords[i] || '';
-
-            // If word unchanged, use original markdown formatting
-            if (editedWord === originalPlainWord && originalMarkdownWord) {
-                resultWords.push(originalMarkdownWord);
-            } else {
-                // Word was modified, check if it needs markdown formatting
-                if (editedWord.trim() && !editedWord.match(/^\s+$/)) {
-                    // Apply basic markdown formatting to new/modified words
-                    resultWords.push(applyBasicMarkdownFormatting(editedWord));
-                } else {
-                    resultWords.push(editedWord);
-                }
-            }
-        }
-
-        return resultWords.join('');
-    };
-
-    // Function to apply basic markdown formatting to new content
-    const applyBasicMarkdownFormatting = (text: string) => {
-        if (!text.trim()) return text;
-
-        // Don't apply formatting to whitespace
-        if (text.match(/^\s+$/)) return text;
-
-        // Check if it's a bullet point
-        if (text.startsWith('• ')) {
-            return text.replace(/^•\s+/, '- ');
-        }
-
-        // Check if it's a numbered list
-        if (/^\d+\.\s+/.test(text)) {
-            return text;
-        }
-
-        // For regular text, don't add any formatting - keep as is
-        return text;
-    };
-
-    // Simple function to convert plain text to markdown
-    const convertPlainTextToMarkdown = (plainText: string) => {
-        if (!plainText) return '';
-
-        console.log('Converting plain text to markdown for saving...');
-        console.log('Plain text to convert:', plainText.substring(0, 200));
-
-        // Simple conversion to markdown
-        let result = plainText
-            // Convert bullet points to markdown lists
-            .replace(/^•\s+(.+)$/gm, '- $1')
-            // Convert numbered lists (keep as is)
-            .replace(/^(\d+)\.\s+(.+)$/gm, '$1. $2')
-            // Convert short lines to headers (if they look like titles)
-            .replace(/^([A-Z][A-Za-z\s]{2,50})(?=\n|$)/gm, (match) => {
-                if (match.length < 60 && !match.endsWith('.') && !match.endsWith(',')) {
-                    return `### ${match}`;
-                }
-                return match;
-            })
-            // Add proper line breaks
-            .replace(/\n\n/g, '\n\n')
-            .trim();
-
-        console.log('Converted to markdown:', result.substring(0, 200));
-        return result;
-    };
-
-    // Convert plain text back to markdown format
-    // This function should preserve the original markdown structure as much as possible
-    const plainTextToMarkdown = (plainText: string, originalMarkdown?: string) => {
-        if (!plainText) return '';
-
-        console.log('Converting plain text to markdown...');
-        console.log('Original markdown:', originalMarkdown?.substring(0, 200));
-        console.log('Plain text to convert:', plainText.substring(0, 200));
-
-        // If we have original markdown and the plain text is the same as the converted original,
-        // return the original markdown to preserve formatting
-        if (originalMarkdown) {
-            const convertedOriginal = markdownToPlainText(originalMarkdown);
-            console.log('Converted original:', convertedOriginal.substring(0, 200));
-
-            if (plainText.trim() === convertedOriginal.trim()) {
-                console.log('Returning original markdown to preserve formatting');
-                return originalMarkdown;
-            }
-        }
-
-        // Simple conversion for new/modified content
-        let result = plainText
-            // Convert bullet points back to markdown lists
-            .replace(/^•\s+(.+)$/gm, '- $1')
-            // Convert numbered items back to numbered lists
-            .replace(/^(\d+)\.\s+(.+)$/gm, '$1. $2')
-            // Add proper line breaks
-            .replace(/\n\n/g, '\n\n')
-            .trim();
-
-        console.log('Final converted markdown:', {
-            originalLength: plainText.length,
-            markdownLength: result.length,
-            preview: result.substring(0, 200)
-        });
-
-        return result;
-    };
-
-    // Helper function to calculate text similarity
-    const calculateTextSimilarity = (text1: string, text2: string) => {
-        const words1 = text1.toLowerCase().split(/\s+/);
-        const words2 = text2.toLowerCase().split(/\s+/);
-        const commonWords = words1.filter(word => words2.includes(word));
-        return commonWords.length / Math.max(words1.length, words2.length);
     };
 
     // Initialize edit content when response changes
@@ -363,75 +159,38 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
         // Always start in markdown mode and show markdown content
         setViewMode('markdown');
         setEditContent(cleanedResponse);
-        console.log('ChatResponse - Initialized in markdown mode with content:', cleanedResponse.substring(0, 100));
     }, [m?.response, answerMessage, conversations.length, i]);
-
-    // Handle inline editing - now opens EditResponseModal
-    const handleInlineEdit = () => {
-        if (!privateChat || loading || !onOpenEditModal) return;
-        onOpenEditModal(m?.id, m?.response || '');
-    };
 
     const handleInlineSave = async () => {
         try {
-            console.log('=== SAVE DEBUG ===');
-
-            console.log('Save debug info:', {
-                originalMarkdown: originalMarkdown?.substring(0, 100),
-                editContent: editContent?.substring(0, 100),
-                currentResponse: m?.response?.substring(0, 100)
-            });
 
             // Always save in markdown format
             let finalContent = editContent.trim();
-
-            console.log('Save mode:', viewMode);
-            console.log('Edit content before conversion:', finalContent.substring(0, 100));
-            console.log('Original markdown available:', originalMarkdown?.substring(0, 100));
 
             // If we're in plain text view, save the original markdown (since plain text is read-only)
             if (viewMode === 'plaintext') {
                 // In plain text mode, we save the original markdown content
                 if (originalMarkdown) {
                     finalContent = originalMarkdown.trim();
-                    console.log('Saving original markdown from plain text mode:', finalContent.substring(0, 100));
                 } else {
                     // Fallback: use current content
                     finalContent = editContent.trim();
-                    console.log('Saving current content as fallback:', finalContent.substring(0, 100));
                 }
             } else {
                 // If we're in markdown mode, use the edited content as is
                 finalContent = editContent.trim();
-                console.log('Saving markdown content directly:', finalContent.substring(0, 100));
             }
 
             // Convert ==text== back to <u>text</u> before saving
             finalContent = finalContent.replace(/==(.*?)==/g, '<u>$1</u>');
 
-            console.log('Final content to save:', finalContent?.substring(0, 100));
-
-            console.log('Save condition check:', {
-                onResponseUpdateExists: !!onResponseUpdate,
-                finalContentLength: finalContent?.length,
-                currentResponseLength: m?.response?.length,
-                contentsAreDifferent: finalContent !== m?.response,
-                messageId: m?.id
-            });
-
             if (onResponseUpdate && finalContent !== m?.response) {
-                console.log('Calling onResponseUpdate with:', m?.id, finalContent?.substring(0, 50));
                 await onResponseUpdate(m?.id, finalContent);
                 // Notify parent that response was edited
                 if (onResponseEdited) {
                     onResponseEdited(m?.id);
                 }
-                console.log('Response updated successfully');
             } else {
-                console.log('No update needed or onResponseUpdate not available', {
-                    hasOnResponseUpdate: !!onResponseUpdate,
-                    contentsDifferent: finalContent !== m?.response
-                });
             }
             setIsEditing(false);
         } catch (error) {

@@ -197,7 +197,7 @@ const ToolsConnected = ({ isWebSearchActive, toolStates, onToolStatesChange }: T
                             <div className="mb-3 px-3">
                                 <Link
                                     href={routes.mcp}
-                                    className="text-blue-600 underline text-font-15"
+                                    className="text-b2 underline text-font-15"
                                 >
                                     View all Connections
                                 </Link>

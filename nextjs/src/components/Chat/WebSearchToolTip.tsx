@@ -24,7 +24,7 @@ const WebSearchToolTip = ({
                 <TooltipTrigger disabled={loading}>
                     <div
                        className={`web-search cursor-pointer transition ease-in-out duration-200 w-auto h-8 flex items-center px-[5px] ${
-                            isWebSearchActive ? 'bg-blue rounded-[15px] hover:bg-blue' : 'rounded-md hover:bg-b11'
+                            isWebSearchActive ? 'bg-b2 rounded-[15px] hover:bg-b2' : 'rounded-md hover:bg-b11'
                         }`}
                         onClick={handleWebSearchClick}
                     >

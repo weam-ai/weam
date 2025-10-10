@@ -11,7 +11,7 @@ const bcrypt = require('bcrypt');
 const Role = require('../models/role');
 const UserBot = require('../models/userBot');
 const { OPENAI_MODAL, AI_MODAL_PROVIDER, PINECORN_STATIC_KEY, MODAL_NAME, ANTHROPIC_MODAL, GEMINI_MODAL, PERPLEXITY_MODAL, OPENROUTER_PROVIDER, DEEPSEEK_MODAL, LLAMA4_MODAL, GROK_MODAL, QWEN_MODAL } = require('../config/constants/aimodal');
-const { LINK, FRESHDESK_SUPPORT_URL, API, SERVER } = require('../config/config');
+const { LINK, API, SERVER, EMAIL } = require('../config/config');
 const mongoose = require('mongoose');
 const Bot = require('../models/bot');
 const { isBlockedDomain, isDisposableEmail } = require('../utils/validations/emailValidation');
@@ -410,7 +410,7 @@ const checkApiKey = async (req) => {
             [AI_MODAL_PROVIDER.ANTHROPIC]: anthropicApiChecker,
             [AI_MODAL_PROVIDER.GEMINI]: geminiApiKeyChecker,
             // [AI_MODAL_PROVIDER.PERPLEXITY]: perplexityApiChecker,
-            // [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
+            [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
         }
         const provider = await providerObj[code](req);
         return provider;
@@ -450,7 +450,7 @@ const resendVerification = async (req) => {
         const existingUser = await User.findOne({ email: req.body.email }); 
         if (!existingUser) throw new Error(_localize('auth.link_expire', req, 'verification'));
         const inviteLink = await createVerifyLink(existingUser, {}, req.body.minutes);
-        getTemplate(EMAIL_TEMPLATE.RESEND_VERIFICATION_LINK, { link: inviteLink, support: FRESHDESK_SUPPORT_URL }).then(
+        getTemplate(EMAIL_TEMPLATE.RESEND_VERIFICATION_LINK, { link: inviteLink, support: EMAIL?.SENDER_EMAIL }).then(
             async(template) => {
                 await sendSESMail(existingUser.email, template.subject, template.body);
             }
@@ -655,7 +655,7 @@ async function anthropicApiChecker(req) {
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
-                model: MODAL_NAME.CLAUDE_3_5_SONNET_LATEST,
+                model: MODAL_NAME.CLAUDE_SONNET_4_20250514,
                 max_tokens: 1024,
                 messages: [
                     { role: 'user', content: 'Hello, world' }
@@ -664,15 +664,12 @@ async function anthropicApiChecker(req) {
         });
         if (!response.ok) return false;
         const companyId = getCompanyId(req.user);
+        const companydetails = req.user.company;
 
-        const [company, existingBots] = await Promise.all([
-            Company.findById(companyId, { companyNm: 1, slug: 1 }),
-            UserBot.find({ 'company.id': companyId, 'bot.code': req.body.bot.code })
-
+        const [existingBots, anthropicBot] = await Promise.all([
+            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.ANTHROPIC }),
+            Bot.findOne({ code: AI_MODAL_PROVIDER.ANTHROPIC }, { title: 1, code: 1 })
         ]);
-        if (!company) throw new Error(_localize('module.notFound', req, 'company'));
-
-        const { companyNm, slug, _id: companyDbId } = company;
 
         const updates = [];
         const inserts = [];
@@ -682,8 +679,8 @@ async function anthropicApiChecker(req) {
             const existingBot = existingBots.find(bot => bot.name === element.name);
             const modelConfig = {
                 name: element.name,
-                bot: req.body.bot,
-                company: { name: companyNm, slug, id: companyDbId },
+                bot: formatBot(anthropicBot),
+                company: companydetails,
                 config: { apikey: encryptedKey },
                 modelType: element.type,
                 extraConfig: {
@@ -697,7 +694,7 @@ async function anthropicApiChecker(req) {
             if (existingBot)
                 updates.push({
                     updateOne: {
-                        filter: { name: element.name, 'company.id': companyId, 'bot.code': req.body.bot.code },
+                        filter: { name: element.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.ANTHROPIC },
                         update: { $set: modelConfig, $unset: { deletedAt: 1 } }
                     }
                 });
@@ -709,12 +706,12 @@ async function anthropicApiChecker(req) {
 
         if (inserts.length) return UserBot.insertMany(inserts);
 
-        await Company.updateOne({ _id: companyId }, { $unset: { [`queryLimit.${AI_MODAL_PROVIDER.ANTHROPIC}`]: '' }});
         return existingBots[0]?.deletedAt ? existingBots : true;
     } catch (error) {
         handleError(error, 'Error - anthropicApiChecker');
     }
 }
+
 
 async function createFreeTierApiKey(user) {
     try {
@@ -943,27 +940,24 @@ async function createGeminiModels(req) {
     try {
         const companydetails = req.user.company;
         const companyId = companydetails.id;
-        
-        const existing = await UserBot.find({ 'company.id': companyId, 'bot.code': req.body.bot.code });
-        
-        const geminiModels = [
-            'gemini-1.5-pro',
-            // 'gemini-1.5-flash-8b',
-            // 'gemini-1.5-flash',
-            'gemini-2.0-flash',
-        ];
+
+        const [geminiBot, existing] = await Promise.all([
+            Bot.findOne({ code: AI_MODAL_PROVIDER.GEMINI }, { title: 1, code: 1 }),
+            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.GEMINI })
+        ]);
 
         const updates = [];
         const inserts = [];
+        const encryptedKey = encryptedData(req.body.key);
 
-        for (const modelName of geminiModels) {
-            const existingEntry = existing.find(entry => entry.name === modelName);
+        GEMINI_MODAL.forEach(element => {
+            const existingEntry = existing.find(entry => entry.name === element.name);
             const modelConfig = {
-                name: modelName,
-                bot: req.body.bot,
+                name: element.name,
+                bot: formatBot(geminiBot),
                 company: companydetails,
                 config: {
-                    apikey: encryptedData(req.body.key),
+                    apikey: encryptedKey,
                 },
                 modelType: 2,
                 isActive: true,
@@ -973,25 +967,17 @@ async function createGeminiModels(req) {
                     topK: 10
                 }
             };
-            
             if (existingEntry) {
                 updates.push({
                     updateOne: {
-                        filter: { name: modelName, 'company.id': companyId, 'bot.code': req.body.bot.code },
+                        filter: { name: element.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.GEMINI },
                         update: { $set: modelConfig, $unset: { deletedAt: 1 } }
                     }
                 });
             } else {
                 inserts.push(modelConfig);
             }
-        }
-
-        await Promise.all([
-            Company.updateOne(
-                { _id: companyId }, 
-                { $unset: { [`queryLimit.${AI_MODAL_PROVIDER.GEMINI}`]: '' }}
-            )
-        ]);
+        });
         
         if (updates.length) {
             return UserBot.bulkWrite(updates);
@@ -1010,19 +996,37 @@ async function createGeminiModels(req) {
 async function geminiApiKeyChecker(req) {
     try {
         const response = await fetch(
-            `${LINK.GEMINI_API_URL}?key=${req.body.key}`,
+            `${LINK.GEMINI_API_URL}/v1beta/models/gemini-2.0-flash:generateContent?key=${req.body.key}`,
             {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify(
+                    {
+                        system_instruction: {
+                            parts: [
+                                {
+                                    text: 'You are a cat. Your name is Neko.'
+                                }
+                            ]
+                        },
+                        contents: [
+                            {
+                                parts: [
+                                    {
+                                        text: 'Hello there'
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                )
             }
         );
-
         if (!response.ok) {
             return false;
         }
-
         return createGeminiModels(req);
     } catch (error) {
         handleError(error, 'Error - geminiApiKeyChecker');
@@ -1037,7 +1041,7 @@ const sendManualInviteEmail = async (req) => {
         const emailPromise = [];
         existingUser.forEach(async (user) => {
             const inviteLink = await createVerifyLink(user, {}, minutes);
-            emailPromise.push(getTemplate(EMAIL_TEMPLATE.VERIFICATION_LINK, { link: inviteLink, support: FRESHDESK_SUPPORT_URL }).then(
+            emailPromise.push(getTemplate(EMAIL_TEMPLATE.VERIFICATION_LINK, { link: inviteLink, support: EMAIL?.SENDER_EMAIL }).then(
                 async(template) => {
                     await sendSESMail(user.email, template.subject, template.body);
                 }
@@ -1061,79 +1065,89 @@ const addBlockedDomain = async (req) => {
     }
 }
 
-async function ollamaApiChecker(req) {
+async function openRouterApiChecker(req) {
     try {
-        const baseUrl = req.body.baseUrl || 'http://localhost:11434';
-        const apiKey = req.body.apiKey;
-        
-        // Test connection to Ollama instance
-        const headers = { 'Content-Type': 'application/json' };
-        if (apiKey) {
-            headers['Authorization'] = `Bearer ${apiKey}`;
-        }
-        
-        const response = await fetch(`${baseUrl}/api/tags`, {
-            method: 'GET',
-            headers
-        });
-        
-        if (!response.ok) return false;
-        
-        const data = await response.json();
-        const models = data.models || [];
-        
         const companyId = getCompanyId(req.user);
         const companydetails = req.user.company;
-
-        const [existingBots, ollamaBot] = await Promise.all([
-            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OLLAMA }),
-            Bot.findOne({ code: AI_MODAL_PROVIDER.OLLAMA }, { title: 1, code: 1 })
+        const response = await fetch(`${LINK.OPEN_ROUTER_API_URL}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${req.body.key}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: MODAL_NAME.GPT_4O_MINI,
+                messages: [
+                    { role: 'user', content: 'What is the meaning of life?' }
+                ]
+            })
+        });
+        console.log('openRouterApiChecker',response.status);
+        if (!response.ok) return false;
+        const query = Object.keys(OPENROUTER_PROVIDER);
+        const [openRouterBot, existing] = await Promise.all([
+            Bot.find({ code: { $in: query } }, { title: 1, code: 1 }),
+            UserBot.find({ 'company.id': companyId, 'bot.code': { $in: query } })
         ]);
-
         const updates = [];
         const inserts = [];
-        const encryptedKey = apiKey ? encryptedData(apiKey) : null;
-        const encryptedBaseUrl = encryptedData(baseUrl);
-
-        // Create model configs for available Ollama models
-        models.forEach(model => {
-            const existingBot = existingBots.find(bot => bot.name === model.name);
-            const modelConfig = {
-                name: model.name,
-                bot: formatBot(ollamaBot),
-                company: companydetails,
-                config: { 
-                    baseUrl: encryptedBaseUrl,
-                    apikey: encryptedKey 
-                },
-                modelType: 'text',
-                extraConfig: {
-                    temperature: 0.7,
-                    top_p: 0.9,
-                    top_k: 40,
-                    repeat_penalty: 1.1
+        const encryptedKey = encryptedData(req.body.key);
+        const commonConfig = {
+            company: companydetails,
+            config: {
+                apikey: encryptedKey,
+            },
+            isActive: true,
+            extraConfig: {
+                stream: true,
+                temperature: 0.7,
+                topP: 0.9,
+                topK: 10
+            },
+        }
+        const processModalBots = (modalList, providerKey, providerName) => {
+            const botMeta = openRouterBot.find(bot => bot.code === providerKey);
+            modalList.forEach((element) => {
+                const existingBot = existing.find(bot => bot.name === element.name);
+                const modelConfig = {
+                    name: element.name,
+                    bot: formatBot(botMeta),
+                    modelType: element.type,
+                    provider: providerName,
+                    ...commonConfig,
+                };
+                if (existingBot) {
+                    updates.push({
+                        updateOne: {
+                            filter: {
+                                name: element.name,
+                                'company.id': companyId,
+                                'bot.code': providerKey
+                            },
+                            update: {
+                                $set: modelConfig,
+                                $unset: { deletedAt: 1 }
+                            }
+                        }
+                    });
+                } else {
+                    inserts.push(modelConfig);
                 }
-            };
-            
-            if (existingBot) {
-                updates.push({
-                    updateOne: {
-                        filter: { name: model.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.OLLAMA },
-                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
-                    }
-                });
-            } else {
-                inserts.push(modelConfig);
-            }
-        });
-
-        if (updates.length) await UserBot.bulkWrite(updates);
-        if (inserts.length) return UserBot.insertMany(inserts);
-
-        return existingBots[0]?.deletedAt ? existingBots : true;
+            });
+        };
+        processModalBots(DEEPSEEK_MODAL, AI_MODAL_PROVIDER.DEEPSEEK, OPENROUTER_PROVIDER.DEEPSEEK);
+        processModalBots(LLAMA4_MODAL, AI_MODAL_PROVIDER.LLAMA4, OPENROUTER_PROVIDER.LLAMA4);
+        processModalBots(QWEN_MODAL, AI_MODAL_PROVIDER.QWEN, OPENROUTER_PROVIDER.QWEN);
+        processModalBots(GROK_MODAL, AI_MODAL_PROVIDER.GROK, OPENROUTER_PROVIDER.GROK);
+        if (updates.length) {
+            return UserBot.bulkWrite(updates);
+        }
+        if (inserts.length) {
+            return UserBot.insertMany(inserts);
+        }
+        return existing;
     } catch (error) {
-        handleError(error, 'Error - ollamaApiChecker');
-        return false;
+        handleError(error, 'Error - openRouterApiChecker');
     }
 }
 

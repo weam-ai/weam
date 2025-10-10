@@ -20,4 +20,6 @@ export type AgentRecordType = {
     coverImg?: FileType;
     charimg?: string;
     favoriteByUsers: string[];
+    type?: 'agent' | 'supervisor';
+    description?: string;
 };

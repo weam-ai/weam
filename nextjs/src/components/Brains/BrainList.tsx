@@ -122,13 +122,13 @@ export const LinkItems = React.memo(({ icon, text, href, data }: LinkItemsProps)
                 href={href}
                 className={`${
                     isActive ? 'active' : ''
-                } peer-hover:bg-blue5 flex items-center px-[15px] py-[8.6px] text-b5 rounded-custom hover:text-blue [&.active]:text-blue`}
+                } peer-hover:bg-gray-100 flex items-center px-[15px] py-[8.6px] text-b5 rounded-custom hover:text-b2 [&.active]:text-b2`}
                 onClick={handleLinkClick}
             >
                 <span
                     className={`${
                         isActive ? 'active' : ''
-                    } mr-2.5 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:fill-b6 group-hover:[&>svg]:fill-blue [&>svg]:[&.active]:fill-blue`}
+                    } mr-2.5 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:fill-b6 group-hover:[&>svg]:fill-b2 [&>svg]:[&.active]:fill-b2`}
                 >
                     {icon}
                 </span>
@@ -307,7 +307,7 @@ export const CommonList = ({ b, key, currentUser, closeSidebar }: CommonListProp
                     <input
                         type="text"
                         ref={inputRef}
-                        className="flex-1 mr-3 p-0 m-0 border border-blue outline-none bg-transparent rounded-custom text-font-14 font-semibold leading-[19px] text-b2 focus:border-blue"
+                        className="flex-1 mr-3 p-0 m-0 border border-b2 outline-none bg-transparent rounded-custom text-font-14 font-semibold leading-[19px] text-b2 focus:border-b2"
                         value={editedTitle}
                         onChange={handleInputChange}
                         maxLength={50}

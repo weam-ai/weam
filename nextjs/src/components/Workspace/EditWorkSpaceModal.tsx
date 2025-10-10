@@ -40,6 +40,8 @@ import { setSelectedWorkSpaceAction } from '@/lib/slices/workspace/workspacelist
 import { useDispatch } from 'react-redux';
 import Toast from '@/utils/toast';
 import { RootState } from '@/lib/store';
+import TooltipIcon from '@/icons/TooltipIcon';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const membersRoleOptions = [
     { value: 'Every', label: 'Everyone' },
@@ -148,7 +150,7 @@ const AddNewMemberModal = ({ workspace, onClose, open, refetchMemebrs }) => {
                                             <div className="flex justify-center mt-5 mb-5">
                                                 <button
                                                     type="submit"
-                                                    className="btn btn-blue"
+                                                    className="btn btn-black"
                                                     disabled={isPending}
                                                 >
                                                     Add a Member
@@ -291,7 +293,7 @@ const AddTeamMemberModal = ({
                                             <div className="flex justify-center mt-5 mb-5">
                                                 <button
                                                     type="submit"
-                                                    className="btn btn-blue"
+                                                    className="btn btn-black"
                                                     disabled={isPending}
                                                 >
                                                     Add a Team
@@ -397,7 +399,7 @@ const AboutBrainDetails = ({
                     {isEdit ? (
                         <span
                             ref={workSpaceNameButtonRef}
-                            className="text-blue hover:text-bluehover hover:underline cursor-pointer"
+                            className="text-b7 hover:text-b2 underline cursor-pointer"
                             onClick={onChange}
                         >
                             Change
@@ -405,7 +407,7 @@ const AboutBrainDetails = ({
                     ) : (
                         <span
                             ref={workSpaceNameButtonRef}
-                            className="text-blue hover:text-bluehover hover:underline cursor-pointer"
+                            className="text-b7 hover:text-b2 underline cursor-pointer"
                             onClick={() => setIsEdit(true)}
                         >
                             Edit
@@ -451,7 +453,7 @@ const AboutBrainDetails = ({
             {adminUser?.user?.email === userDetail?.email && (
                 <div className="group/item user-item flex justify-between py-2.5">
                    
-                    <button className="btn btn-blue" onClick={handleDelete} disabled={isDeletePending}>
+                    <button className="btn btn-black" onClick={handleDelete} disabled={isDeletePending}>
                         Archive
                     </button>
                 </div>
@@ -495,7 +497,7 @@ const MemberItem = ({ member, handleRemoveMember }) => {
                     <span className='cursor-pointer' onClick={() =>
                         handleRemoveMember(member?.user?.id)
                     }>
-                        <RemoveIcon width={14} height={14} className={"size-4 fill-b4 hover:fill-blue"} />
+                        <RemoveIcon width={14} height={14} className={"size-4 fill-b5 hover:fill-red"} />
                     </span>
                 )}
                 {/* } */}
@@ -518,13 +520,38 @@ const TeamItem = ({ team, handleRemoveTeam, brain }:any) => {
                 <p className="m-0 text-font-14 leading-[22px] font-normal text-b2 ml-2">
                     ({team?.id?.teamUsers.length} Members)
                 </p>
+                
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="ml-2 cursor-pointer hover:opacity-70 transition-opacity">
+                                <TooltipIcon width={16} height={16} className="fill-b5 hover:fill-b2" />
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                            <div className="space-y-2">
+                                <p className="font-semibold text-sm">Team Members:</p>
+                                <div className="space-y-1">
+                                    {team?.id?.teamUsers?.map((member: any, index: number) => (
+                                        <div key={member._id || index} className="text-xs">
+                                            <p className="font-medium">
+                                                {member.fname} {member.lname}
+                                            </p>
+                                            <p className="text-b5">{member.email}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
             <div className="flex items-center space-x-2.5 text-font-14">
                 {
                      <span className='cursor-pointer' onClick={() =>
                         handleRemoveTeam(team.id._id)
                     }>
-                        <RemoveIcon width={14} height={14} className={"size-4 fill-b4 hover:fill-blue"} />
+                        <RemoveIcon width={14} height={14} className={"size-4 fill-b5 hover:fill-red"} />
                     </span>
                    
                 }
@@ -731,12 +758,12 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                         />
                                     </div>
                                     {/* Add Member start */}
-                                    <div className="mt-2.5 px-[30px]">
+                                    <div className="px-[30px]">
                                         <Dialog>
                                             <DialogTrigger asChild>
                                                 <div className="w-full gap-1 flex">
                                                     <span
-                                                        className="inline-flex items-center cursor-pointer md:px-3 px-2 py-2 rounded-md bg-b12 border border-b11 hover:bg-b11 hover:border-b11 transition ease-in-out duration-150"
+                                                        className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
                                                         onClick={() =>
                                                             setAddMemberModal(
                                                                 true
@@ -746,14 +773,14 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                                         <AddUser
                                                             width={16}
                                                             height={18}
-                                                            className="w-[26px] h-[18px] object-contain fill-b5 mr-1"
+                                                            className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
                                                         />
-                                                            <span className="text-font-14 font-semibold text-b2">
+                                                            <span>
                                                             Add a Member
                                                         </span>
                                                     </span>
                                                     <span
-                                                        className="inline-flex items-center cursor-pointer md:px-3 px-2 py-2 rounded-md bg-b12 border border-b11 hover:bg-b11 hover:border-b11 transition ease-in-out duration-150"
+                                                        className="btn btn-outline-gray flex items-center gap-x-1 justify-center group"
                                                         onClick={() =>
                                                             setAddTeamModal(
                                                                 true
@@ -763,9 +790,9 @@ const EditWorkSpaceModal = ({ open, closeModal, workspace }) => {
                                                         <AddTeam
                                                             width={18}
                                                             height={18}
-                                                            className="w-[26px] h-[18px] object-contain fill-b2 mr-1"
+                                                            className="w-[26px] h-[18px] object-contain fill-b5 group-hover:fill-white group-active:fill-white mr-1"
                                                         />
-                                                        <span className="text-font-14 font-semibold text-b2">
+                                                        <span>
                                                             Add a Team
                                                         </span>
                                                     </span>

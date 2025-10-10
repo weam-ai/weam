@@ -55,6 +55,7 @@ export type BrainAgentType = {
     _id: string;
     title: string;
     slug: string;
+    type?: 'agent' | 'supervisor';
     systemPrompt: string;
     isActive: boolean;
     createdAt: string;

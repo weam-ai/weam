@@ -2,6 +2,7 @@ import commonApi from '@/api';
 import { DEFAULT_SORT, MODULES, MODULE_ACTIONS } from '@/utils/constant';
 import { getCurrentUser } from '@/utils/handleAuth';
 import Toast from '@/utils/toast';
+import { createSharedLinkAction } from '@/actions/settings';
 import React, { useState } from 'react'
 
 const useShareChat = () => {
@@ -14,14 +15,11 @@ const useShareChat = () => {
 
     const createShareChat = async (payload) => {
         try {
-            const response = await commonApi({
-                action: MODULE_ACTIONS.CREATE,
-                prefix: MODULE_ACTIONS.WEB_PREFIX,
-                module: MODULES.SHARE_CHAT,
-                common: true,
-                data: payload
-            })
+            setLoading(true);
+            const response = await createSharedLinkAction(payload);
             Toast(response.message);
+        } catch (error) {
+            Toast('Failed to create shared link');
         } finally {
             setLoading(false);
         }

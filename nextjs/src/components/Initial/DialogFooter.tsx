@@ -14,7 +14,7 @@ const DialogFooter = ({
   return (
     <div className="flex items-center justify-between sm:py-4 py-2 px-6 z-10 max-sm:flex-col max-sm:gap-y-3">
       <Button 
-        className="text-font-14 font-bold underline hover:text-black text-blue" 
+        className="text-font-14 font-bold underline hover:text-b5 text-black" 
         variant="ghost" 
         onClick={onSkip}
         disabled={isUpdating}

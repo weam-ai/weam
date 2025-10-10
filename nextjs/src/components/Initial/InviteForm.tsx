@@ -94,10 +94,10 @@ const InviteForm = () => {
                 <ValidationError errors={errors} field={'role'} />
             </div>
             <div className="flex gap-2">
-                <button className="btn btn-blue max-w-[200px] mt-5" onClick={handleSubmit((data) => sendInvitation(users, data.role, true))} disabled={!users.length || loading}>
+                <button className="btn btn-black max-w-[200px] mt-5" onClick={handleSubmit((data) => sendInvitation(users, data.role, true))} disabled={!users.length || loading}>
                     Send Invitations
                 </button>
-                <button className="btn btn-outline-blue max-w-[150px] mt-5" onClick={handleSkipClick}>
+                <button className="btn btn-outline-gray max-w-[150px] mt-5" onClick={handleSkipClick}>
                     Skip
                 </button>
             </div>

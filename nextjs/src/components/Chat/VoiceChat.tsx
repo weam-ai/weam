@@ -27,6 +27,10 @@ const VoiceChat = React.memo(({ setText }) => {
 
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
+
+  // Ref to track if the user manually stopped the recording
+  const userManuallyStoppedRef = useRef(false);
+
   const formatTime = (time) => {
     return time.toString().padStart(2, '0');
   };
@@ -47,7 +51,7 @@ const VoiceChat = React.memo(({ setText }) => {
       
       recognition.onstart = () => {
         setIsListening(true);
-        console.log('Speech recognition started');
+        console.log('Updated: Speech recognition started');
       };
       
       recognition.onresult = (event) => {
@@ -76,8 +80,20 @@ const VoiceChat = React.memo(({ setText }) => {
       };
       
       recognition.onend = () => {
-        setIsListening(false);
-        console.log('Speech recognition ended');
+        console.log('Updated: Speech recognition ended');
+        if (userManuallyStoppedRef.current) {
+          setIsListening(false);
+        }
+        else {
+          // This is an automatic timeout by the browser. Restart it.
+          try {
+            console.log('Auto-restarting speech recognition...');
+            recognition.start();
+          } catch (err) {
+            console.error('Error on auto-restart:', err);
+            setIsListening(false); // Fallback to stop if restart fails
+          }
+        }
       };
     } else {
       Toast('Speech Recognition not supported in this browser. Try Chrome or Edge.', 'error');
@@ -135,6 +151,7 @@ const VoiceChat = React.memo(({ setText }) => {
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
       setTranscript('');
+      userManuallyStoppedRef.current = false;
       try {
         recognitionRef.current.start();
       } catch (err) {
@@ -145,6 +162,7 @@ const VoiceChat = React.memo(({ setText }) => {
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
+      userManuallyStoppedRef.current = true;
       recognitionRef.current.stop();
     }
   };

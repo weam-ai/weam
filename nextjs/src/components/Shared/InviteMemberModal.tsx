@@ -194,10 +194,10 @@ const InviteMemberModal = ({getUsersList}) => {
                                 className="w-[85px] h-[50px] object-contain mx-auto mb-6"
                             />
                             <p className="text-font-16 text-b5">
-                               {userLimitExceed? <p>You’ve reached the limit of adding users for your company. If you’d like to add more users or need assistance, please contact us at <a href='mailto:hello@weam.ai' className='text-blue'> hello@weam.ai</a></p> :"Invitations successfully sent."}
+                               {userLimitExceed? <p>You’ve reached the limit of adding users for your company. If you’d like to add more users or need assistance, please contact us at <a href='mailto:hello@weam.ai' className='text-b2'> hello@weam.ai</a></p> :"Invitations successfully sent."}
                             </p>
                             <button
-                                className="btn btn-blue mt-6"
+                                className="btn btn-black mt-6"
                                 onClick={handleCancel}
                             >
                                 Finish
@@ -212,7 +212,7 @@ const InviteMemberModal = ({getUsersList}) => {
                     <button className='btn btn-outline-gray'>Cancel</button>
                     </DialogClose>
                     <button
-                        className="btn btn-blue"
+                        className="btn btn-black"
                         onClick={handleSubmit(() => sendInvitation(users, selectRole))}
                         disabled={!users.length || loading}
                     >

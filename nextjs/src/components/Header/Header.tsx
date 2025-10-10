@@ -1,7 +1,7 @@
 'use client';
 import UserModel from './UserModel';
 import MemberList from './MemberList';
-import { useParams, usePathname, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useSearchParams, useRouter } from 'next/navigation';
 import routes from '@/utils/routes';
 import ChatThreadIcon from '@/icons/ChatThreadIcon';
 import PromptIcon from '@/icons/Prompt';
@@ -63,6 +63,40 @@ const HeaderLayout = () => {
     );
 };
 
+export const ClickableBreadcrumb = ({ brainName, sectionName, brainId, pathname }) => {
+    const router = useRouter();
+    
+    const handleBrainClick = () => {
+        // Navigate to the main brain screen based on the current path
+        if (pathname.includes('/chat')) {
+            router.push(`/?b=${brainId}`);
+        } else if (pathname.includes('/prompts')) {
+            router.push(`/?b=${brainId}`);
+        } else if (pathname.includes('/custom-gpt')) {
+            router.push(`/?b=${brainId}`);
+        } else if (pathname.includes('/docs')) {
+            router.push(`/?b=${brainId}`);
+        } else if (pathname.includes('/pages')) {
+            router.push(`/?b=${brainId}`);
+        }
+    };
+
+    return (
+        <div className="flex items-center space-x-2">
+            <button 
+                onClick={handleBrainClick}
+                className="text-font-14 text-b2 underline hover:text-b5 cursor-pointer font-medium"
+            >
+                {brainName}
+            </button>
+            <span className="inline-block mx-2.5 text-b5">/</span>
+            <span className="text-font-14 text-b2">
+                {sectionName}
+            </span>
+        </div>
+    );
+};
+
 const ListHeaderLayout = ({ heading, icons }) => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -71,11 +105,11 @@ const ListHeaderLayout = ({ heading, icons }) => {
     const data = matchedBrain(braindata, brainId);
 
     return (
-        <header className="top-header h-[68px] min-h-[68px] flex items-center space-x-2 py-2 md:pl-[15px] pl-[50px] pr-[15px] max-md:sticky max-md:top-0 z-10 bg-white">
+        <header className="top-header h-[68px] min-h-[68px] flex items-center space-x-2 py-2 md:pl-[30px] pl-[50px] pr-[15px] max-md:sticky max-md:top-0 z-10 bg-white">
             <div className="size-[30px] flex items-center justify-center rounded-full p-1">
                 {icons} 
             </div>
-            <p className="text-font-16 font-bold">{heading}</p>
+            {/* <p className="text-font-16 font-bold">{heading}</p>
             {pathname !== routes.customGPTAdd && (
                 <>
                     <span className="inline-block mx-2.5">/</span>
@@ -83,6 +117,16 @@ const ListHeaderLayout = ({ heading, icons }) => {
                         {pathname.includes('/custom-gpt/edit/') ? 'Edit Agent' : data?.title}
                     </p>
                 </>
+            )} */}
+            { data?.title ? (
+                <ClickableBreadcrumb 
+                    brainName={data.title}
+                    sectionName={pathname.includes('/custom-gpt/edit/') ? 'Edit Agent' : heading}
+                    brainId={brainId}
+                    pathname={pathname}
+                />
+            ) : (
+                <p className="text-font-16 font-bold">{heading}</p>
             )}
         </header>
     );

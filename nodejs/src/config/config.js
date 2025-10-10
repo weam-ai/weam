@@ -13,7 +13,6 @@ module.exports = {
     SERVER: {
         PORT: process.env.SERVER_PORT || 4051,
         NODE_ENV: process.env.NODE_ENV,
-        LOCAL_LOG: process.env.LOCAL_LOG
     },
     API: {
         PREFIX: process.env.API_PREFIX,
@@ -98,7 +97,6 @@ module.exports = {
     TZ: process.env.TZ ?? 'Asia/Kolkata',
     ENCRYPTION_KEY: process.env.SECURITY_KEY,
     SUPPORT_EMAIL: process.env.SUPPORT_EMAIL,
-    FRESHDESK_SUPPORT_URL: process.env.FRESHDESK_SUPPORT_URL,
     EMAIL: {
         EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
         SMTP_SERVER: process.env.SMTP_SERVER,

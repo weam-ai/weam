@@ -45,7 +45,7 @@ export default function DataTablePagination({ table, pagination }:any) {
                           }}
                           className={`size-7 flex items-center justify-center text-font-14 font-normal bg-b12 rounded-custom ${
                               pagination.pageIndex + 1 === page
-                                  ? 'bg-blue text-b15'
+                                  ? 'bg-b2 text-white'
                                   : 'text-b2'
                           }`}
                           disabled={page === '...'}

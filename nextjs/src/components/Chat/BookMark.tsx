@@ -151,8 +151,8 @@ const BookmarkDialog = React.memo(({ onSelect, isWebSearchActive, selectedAttach
                                     </div>
                                 </DialogClose>
                             )) :
-                            <div className="w-full max-w-[740px] text-center mx-auto py-8 text-b2 border-[2px] rounded-lg border-b-[5px] px-3 mt-5 col-span-3">
-                                <p className="text-font-14">No favorites found</p>
+                            <div className="w-full max-w-[740px] text-center mx-auto py-8 text-b2 px-3 mt-5 col-span-3">
+                                <p className="text-font-14 text-gray-500">No favorites found</p>
                             </div>
                         }
                     </div>

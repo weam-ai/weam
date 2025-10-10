@@ -139,7 +139,6 @@ const CompanyDetails = () => {
         }
     };
 
-      
     return (   
         <>
             <form
@@ -280,12 +279,12 @@ const CompanyDetails = () => {
                 </div>
 
                 <div className="submit-wrap flex items-center justify-center mt-2 md:mt-10 mx-auto w-full">
-                    <button className="btn btn-black py-[12px] w-full max-w-[300px]" disabled={loading}>
+                    <button className="btn btn-black w-full max-w-[300px]" disabled={loading}>
                         Sign Up
                     </button>
                 </div>
-                <p className="mb-5 mt-3 md:mb-0 mx-auto w-full text-center text-b7">
-                Already have an account? <Link className='text-blue hover:text-black font-bold' href={routes.login}>Sign In</Link>
+                <p className="mb-5 mt-3 md:mb-0 mx-auto text-font-14 w-full text-center text-b7">
+                Already have an account? <Link className='hover:text-b5 underline text-b2 font-bold' href={routes.login}>Sign In</Link>
                 </p>
             </form>
             </>

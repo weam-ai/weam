@@ -117,20 +117,20 @@ const SettingSidebar = async () => {
             navigate: `${LINK.DOMAIN_URL}/settings/billing`,
             slug: '/settings/billing',
         },
-        {
-            name: 'Support',
-            icon: (
-                <SupportIcon
-                    height={18}
-                    width={18}
-                    className={'w-[18px] h-auto object-contain fill-b2'}
-                />
-            ),
-            hasAccess: userDetail?.roleCode !== ROLE_TYPE.USER,
-            navigate: 'https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue',
-            slug: '/support',
-            target: '_blank',
-        },
+        // {
+        //     name: 'Support',
+        //     icon: (
+        //         <SupportIcon
+        //             height={18}
+        //             width={18}
+        //             className={'w-[18px] h-auto object-contain fill-b2'}
+        //         />
+        //     ),
+        //     hasAccess: userDetail?.roleCode !== ROLE_TYPE.USER,
+        //     navigate: 'https://weamai.freshdesk.com/support/tickets/new?ticket_form=report_an_issue',
+        //     slug: '/support',
+        //     target: '_blank',
+        // },
         {
             name: 'Apps',
             icon: (
