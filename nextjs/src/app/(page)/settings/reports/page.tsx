@@ -189,7 +189,7 @@ export default function DashboardReport() {
                                     />
                                 </div>
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
+                                    {/*<DropdownMenuTrigger asChild>
                                         <div className="relative cursor-pointer border h-10 w-9 flex items-center justify-center rounded-md bg-white border-gray-300">
                                             <FilterIcon width={18} height={18} className="h-5 w-auto fill-b6" />
                                         </div>
@@ -210,7 +210,7 @@ export default function DashboardReport() {
                                         >
                                             Free Plan
                                         </DropdownMenuItem>
-                                    </DropdownMenuContent>
+                                    </DropdownMenuContent>*/}
                                 </DropdownMenu>
                                 <button
                                         onClick={clearAll}
