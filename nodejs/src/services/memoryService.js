@@ -242,7 +242,7 @@ function generateSumhistoryCheckpoint(content) {
 async function initializeMemory(chatSessionId, llmModel, threadId = null) {
     try {
         const chatHistory = new MongoDBChatMessageHistory(chatSessionId, threadId);
-        console.log("=======",chatHistory)        // Get existing system message to initialize the moving summary buffer
+    // Get existing system message to initialize the moving summary buffer
         const existingThread = await Thread.findOne({
             chat_session_id: chatSessionId,
             system: { $exists: true, $ne: null }

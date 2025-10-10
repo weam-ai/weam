@@ -109,7 +109,7 @@ async function fetchModalList (companyId) {
             provider:1,
         }
     ).lean();
-    console.log("result111",result)
+    
     return result;
 }
 

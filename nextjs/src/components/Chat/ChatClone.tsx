@@ -551,7 +551,7 @@ const ChatPage = memo(() => {
             companyId: companyId,
             user: formatMessageUser(currentUser),
             isPaid: true,
-            apiKey: selectedAIModal?.config?.apikey || 'http://host.docker.internal:11434',
+            apiKey: selectedAIModal?.config?.apikey,
             usedCredit: modelCredit
         };
         console.log(newPromptReqBody)
@@ -604,7 +604,7 @@ const ChatPage = memo(() => {
             isPaid: true,
             responseAPI: API_TYPE,
             proAgentData: serializableProAgentData,
-            apiKey: matchedModel.config?.apikey || 'http://host.docker.internal:11434',
+            apiKey: matchedModel.config?.apikey ,
             brainId: getDecodedObjectId(),
             usedCredit: modelCredit
         })
@@ -613,15 +613,23 @@ const ChatPage = memo(() => {
             chatId: params.id,
             model: matchedModel.name,
             code: selectedAIModal.bot.code,
-            apiKey: selectedAIModal?.config?.apikey || 'http://host.docker.internal:11434',
+            apiKey: selectedAIModal?.config?.apikey,
             usedCredit: modelCredit
         })
         if (chatTitle == '' || chatTitle === undefined) {
+            // Check if the selected model is an Ollama model
+            const isOllamaModel = selectedAIModal.bot.code === 'OLLAMA';
+            
+            // Find an OpenAI model in the available models
+            const openAiModel = userModal.find((modal: AiModalType) => modal.bot.code === 'OPEN_AI');
+            
             socket.emit(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, {
                 query: query,
                 chatId: params.id,
-                code: selectedAIModal.bot.code,
-                apiKey: selectedAIModal?.config?.apikey || 'http://host.docker.internal:11434',
+                code: isOllamaModel ? 'OPEN_AI' : selectedAIModal.bot.code, // Use OpenAI for title generation if Ollama is selected
+                apiKey: isOllamaModel ? (openAiModel?.config?.apikey || '') : selectedAIModal?.config?.apikey,
+                isOllamaModel: isOllamaModel, // Flag to indicate this is an Ollama model
+                companyId: companyId, // Send company ID to help backend find OpenAI API key
             })
         }
     };
@@ -1138,8 +1146,22 @@ const ChatPage = memo(() => {
     };
 
     const handleGenerateTitleByLLM = useCallback((payload: { title: string }) => {
+        // Persist the title in local storage to prevent it from disappearing
+        if (payload.title) {
+            localStorage.setItem(`chat_title_${params.id}`, payload.title);
+        }
         dispatch(setChatMessageAction(payload.title));
-    }, [socket]);
+    }, [socket, params.id]);
+
+    // Load saved chat title from localStorage if it exists
+    useEffect(() => {
+        if (params.id) {
+            const savedTitle = localStorage.getItem(`chat_title_${params.id}`);
+            if (savedTitle && (!chatTitle || chatTitle === '')) {
+                dispatch(setChatMessageAction(savedTitle));
+            }
+        }
+    }, [params.id, chatTitle, dispatch]);
 
     // Start Socket Connection and disconnection configuration
     useEffect(() => {

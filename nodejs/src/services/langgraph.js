@@ -823,15 +823,14 @@ async function llmFactory(modelName, opts = {}) {
                                 companyId: opts.companyRedisId,
                                 options: { temperature: baseConfig.temperature }
                             });
-                            console.log(`🔍 [OLLAMA] Chat response:`, JSON.stringify(res, null, 2));
+
                             const text = res?.text || res?.response || res?.content || '';
-                            console.log(`🔍 [OLLAMA] Extracted text: "${text}"`);
+
 
                             // Simulate streaming by emitting the complete response as chunks
                             // This makes Ollama compatible with the streaming interface
                             // Skip socket emission during title generation
                             if (global.currentSocket && text && !opts.isTitleGeneration) {
-                                console.log(`📡 [OLLAMA] Emitting response via socket streaming`);
                                 // Split text into words for pseudo-streaming effect
                                 const words = text.split(' ');
                                 for (let i = 0; i < words.length; i++) {
@@ -1990,16 +1989,11 @@ async function generateTitleByLLM(payload) {
     try {
         const { query, code, apiKey, chatId } = payload;
         
-        if (!query) {
-            throw new Error('Missing required parameter: query is required');
+        if (!query || !apiKey) {
+            throw new Error('Missing required parameters: query and apiKey are required');
         }
-
-        // Determine the provider from the code
+        
         const mappedProvider = mapProviderCode(code);
-
-        console.log(`🔍 [TITLE_GEN] Input code: ${code}, Mapped provider: ${mappedProvider}`);
-
-        // Use a smaller, faster model for title generation
         const defaultModelMap = {
             [AI_MODAL_PROVIDER.OPEN_AI]: 'gpt-4o-mini',
             [AI_MODAL_PROVIDER.ANTHROPIC]: 'claude-3-5-sonnet-20240620',
@@ -2009,106 +2003,28 @@ async function generateTitleByLLM(payload) {
             [AI_MODAL_PROVIDER.GROK]: 'grok-2-1212',
             [AI_MODAL_PROVIDER.QWEN]: 'qwq-32b',
             [AI_MODAL_PROVIDER.PERPLEXITY]: 'perplexity-3.5-sonnet',
-            [AI_MODAL_PROVIDER.OLLAMA]: 'llama3',
         };
-
+        
         const defaultModel = defaultModelMap[mappedProvider] || defaultModelMap[AI_MODAL_PROVIDER.OPEN_AI];
-
-        // Skip API key validation for providers that don't need it
-        const skipKeyProviders = [AI_MODAL_PROVIDER.OLLAMA, AI_MODAL_PROVIDER.LOCAL_LLM];
-        const needsApiKey = !skipKeyProviders.includes(mappedProvider);
-
-        // Only decrypt API key if needed
-        let decryptedApiKey = null;
-        if (needsApiKey) {
-            if (!apiKey) {
-                throw new Error('API key is required for this provider');
-            }
-            decryptedApiKey = decryptedData(apiKey);
-            if (!decryptedApiKey) {
-                throw new Error('Invalid or missing API key');
-            }
+        const decryptedApiKey = decryptedData(apiKey);
+        
+        if (!decryptedApiKey) {
+            throw new Error('Invalid or missing API key');
         }
-
-        // Create the model with the appropriate provider and API key
-        const factoryOptions = {
-            streaming: false,
-            apiKey: decryptedApiKey,
-            llmProvider: mappedProvider,
-            isTitleGeneration: true // Flag to prevent socket emission during title generation
-        };
-
-        // For Ollama, use the apiKey field as baseUrl (this is how it's passed from frontend)
-        if (mappedProvider === AI_MODAL_PROVIDER.OLLAMA && apiKey) {
-            factoryOptions.baseUrl = apiKey; // The apiKey field contains the Ollama base URL
-            factoryOptions.apiKey = null; // No API key needed for Ollama
-        }
-
-        const model = await llmFactory(defaultModel, factoryOptions);
-        let titleSystemPrompt = toolDescription.TITLE_SYSTEM_PROMPT.replace('{{query}}', query);
-
-        // For Ollama models, add extra emphasis on JSON format
-        if (mappedProvider === AI_MODAL_PROVIDER.OLLAMA) {
-            titleSystemPrompt += `\n\nIMPORTANT: You MUST respond with valid JSON format like this: {"title": "Your Generated Title"}\nDo NOT include any other text, explanations, or markdown. Only return the JSON object.`;
-        }
+        
+        const model = await llmFactory(defaultModel, { 
+            streaming: false, 
+            apiKey: decryptedApiKey, 
+            llmProvider: mappedProvider 
+        });
+        const titleSystemPrompt = toolDescription.TITLE_SYSTEM_PROMPT.replace('{{query}}', query);
         const messages = [
             new SystemMessage(titleSystemPrompt),
             new HumanMessage(query)
         ];
         const result = await model.invoke(messages);
-
-        let answer = 'New Chat';
-        try {
-            // Try to parse as JSON first (expected format)
-            let contentToParse = result.content;
-
-            // Handle common JSON malformations from Ollama
-            if (typeof contentToParse === 'string') {
-                contentToParse = contentToParse.trim();
-
-                // Extract just the JSON object if there's trailing text after the closing brace
-                const firstBraceIndex = contentToParse.indexOf('{');
-                const lastBraceIndex = contentToParse.indexOf('}');
-
-                if (firstBraceIndex !== -1 && lastBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
-                    // Extract only the content from first { to first }
-                    contentToParse = contentToParse.substring(firstBraceIndex, lastBraceIndex + 1);
-                } else if (firstBraceIndex !== -1 && lastBraceIndex === -1) {
-                    // Missing closing brace - add it if the JSON looks complete otherwise
-                    if (contentToParse.includes('"title"') && contentToParse.includes(':') && contentToParse.includes('"')) {
-                        contentToParse = contentToParse + '}';
-                    }
-                } else {
-                    // Remove extra closing braces that Ollama sometimes adds
-                    contentToParse = contentToParse.replace(/}\s*}+\s*$/, '}');
-                }
-            }
-
-            const parsedResult = JSON.parse(contentToParse);
-            answer = parsedResult.title || 'New Chat';
-            console.log(`✅ [TITLE_GEN] Successfully parsed JSON title: ${answer}`);
-        } catch (jsonError) {
-            // If JSON parsing fails, try to extract title from malformed JSON or use as plain text
-            console.log(`📝 [TITLE_GEN] JSON parsing failed, attempting extraction. Content: ${result.content}`);
-
-            if (result.content && typeof result.content === 'string') {
-                // Try to extract title from malformed JSON using regex
-                const titleMatch = result.content.match(/"title"\s*:\s*"([^"]+)"/);
-                if (titleMatch && titleMatch[1]) {
-                    answer = titleMatch[1];
-                    console.log(`🔧 [TITLE_GEN] Extracted title from malformed JSON: ${answer}`);
-                } else {
-                    // Fallback: Clean up the content to make it a valid title
-                    answer = result.content
-                        .replace(/[^\w\s]/g, '') // Remove special characters
-                        .trim()
-                        .split(' ')
-                        .slice(0, 10) // Limit to 10 words as per prompt requirements
-                        .join(' ') || 'New Chat';
-                    console.log(`🔄 [TITLE_GEN] Using cleaned plain text as title: ${answer}`);
-                }
-            }
-        }
+        const parsedResult = JSON.parse(result.content);
+        const answer = parsedResult.title || 'New Chat';
         Promise.all([
             Chat.updateOne({ _id: chatId }, { $set: { title: answer } }),
             ChatMember.updateMany({ chatId: chatId }, { $set: { title: answer } })
