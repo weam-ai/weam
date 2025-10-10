@@ -554,6 +554,76 @@ async function getBrainStatus(brains) {
     }
 }
 
+const convertToShared = async (req) => {
+    try {
+        const { isPrivateBrainVisible } = req.user;
+        const brainId = req.params.id;
+        const { shareWith = [], teams = [], customInstruction } = req.body;
+
+        if (!isPrivateBrainVisible) {
+            throw new Error(_localize('module.unAuthorized', req, 'Brain'));
+        }
+
+        // Find the private brain and ensure ownership
+        const existingBrain = await Brain.findOne({ 
+            _id: brainId, 
+            'user.id': req.userId,
+            isShare: false 
+        });
+
+        if (!existingBrain) {
+            throw new Error(_localize('module.notFound', req, 'Brain'));
+        }
+
+        // Check workspace access
+        const accessOfWorkspace = await accessOfWorkspaceToUser({
+            workspaceId: existingBrain.workspaceId, 
+            userId: req.user.id
+        });
+        
+        if (!accessOfWorkspace) {
+            throw new Error(_localize('module.unAuthorized', req, 'Brain'));
+        }
+
+        // Convert to shared brain
+        const updateData = {
+            isShare: true,
+            ...(customInstruction !== undefined && { customInstruction })
+        };
+
+        const updatedBrain = await Brain.findOneAndUpdate(
+            { _id: brainId },
+            updateData,
+            { new: true }
+        );
+
+        // Handle owner's share record - ensure owner has access
+        await shareBrainFormat(req, updatedBrain);
+
+        // Add members if provided
+        if (shareWith.length > 0) {
+            await Promise.all([
+                shareBrainWithUser(shareWith, updatedBrain, req),
+                addWorkSpaceUsers(shareWith, { _id: updatedBrain.workspaceId }, req.user)
+            ]);
+        }
+
+        // Add teams if provided
+        if (teams.length > 0) {
+            const workspace = await Workspace.findById(updatedBrain.workspaceId);
+            await Promise.all([
+                addWorkSpaceTeam(teams, workspace, req.user),
+                addShareBrainTeam(teams, updatedBrain, req.user),
+                addBrainChatMember(updatedBrain, teams, req.user.id, true)
+            ]);
+        }
+
+        return updatedBrain;
+    } catch (error) {
+        handleError(error, 'Error - convertToShared');
+    }
+};
+
 module.exports = {
     createBrain,
     updateBrain,
@@ -576,5 +646,6 @@ module.exports = {
     getBrainStatus,
     getGeneralBrain,
     defaultGeneralBrainMember,
+    convertToShared,
 
 }
