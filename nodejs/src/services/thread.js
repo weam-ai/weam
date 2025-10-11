@@ -542,7 +542,10 @@ const searchMessage = async (req) => {
 async function createLLMConversation (data) {
     try {
         const formatedQuestion = formatAIMessage(data.query);
-        const formatedResponse = formatAIMessageResponse(data.answer);
+        const formatedResponse = formatAIMessageResponse(data.answer, {
+            search_citations: data.search_citations,
+            search_results: data.search_results
+        });
         
         // Import generateSumhistoryCheckpoint and system message functions
         const { generateSumhistoryCheckpoint, addSystemMessage } = require('./memoryService');

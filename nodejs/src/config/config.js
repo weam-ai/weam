@@ -44,6 +44,7 @@ module.exports = {
         SEARXNG_API_URL: 'https://dev-searxng.weam.ai',
         MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
         MCP_SERVER_URL: process.env.MCP_SERVER_URL,
+        PERPLEXITY_API_URL: 'https://api.perplexity.ai',
     },
     AUTH: {
         JWT_SECRET: process.env.JWT_SECRET,

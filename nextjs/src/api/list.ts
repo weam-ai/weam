@@ -285,6 +285,10 @@ const apiList = {
         url: () => `${WEB}/chat/enhance-prompt`,
         method: 'POST'
     },
+    getImages: {
+        url: () => `${WEB}/chat/get/search-metadata`,
+        method: 'POST'
+    },
     commonUrl: (prefix: string, module: string) => ({
         list: {
             url: () => `${prefix}/${module}/list`,

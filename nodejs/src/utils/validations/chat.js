@@ -73,6 +73,11 @@ const deleteShareChatKeys = joi.object({
     isBulk: joi.boolean().required(),
 });
 
+const getSearchMetadataKeys = joi.object({
+    query: joi.string().required(),
+    messageId: joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
+});
+
 module.exports = {
     addChatMemberKeys,
     favouriteKeys,
@@ -80,5 +85,6 @@ module.exports = {
     createForkChatKeys,
     updateChatKeys,
     createShareChatKeys,
-    deleteShareChatKeys
+    deleteShareChatKeys,
+    getSearchMetadataKeys
 };

@@ -1,5 +1,6 @@
 const superSolutionService = require('../../services/superSolution');
 const { catchAsync } = require('../../utils/helper');
+const util = require('../../utils/messages');
 
 const SOLUTION_APP = 'solution app';
 const MEMBER = 'member';
@@ -84,6 +85,17 @@ const getSolutionAccessByUserId = catchAsync(async (req, res) => {
     return util.recordNotFound(null, res);
 });
 
+const userHasAccessOfSolution = catchAsync(async (req, res) => {
+    const result = await superSolutionService.userHasAccessOfSolution(req);
+    if (result.hasAccess) {
+        res.message = result.message || _localize('module.authorized', req, SOLUTION_APP);
+        return util.successResponse(result, res);
+    } else {
+        res.message = result.message || _localize('module.unAuthorized', req, SOLUTION_APP);
+        return util.badRequest(result, res);
+    }
+});
+
 module.exports = {
     // Solution Apps
     getAllSolutionApps,
@@ -95,5 +107,6 @@ module.exports = {
     addSolutionTeam,
     removeSolutionTeam,
     //get-by-user-id/${id}
-    getSolutionAccessByUserId
+    getSolutionAccessByUserId,
+    userHasAccessOfSolution
 };

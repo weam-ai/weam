@@ -5,7 +5,7 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { Calendar } from 'react-date-range';
 import { DateRangePicker, defaultStaticRanges } from 'react-date-range';
-import Select from 'react-select';
+import MultiSelect from '@/components/ui/multi-select';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -181,21 +181,15 @@ export default function DashboardReport() {
                                     )}
                                 </div>
                                 <div className="max-w-40 md:min-w-[150px]">
-                                    <Select placeholder="Select Model" 
-                                        options={modelOptions} 
-                                        menuPlacement='auto' 
-                                        id="selectModelYourDeployment" 
-                                        className="react-select-container" 
-                                        classNamePrefix="react-select"                                     
-                                        onChange={(selectedOptions) => {
-                                            setSelectModel(selectedOptions.map(option => option.value)); // Store an array of values
-                                        }}
-                                        isMulti={true}
-                                        value={modelOptions.filter(option => selectModel.includes(option.value))}
+                                    <MultiSelect
+                                        options={modelOptions}
+                                        value={selectModel}
+                                        onChange={setSelectModel}
+                                        placeholder="Select Model"
                                     />
                                 </div>
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
+                                    {/*<DropdownMenuTrigger asChild>
                                         <div className="relative cursor-pointer border h-10 w-9 flex items-center justify-center rounded-md bg-white border-gray-300">
                                             <FilterIcon width={18} height={18} className="h-5 w-auto fill-b6" />
                                         </div>
@@ -216,7 +210,7 @@ export default function DashboardReport() {
                                         >
                                             Free Plan
                                         </DropdownMenuItem>
-                                    </DropdownMenuContent>
+                                    </DropdownMenuContent>*/}
                                 </DropdownMenu>
                                 <button
                                         onClick={clearAll}

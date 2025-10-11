@@ -2,19 +2,25 @@ import { LINK } from '@/config/config';
 import React, { useState, useRef, useEffect } from 'react';
 import { MarkOutPut } from './MartOutput';
 import StreamLoader from '../Loader/StreamLoader';
-import { API_TYPE_OPTIONS, WEB_RESOURCES_DATA } from '@/utils/constant';
+import { AI_MODAL_NAME, API_TYPE_OPTIONS, WEB_RESOURCES_DATA } from '@/utils/constant';
 import DocumentProcessing from '../Loader/DocumentProcess';
 import PreviewImage from '../ui/PreviewImage';
 import PageSpeedResponse from './PageSpeedResponse';
 import { PAGE_SPEED_RECORD_KEY } from '@/hooks/conversation/useConversation';
 import ShowResources from './ShowResources';
 import TextAreaBox from '@/widgets/TextAreaBox';
-import useCanvasInput from '@/hooks/chat/useCanvasInput';
-import CanvasInput from './CanvasInput';
+import { ConversationType } from '@/types/chat';
+import PerplexityChatResponse from './PerplexityResponse';
 type ResponseLoaderProps = {
     code: string;
     loading: boolean;
     proAgentCode: string;
+}
+
+type LLMResponseProps = {
+    response: string;
+    conversation: ConversationType;
+    setConversations: (conversations: ConversationType[]) => void;
 }
 
 export const GeneratedImagePreview = ({ src }) => {
@@ -29,6 +35,28 @@ export const GeneratedImagePreview = ({ src }) => {
         />
     );
 };
+
+const LLMResponse = ({ response, conversation, setConversations }: LLMResponseProps) => {
+    return (
+        <>
+            {
+                [AI_MODAL_NAME.SONAR, AI_MODAL_NAME.SONAR_REASONING_PRO].includes(conversation?.responseModel) ? (
+                    <PerplexityChatResponse conversations={conversation} response={response} setConversations={setConversations} />
+                )
+                    : (
+                        <div className="relative group">
+                            <div
+                                className="rounded-lg p-3"
+                            >
+                                {MarkOutPut(response)}
+                            </div>
+                        </div>
+
+                    )
+            }
+        </>
+    )
+}
 
 const DallEImagePreview = ({
     conversations,
@@ -71,7 +99,7 @@ const StreamingChatLoaderOption = ({ code, loading, proAgentCode }: ResponseLoad
     return loadingComponents[code] || <StreamLoader />;
 };
 
-const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmitPrompt, privateChat = true, isStreamingLoading, proAgentCode, onResponseUpdate, onResponseEdited, onOpenEditModal }) => {
+const ChatResponse = ({ conversations, i, loading, answerMessage, m, isStreamingLoading, proAgentCode, onResponseUpdate, onResponseEdited, setConversations }) => {
 
     // Inline editing state
     const [isEditing, setIsEditing] = useState(false);
@@ -80,14 +108,6 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
     const textareaRef = useRef(null);
 
     const [originalMarkdown, setOriginalMarkdown] = useState('');
-
-    // Canvas input functionality
-    const {
-        showCanvasBox,
-        inputPosition,
-        handleDeSelectionChanges,
-        selectedId
-    } = useCanvasInput();
 
     // Convert markdown to formatted text that preserves some styling
     const markdownToPlainText = (markdown: string) => {
@@ -414,13 +434,7 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative group">
-                                <div 
-                                    className="rounded-lg p-3"
-                                >
-                                    {MarkOutPut(answerMessage)}
-                                </div>
-                            </div>
+                            <LLMResponse response={answerMessage} conversation={m} setConversations={setConversations}/>
                         )
                     ) : (
                         //when stream response give done we empty answerMessage and show m.response (so in DB )
@@ -649,13 +663,7 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                                     </div>
                                 </div>
                             ) : (
-                                <div className="relative group">
-                                    <div 
-                                        className="rounded-lg p-3"
-                                    >
-                                        {MarkOutPut(m.response)}
-                                    </div>
-                                </div>
+                                <LLMResponse response={m.response} conversation={m} setConversations={setConversations}/>
                             )}
                             {
                                 m?.responseAddKeywords?.hasOwnProperty(PAGE_SPEED_RECORD_KEY) 
@@ -901,13 +909,7 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                             </div>
                         </div>
                     ) : (
-                        <div className="relative group">
-                            <div 
-                                className="rounded-lg p-3"
-                            >
-                                {MarkOutPut(m.response)}
-                            </div>
-                        </div>
+                        <LLMResponse response={m.response} conversation={m} setConversations={setConversations}/>
                     )}
                     {
                         m?.responseAddKeywords?.hasOwnProperty(PAGE_SPEED_RECORD_KEY) && <PageSpeedResponse response={m?.responseAddKeywords} />
@@ -916,21 +918,6 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, handleSubmi
                         m?.responseAddKeywords?.hasOwnProperty(WEB_RESOURCES_DATA) && <ShowResources response={m?.responseAddKeywords as any} />
                     }
                 </>
-            )}
-            {/* {showRefineButton && (
-                <button 
-                className='btn btn-black min-w-[100px] px-3 py-[5px]'
-                    style={{ ...buttonPosition }} 
-                    onMouseDown={(e) => e.preventDefault()} 
-                    onClick={handleAskWeam}
-                >
-                    Edit selected text
-                </button>
-            )} */}
-    
-            {/* Show the textbox if the button was clicked */}
-            { privateChat && showCanvasBox && selectedId === m?.id && (
-                <CanvasInput inputPosition={inputPosition} handleDeSelectionChanges={handleDeSelectionChanges} handleSubmitPrompt={handleSubmitPrompt}/>
             )}
         </div>
     </div>

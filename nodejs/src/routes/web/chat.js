@@ -2,7 +2,7 @@ const { Router } = require('express');
 const chatController = require('../../controller/web/chatController');
 const { authentication } = require('../../middleware/authentication');
 const router = Router();
-const { createNewChatKeys, createForkChatKeys, updateChatKeys } = require('../../utils/validations/chat');
+const { createNewChatKeys, createForkChatKeys, updateChatKeys, getSearchMetadataKeys } = require('../../utils/validations/chat');
 const { checkPromptLimit } = require('../../middleware/promptlimit');
 
 router.post('/create', validate(createNewChatKeys), authentication, chatController.addChat);
@@ -13,5 +13,6 @@ router.get('/:id', authentication, chatController.getChatById);
 router.post('/fork', validate(createForkChatKeys), authentication, chatController.forkChat);
 router.post('/check-access', authentication, chatController.checkChatAccess);
 router.post('/enhance-prompt', authentication, chatController.enhancePrompt);
+router.post('/get/search-metadata', validate(getSearchMetadataKeys), authentication, chatController.getSearchMetadata);
 
 module.exports = router;

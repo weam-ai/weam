@@ -57,6 +57,12 @@ const enhancePrompt = catchAsync(async (req, res) => {
     return util.successResponse(result, res);
 })
 
+const getSearchMetadata = catchAsync(async (req, res) => {
+    const result = await chatService.getSearchMetadata(req);
+    res.message = _localize('module.get', req, 'search metadata');
+    return util.successResponse(result, res);
+})
+
 module.exports = {
     addChat,
     getAllChat,
@@ -65,5 +71,6 @@ module.exports = {
     forkChat,
     updateChat,
     checkChatAccess,
-    enhancePrompt
+    enhancePrompt,
+    getSearchMetadata
 }

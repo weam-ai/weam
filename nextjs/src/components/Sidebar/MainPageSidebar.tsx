@@ -80,7 +80,7 @@ const MainPageSidebar = async () => {
                         </div>
                         <PrivateVisible>
                           <div className="w-full border-t mt-5 pt-5 collapsed-pbrains">
-                                <div className="flex w-full pr-1 justify-between group mb-4 font-bold text-font-14 collapsed-center">
+                                <div className="flex w-full pr-1 justify-between group mb-1 font-bold text-font-14 collapsed-center">
                                     <div className="flex justify-between w-full items-center collapsed-text">
                                         <span className="pl-2 text-font-12 font-medium">
                                             PRIVATE BRAINS
