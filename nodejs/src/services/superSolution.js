@@ -213,6 +213,41 @@ const getSolutionAccessByUserId = async (req) => {
     }
 };
 
+const userHasAccessOfSolution = async (req) => {
+    try {
+        const { userId, urlPath } = req.body;
+
+        if (!userId || !urlPath) {
+            throw new Error('userId and urlPath are required');
+        }
+
+        // First, find the solution app by the URL path
+        const solutionApp = await SolutionApp.findOne({ 
+            pathToOpen: urlPath,
+            isActive: true 
+        });
+
+        if (!solutionApp) {
+            return { hasAccess: false, message: 'Solution not found for the given path' };
+        }
+
+        // Check if user has access in solution members (both individual and team-based)
+        const solutionMember = await SolutionMember.findOne({
+            appId: solutionApp._id,
+            'user.id': userId
+        });
+
+        if (solutionMember) {
+            return { hasAccess: true, message: 'Access granted - User is a member' };
+        }
+
+        return { hasAccess: false, message: 'User does not have access to this solution' };
+    } catch (error) {
+        handleError(error, 'Error in userHasAccessOfSolution');
+
+    }
+}
+
 module.exports = {
     // Solution Apps
     getAllSolutionApps,
@@ -225,4 +260,5 @@ module.exports = {
     removeSolutionTeam,
     //get-by-user-id/${id}
     getSolutionAccessByUserId,
+    userHasAccessOfSolution
 };
