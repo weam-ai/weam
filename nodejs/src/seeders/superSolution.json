@@ -28,12 +28,12 @@
         "sequence": 3
       },
       {
-        "name" : "SEO Content Gen",
+        "name" : "Blog Engine",
         "description" : "AI-powered tool that helps you create high-quality, SEO-optimized articles in minutes. Whether you're a blogger, marketer, or business owner, generate keyword-rich content tailored for better search engine rankings — fast, easy, and effective.",
         "icon" : "seo-article-icon",
         "category" : "Productivity & Document Management",
         "isActive" : true,
-        "pathToOpen" : "/seo-content-gen",
+        "pathToOpen" : "/blog-engine",
         "sequence" : 4
       }
     ]

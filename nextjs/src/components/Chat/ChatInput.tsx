@@ -88,9 +88,6 @@ const defaultContext = {
 type TextAreaSubmitButtonProps = {
     disabled: boolean;
     handleSubmit: () => void;
-    loading?: boolean;
-    onStopStreaming?: () => void;
-    isActivelyStreaming?: boolean;
 };
 
 type TextAreaFileInputProps = {

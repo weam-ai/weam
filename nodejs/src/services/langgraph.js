@@ -1523,10 +1523,13 @@ async function streamAndLog(app, data, socket, threadId = null) {
         let sockets = global.io.sockets;
         let stopRequested = false;
 
+        // Styled stop note to visually distinguish from streamed answer
+        const STOP_NOTE_HTML = "\n\n<div style=\"text-align:right; font-size:14px; font-style:italic; color:#8f8f8f; background:#fff; padding:8px 12px; display:inline-block;\">✋ Generation stopped by you</div>\n";
+
         const forceStopHandler = catchSocketAsync((value) => {
             if (value.chatId === data.chatId) {
                 const roomName = `${SOCKET_ROOM_PREFIX.CHAT}${value.chatId}`;
-                sockets.to(roomName).emit(SOCKET_EVENTS.FORCE_STOP, { proccedMsg: value.proccedMsg, userId: value.userId });
+                sockets.to(roomName).emit(SOCKET_EVENTS.FORCE_STOP, { proccedMsg: value.proccedMsg + STOP_NOTE_HTML, userId: value.userId });
                 stopRequested = true;
             }
         });
@@ -1540,6 +1543,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
         })) {
             if (stopRequested) {
                 logger.info('isStopRequested', stopRequested);
+                proccedMsg += STOP_NOTE_HTML;
                 break;
             }
 
@@ -1547,12 +1551,12 @@ async function streamAndLog(app, data, socket, threadId = null) {
             if (handler) {
                 handler(chunk);
             }
-
-            if (stopRequested) {
-                logger.info('isStopRequested post-chunk', stopRequested);
-                break;
-            }
         }
+        await createLLMConversation({ 
+            ...data, 
+            answer: proccedMsg, 
+            usedCredit: data.usedCredit || 1 
+        });
     } catch (error) {
         logger.error('error streamAndLog', error);
         
@@ -1561,28 +1565,6 @@ async function streamAndLog(app, data, socket, threadId = null) {
             chunk: llmStreamingEvents.RESPONSE_ERROR_MESSAGE,
         });
     } finally {
-        if (proccedMsg) {
-            try {
-                await createLLMConversation({ 
-                    ...data, 
-                    answer: proccedMsg, 
-                    usedCredit: data.usedCredit || 1 
-                });
-            } catch (saveError) {
-                logger.error('❌ Error saving conversation to database:', saveError);
-            }
-        } else {
-            try {
-                await createLLMConversation({ 
-                    ...data, 
-                    answer: '', 
-                    usedCredit: data.usedCredit || 1 
-                });
-            } catch (saveError) {
-                logger.error('❌ Error saving conversation to database:', saveError);
-            }
-        }
-
         // Clean up stop listeners if they never fired
         try {
             if (typeof forceStopHandler === 'function') {

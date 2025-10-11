@@ -249,10 +249,8 @@ const ChatPage = memo(() => {
         showHoverIcon,
         getAIProAgentChatResponse,
         isStreamingLoading,
-        isActivelyStreaming,
         generateSeoArticle,
         getSalesCallResponse,
-        stopStreaming
     } = useConversation();
     const { chatInfo, socketChatById, handleAIApiType } = useChat();
     const {
