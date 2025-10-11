@@ -663,7 +663,7 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, isStreaming
                                     </div>
                                 </div>
                             ) : (
-                                <LLMResponse response={answerMessage} conversation={m} setConversations={setConversations}/>
+                                <LLMResponse response={m.response} conversation={m} setConversations={setConversations}/>
                             )}
                             {
                                 m?.responseAddKeywords?.hasOwnProperty(PAGE_SPEED_RECORD_KEY) 
@@ -909,7 +909,7 @@ const ChatResponse = ({ conversations, i, loading, answerMessage, m, isStreaming
                             </div>
                         </div>
                     ) : (
-                        <LLMResponse response={answerMessage} conversation={m} setConversations={setConversations}/>
+                        <LLMResponse response={m.response} conversation={m} setConversations={setConversations}/>
                     )}
                     {
                         m?.responseAddKeywords?.hasOwnProperty(PAGE_SPEED_RECORD_KEY) && <PageSpeedResponse response={m?.responseAddKeywords} />

@@ -150,6 +150,8 @@ const MODAL_NAME = {
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',
     GPT_5_CHAT_LATEST: 'gpt-5-chat-latest',
+    SONAR: 'sonar',
+    SONAR_REASONING_PRO: 'sonar-reasoning-pro',
 }
 const PINECONE_APIKEY_CODE = "PINECONE_APIKEY"
 module.exports = {

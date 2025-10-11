@@ -1066,6 +1066,7 @@ const addBlockedDomain = async (req) => {
 
 async function perplexityApiChecker(req) {
     try {
+        console.log("=====Perplexity=====Req====Body=====",req.body)
         const companyId = getCompanyId(req.user);
         const companydetails = req.user.company;
         const response = await fetch(`${LINK.PERPLEXITY_API_URL}/chat/completions`, {
@@ -1088,6 +1089,7 @@ async function perplexityApiChecker(req) {
                 ]
             })
         });
+        console.log("========Response====Status====",response.status)
         if (!response.ok) return false
         const [perplexityBot, existing] = await Promise.all([
             Bot.findOne({ code: AI_MODAL_PROVIDER.PERPLEXITY }, { title: 1, code: 1 }),
