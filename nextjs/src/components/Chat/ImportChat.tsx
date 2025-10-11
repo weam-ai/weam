@@ -64,7 +64,7 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
 
             try {
                 const response = await pyUploadImportChat(formData, setShowImportChat);
-                if (response?.status_code === 200) {
+                if (response?.status === 200) {
                     setUploadMessage(
                         response?.data?.message || IMPORT_IN_PROGRESS_MESSAGE
                     );

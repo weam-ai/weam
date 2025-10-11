@@ -59,6 +59,7 @@ export const MODULES = {
     TAB_AGENT_LIST: 'tabAgentList',
     TAB_DOCUMENT_LIST: 'tabDocumentList',
     CONFIGURATION_ENV: 'configurationEnv',
+    IMPORT_CHAT: 'import-chat'
 } as const;
 
 export const MODULE_ACTIONS = {
@@ -99,6 +100,7 @@ export const MODULE_ACTIONS = {
     DELETE_S3_MEDIA : 'deleteS3Media',
     FORK_CHAT: 'forkChat',
     INVITE_LOGIN: 'inviteLogin',
+    IMPORT_UPLOAD: 'upload',
     SHARE: 'share',
     SHARE_LIST: 'shareList',
     UNSHARE: 'unshare',

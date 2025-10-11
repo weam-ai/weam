@@ -51,7 +51,7 @@ const getAll = async (req) => {
             dbService.getAllDocuments(Thread, query, options),
         ])
 
-        const finalResult = await Promise.all(result.data.map(async (message) => {
+         const finalResult = await Promise.all(result.data.map(async (message) => {
             const messageId = message._id;
 
             const [question_count, answer_count, question_senders, answer_senders, question_thread_last, answer_thread_last] = await Promise.all([
@@ -68,8 +68,40 @@ const getAll = async (req) => {
                 User.find({ _id: { $in: answer_senders } }, { email: 1, profile: 1, fname: 1, lname: 1 })
             ]);
 
+            // Decrypt message and ai fields before returning
+            let decryptedMessage = message.message;
+            let decryptedAi = message.ai;
+            let decryptedSystem = message.system;
+
+            try {
+                if (message.message) {
+                    decryptedMessage = JSON.parse(decryptedData(message.message));
+                }
+            } catch (error) {
+                console.warn('Failed to decrypt message field:', error);
+            }
+
+            try {
+                if (message.ai) {
+                    decryptedAi = JSON.parse(decryptedData(message.ai));
+                }
+            } catch (error) {
+                console.warn('Failed to decrypt ai field:', error);
+            }
+
+            try {
+                if (message.system) {
+                    decryptedSystem = JSON.parse(decryptedData(message.system));
+                }
+            } catch (error) {
+                console.warn('Failed to decrypt system field:', error);
+            }
+
             return {
                 ...message._doc,
+                message: decryptedMessage,
+                ai: decryptedAi,
+                system: decryptedSystem,
                 question_thread: {
                     count: question_count,
                     users: question_users,
@@ -180,7 +212,7 @@ async function socketMessageList(filter) {
 
 
         const creditInfo = await getUsedCredit(filter, user);
-        const finalResult = await Promise.all(reversedData.map(async (message) => {
+               const finalResult = await Promise.all(reversedData.map(async (message) => {
             const messageId = message._id;
 
             const [question_count, answer_count, question_senders, answer_senders, question_thread_last, answer_thread_last] = await Promise.all([
@@ -197,8 +229,40 @@ async function socketMessageList(filter) {
                 User.find({ _id: { $in: answer_senders } }, { email: 1, profile: 1, fname: 1, lname: 1 })
             ]);
 
+            // Decrypt message and ai fields before returning
+            let decryptedMessage = message.message;
+            let decryptedAi = message.ai;
+            let decryptedSystem = message.system;
+
+            try {
+                if (message.message) {
+                    decryptedMessage = JSON.parse(decryptedData(message.message));
+                }
+            } catch (error) {
+                console.warn('Failed to decrypt message field:', error);
+            }
+
+            try {
+                if (message.ai) {
+                    decryptedAi = JSON.parse(decryptedData(message.ai));
+                }
+            } catch (error) {
+                console.warn('Failed to decrypt ai field:', error);
+            }
+
+            try {
+                if (message.system) {
+                    decryptedSystem = JSON.parse(decryptedData(message.system));
+                }
+            } catch (error) {
+                console.warn('Failed to decrypt system field:', error);
+            }
+
             return {
                 ...message._doc,
+                message: decryptedMessage,
+                ai: decryptedAi,
+                system: decryptedSystem,
                 question_thread: {
                     count: question_count,
                     users: question_users,

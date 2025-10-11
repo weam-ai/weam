@@ -1,4 +1,11 @@
 [
+	{
+        "nm": "Import Chat Success",
+        "code": "IMPORT_CHAT_SUCCESS",
+        "subject": "Your Chat Import is Complete! They're Ready in Weam",
+        "body": "{{header}}<tr><td><table border='0' cellpadding='0' cellspacing='0' style='width: 100%; padding: 15px 30px 30px 30px;'><tr><td style='font-size: 18px; line-height: 26px;'><p>Hi <strong style='color: #6637EC;'>{{name}},</strong></p><p>Your chat <span style='background-color: #FFEB3B; padding: 2px 4px; font-weight: bold;'>import</span> has been completed successfully.</p><p>Here's what you can do with your <span style='background-color: #FFEB3B; padding: 2px 4px; font-weight: bold;'>imported</span> chats in Weam:</p><ul><li><strong>Revisit important conversations</strong>: Easily find and review past discussions with AI, giving you valuable context for your current projects.</li><li><strong>Collaborate more effectively</strong>: Share key insights from your chats with your team to make sure everyone has the information they need.</li><li><strong>Boost productivity</strong>: Use your <span style='background-color: #FFEB3B; padding: 2px 4px; font-weight: bold;'>imported</span> chats as a starting point for new prompts, custom bots, and streamlined workflows.</li></ul><p>Access Your <span style='background-color: #FFEB3B; padding: 2px 4px; font-weight: bold;'>Imported</span> Chats Now:</p></td></tr><tr><td style='height: 15px;'>&nbsp;</td></tr><tr><td><table border='0' cellpadding='0' cellspacing='0' width='200px' style='width: 200px;'><tr><td><a href='{{url}}' style='background-color: #6637EC; color: #FFF; padding: 8px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Your Chats</a></td></tr></table></td></tr><tr><td style='height: 15px;'>&nbsp;</td></tr></table></td></tr>{{footer}}",
+        "isActive": true
+    },
     {
 		"nm": "Header Content",
 		"code": "HEADER_CONTENT",
