@@ -1287,11 +1287,6 @@ async function streamAndLog(app, data, socket, threadId = null) {
             if (handler) {
                 handler(chunk);
             }
-
-            if (stopRequested) {
-                logger.info('isStopRequested post-chunk', stopRequested);
-                break;
-            }
         }
         await createLLMConversation({ 
             ...data, 
