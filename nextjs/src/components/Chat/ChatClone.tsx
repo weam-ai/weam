@@ -226,15 +226,10 @@ const ChatPage = memo(() => {
 
 
     const {
-        enterNewPrompt,
         conversations,
         answerMessage,
         setConversations,
-        getAINormatChatResponse,
-        setChatTitleByAI,
         loading,
-        getAIDocResponse,
-        getAICustomGPTResponse,
         responseLoading,
         conversationPagination,
         showTimer,
@@ -242,16 +237,12 @@ const ChatPage = memo(() => {
         setAnswerMessage,
         disabledInput,
         setLoading,
-        chatCanvasAiResponse,
         listLoader,
         socketAllConversation,
-        getPerplexityResponse,
         showHoverIcon,
-        getAIProAgentChatResponse,
         isStreamingLoading,
         isActivelyStreaming,
         generateSeoArticle,
-        getSalesCallResponse,
         stopStreaming
     } = useConversation();
     const { chatInfo, socketChatById, handleAIApiType } = useChat();
@@ -484,6 +475,12 @@ const ChatPage = memo(() => {
                 proAgentData: JSON.parse(JSON.stringify(serializableProAgentData)), // Deep clone to break circular references
                 isPaid: true,
                 usedCredit: modelCredit,
+                responseMetadata: {
+                    search_results: [],
+                    citations: [],
+                    images: [],
+                    videos: []
+                },
             };
             setConversations([newMessage]);
             dispatch(setInitialMessageAction({}));
@@ -520,6 +517,12 @@ const ChatPage = memo(() => {
                     citations: [],
                     isPaid: true,
                     usedCredit: modelCredit,
+                    responseMetadata: {
+                        search_results: [],
+                        citations: [],
+                        images: [],
+                        videos: []
+                    },
                 },
             ]);
         }
@@ -992,9 +995,35 @@ const ChatPage = memo(() => {
             });
             return;
         }
+        if (payload?.event === STREAMING_RESPONSE_STATUS.CONVERSATION_ERROR) {
+            handleSocketStreamingStop({ proccedMsg: payload.chunk });
+            return;
+        }
         if (payload.chunk === STREAMING_RESPONSE_STATUS.DONE) {
             handleSocketStreamingStop({ proccedMsg: payload.proccedMsg });
             return;
+        }
+        if (payload?.search_results?.length) {
+            setConversations(prev => {
+                const updatedConversations = [...prev];
+                const lastConversation = { ...updatedConversations[updatedConversations.length - 1] };
+                if (!lastConversation.responseMetadata) {
+                    lastConversation.responseMetadata = {
+                        search_results: [],
+                        citations: [],
+                        images: [],
+                        videos: []
+                    };
+                }
+                if (payload.search_results) {
+                    lastConversation.responseMetadata.search_results = payload.search_results;
+                }
+                if (payload.citations) {
+                    lastConversation.responseMetadata.citations = payload.citations;
+                }
+                updatedConversations[updatedConversations.length - 1] = lastConversation;
+                return updatedConversations;
+            });
         }
         setLoading(false);
         setToolCallLoading(defaultToolCallLoading);
@@ -1484,6 +1513,7 @@ const ChatPage = memo(() => {
                                                                             setEditedResponses(prev => new Set([...prev, messageId]));
                                                                         }}
                                                                         onOpenEditModal={handleOpenEditModal}
+                                                                        setConversations={setConversations}
                                                                     />
                                                             }
                                                         </div>

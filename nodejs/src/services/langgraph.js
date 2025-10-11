@@ -7,7 +7,7 @@ const Messages = require('../models/thread');
 const Brain = require('../models/brains');
 const { decryptedData, catchSocketAsync } = require('../utils/helper');
 const { LINK } = require('../config/config');
-const { AI_MODAL_PROVIDER, MODAL_NAME , ANTHROPIC_MAX_TOKENS } = require('../config/constants/aimodal');
+const { AI_MODAL_PROVIDER, MODAL_NAME , ANTHROPIC_MAX_TOKENS, PERPLEXITY_MODAL } = require('../config/constants/aimodal');
 const { ChatAnthropic } = require('@langchain/anthropic');
 const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
 const { SearxNGSearchTool } = require('./searchTool');
@@ -24,6 +24,7 @@ const logger = require('../utils/logger');
 const { tool } = require('@langchain/core/tools');
 const Chat = require('../models/chat');
 const ChatMember = require('../models/chatmember');
+const { perplexityRawStream } = require('./perplexityRaw')
 
 const webSearchTool = new SearxNGSearchTool({
     searxUrl: LINK.SEARXNG_API_URL,
@@ -241,8 +242,6 @@ function queryNeedsTools(query) {
     if (!query || typeof query !== 'string') {
         return false;
     }
-    
-    console.log('🔧 [DYNAMIC ANALYSIS] Enabling all tools for LangGraph to decide dynamically');
     return true;
 }
 
@@ -252,12 +251,10 @@ async function getCachedMCPClient() {
     
     // Return cached client if still valid
     if (mcpClientCache && (now - mcpCacheTimestamp) < MCP_CACHE_TTL) {
-        console.log('🚀 [ULTRA-FAST] Using cached MCP client');
         return mcpClientCache;
     }
     
     // Initialize new client and cache it
-    console.log('🔧 [OPTIMIZATION] Initializing and caching MCP client');
     mcpClientCache = await initializeMCPClient();
     mcpCacheTimestamp = now;
     
@@ -461,7 +458,6 @@ async function callTool(state, agentDetails = null, userData = null) {
 
     // Get MCP tools from global state if available
     const mcpTools = global.mcpTools || [];
-    // console.log('mcpTools:', mcpTools);
     const toolExecutorMap = getToolExecutorMap(agentDetails, mcpTools);
     const toolInvocations = [];
     
@@ -509,7 +505,6 @@ async function callTool(state, agentDetails = null, userData = null) {
                     const executeWithRetry = async (retries = 2) => {
                         for (let attempt = 0; attempt <= retries; attempt++) {
                             try {
-                                console.log(`Executing MCP tool '${toolCall.name}' (attempt ${attempt + 1}/${retries + 1})`);
                                 return await Promise.race([
                                     toolExecutor.invoke(toolArgs),
                                     timeoutPromise
@@ -667,16 +662,12 @@ async function llmFactory(modelName, opts = {}) {
     // Ultra-fast path: Skip expensive operations for simple queries
     let selectedTools = [];
     const needsTools = queryNeedsTools(opts.query);
-    // console.log('🔍 [QUERY ANALYSIS] Query needs tools:', needsTools);
     
     if (needsTools) {
-        console.log('🔧 [OPTIMIZATION] Query requires tools, using cached MCP client...');
         const availableMcpTools = await getCachedMCPClient();
         const rawSelectedTools = await selectRelevantToolsWithDomainFilter(opts.query, availableMcpTools);
         selectedTools = (rawSelectedTools || []).filter(tool => tool != null && typeof tool === 'object');
-        console.log(`🔧 [OPTIMIZATION] Selected ${selectedTools.length} MCP tools for query`);
     } else {
-        console.log('🚀 [ULTRA-FAST] Simple query detected, bypassing all tool operations');
     }
     
     const llmConfig = {
@@ -684,7 +675,6 @@ async function llmFactory(modelName, opts = {}) {
             // Check cache for simple model first
             const cacheKey = `openai_${modelName}_${needsTools}`;
             if (!needsTools && simpleModelCache.has(cacheKey)) {
-                console.log('🚀 [ULTRA-FAST] Using cached simple OpenAI model');
                 return simpleModelCache.get(cacheKey);
             }
             
@@ -720,7 +710,6 @@ async function llmFactory(modelName, opts = {}) {
             // Check cache for simple model first
             const cacheKey = `anthropic_${modelName}_${needsTools}`;
             if (!needsTools && simpleModelCache.has(cacheKey)) {
-                console.log('🚀 [ULTRA-FAST] Using cached simple Anthropic model');
                 return simpleModelCache.get(cacheKey);
             }
             
@@ -747,7 +736,6 @@ async function llmFactory(modelName, opts = {}) {
                 // Check cache for simple model first
                 const cacheKey = `gemini_${modelName}_${needsTools}`;
                 if (!needsTools && simpleModelCache.has(cacheKey)) {
-                    console.log('🚀 [ULTRA-FAST] Using cached simple Gemini model');
                     return simpleModelCache.get(cacheKey);
                 }
                 
@@ -777,6 +765,23 @@ async function llmFactory(modelName, opts = {}) {
         [AI_MODAL_PROVIDER.LLAMA4]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.GROK]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.QWEN]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.PERPLEXITY]: (() => {
+            // Return a special object that will be handled by perplexityRawStream
+            return {
+                _isPerplexityRaw: true,
+                model: modelName,
+                apiKey: opts.apiKey,
+                streaming: opts.streaming ?? true,
+                temperature: opts.temperature ?? 0.7,
+                maxTokens: opts.maxTokens || null,
+                search_recency_filter: 'month',
+                search_domain_filter: Array.isArray(opts.searchDomains) ? opts.searchDomains : undefined,
+                web_search_options: opts.web_search_options,
+                extra_body: opts.extra_body,
+                costCallback: costCallback,
+                threadId: opts.threadId
+            };
+        })(),
     }
     
     
@@ -807,10 +812,8 @@ async function buildGraph(model, data, agentDetails = null) {
     const needsTools = queryNeedsTools(data.query);
     
     if (needsTools) {
-        console.log('🔧 [OPTIMIZATION] Using cached MCP tools for tool-requiring query');
         mcpTools = await getCachedMCPClient();
     } else {
-        console.log('🚀 [ULTRA-FAST] Bypassing MCP initialization for simple query');
     }
     
     // Store MCP tools in global state for access in callTool function
@@ -838,51 +841,6 @@ async function buildGraph(model, data, agentDetails = null) {
         const app = workflow.compile();
         return app;
     }
-}
-
-function pickContent(result) {
-    // Handle Pinecone result structure
-    if (result.metadata?.text) {
-        return result.metadata.text;
-    }
-    
-    // Handle legacy payload structure
-    if (result.payload) {
-        return result.payload?.content ?? result.payload?.text ?? result.payload?.page_content ?? result.payload?.chunk ?? '';
-    }
-    
-    // Handle direct content
-    return result?.content ?? result?.text ?? result?.page_content ?? result?.chunk ?? '';
-}
-
-// Helper function to build RAG context from search results
-function buildRagContext(searchResults, query) {
-    if (!searchResults || searchResults.length === 0) {
-        return '\n\nNote: No specific relevant documents found for this query, but RAG context is available.\n';
-    }
-    
-    let enhancedContext = '\n\n📄 RELEVANT DOCUMENT CONTENT:\n\n';
-    let totalContentLength = 0;
-    const maxContentLength = 3000; // Increased limit for better context
-    
-    searchResults.forEach((result, index) => {
-        const content = pickContent(result);
-        if (content && totalContentLength < maxContentLength) {
-            const remainingLength = maxContentLength - totalContentLength;
-            const truncatedContent = content.length > remainingLength ? 
-                content.substring(0, remainingLength) + '...' : content;
-            
-            const filename = result.metadata?.filename || result.sourceFile || 'unknown';
-            enhancedContext += `--- Document ${index + 1} (${filename}) ---\n`;
-            enhancedContext += truncatedContent;
-            enhancedContext += '\n\n';
-            
-            totalContentLength += truncatedContent.length;
-        }
-    });
-    
-    enhancedContext += 'Please use the above document content to answer the user\'s question. The content is from uploaded files and should be used as the primary source for your response.\n';
-    return enhancedContext;
 }
 
 // Helper function to check if RAG should be enabled
@@ -918,184 +876,6 @@ function shouldEnableAgent(data) {
     return hasAgent;
 }
 
-// Helper function to validate pinecone index and files
-async function validatePineconeIndex(uploadedFiles, companyId) {
-    try {
-        // Check if pinecone index exists and has files
-        const pineconeFiles = await getFilesListFromIndex(companyId);
-        
-        if (!pineconeFiles || pineconeFiles.length === 0) {
-            throw new Error('Pinecone index is empty or not accessible');
-        }
-        
-        // Check if any of the uploaded files exist in pinecone index
-        // First try to match by fileId, then fall back to filename for backward compatibility
-        const availableFileIds = pineconeFiles.map(f => f.fileId).filter(id => id); // Filter out undefined fileIds
-        const availableFilenames = pineconeFiles.map(f => f.filename); // Get all filenames for fallback
-        
-        const uploadedFileIds = uploadedFiles.map(f => f._id?.toString()).filter(id => id); // Get MongoDB ObjectIds as strings
-        const uploadedFilenames = uploadedFiles.map(f => f.name || f.filename).filter(name => name); // Get filenames for fallback
-        
-        // First try to match by fileId
-        let matchingFileIds = uploadedFileIds.filter(uploadedId => 
-            availableFileIds.some(availableId => availableId === uploadedId)
-        );
-        
-        // If no matches by fileId, fall back to filename matching for backward compatibility
-        if (matchingFileIds.length === 0) {
-            const matchingFilenames = uploadedFilenames.filter(uploadedName => 
-                availableFilenames.some(availableName => 
-                    availableName === uploadedName || 
-                    availableName.includes(uploadedName) || 
-                    uploadedName.includes(availableName)
-                )
-            );
-            
-            if (matchingFilenames.length > 0) {
-                return true;
-            }
-        } else {
-            return true;
-        }
-        
-        if (matchingFileIds.length === 0) {
-            throw new Error('None of the uploaded files match files in pinecone index (by fileId or filename)');
-        }
-        
-        return true;
-        
-    } catch (error) {
-        logger.error('Pinecone index validation failed:', error.message);
-        return false;
-    }
-}
-
-// Helper function to map uploaded files to pinecone index files
-async function mapFilesToPineconeIndex(uploadedFiles, companyId) {
-    try {
-        // First validate the pinecone index
-        const isValid = await validatePineconeIndex(uploadedFiles, companyId);
-        if (!isValid) {
-            throw new Error('Pinecone index validation failed');
-        }
-        
-        // Get all files from pinecone index
-        const pineconeFiles = await getFilesListFromIndex(companyId);
-        
-        // Map uploaded files to pinecone files
-        const mappedFiles = [];
-        
-        for (const uploadedFile of uploadedFiles) {
-            const uploadedFileId = uploadedFile._id?.toString();
-            const uploadedFileName = uploadedFile.name || uploadedFile.filename;
-            
-            if (!uploadedFileName) {
-                continue;
-            }
-            
-            // First try to find matching file in pinecone index by fileId
-            let matchingPineconeFile = null;
-            
-            if (uploadedFileId) {
-                matchingPineconeFile = pineconeFiles.find(pf => 
-                    pf.fileId === uploadedFileId
-                );
-            }
-            
-            // If no match by fileId, fall back to filename matching for backward compatibility
-            if (!matchingPineconeFile) {
-                matchingPineconeFile = pineconeFiles.find(pf => 
-                    pf.filename === uploadedFileName || 
-                    pf.filename.includes(uploadedFileName) || 
-                    uploadedFileName.includes(pf.filename)
-                );
-            }
-            
-            if (matchingPineconeFile) {
-                mappedFiles.push({
-                    ...uploadedFile,
-                    pineconeFilename: matchingPineconeFile.filename,
-                    pineconeFileId: matchingPineconeFile.fileId || null, // Can be null for old files
-                    pineconeCount: matchingPineconeFile.count,
-                    matchType: matchingPineconeFile.fileId ? 'fileId' : 'filename' // Track how we matched
-                });
-            }
-        }
-        
-        if (mappedFiles.length === 0) {
-            throw new Error('No files could be mapped to pinecone index');
-        }
-        
-        return mappedFiles;
-        
-    } catch (error) {
-        logger.error('Error mapping files to pinecone index:', error);
-        throw error; // Re-throw to handle in the calling function
-    }
-}
-
-// Helper function to perform vector search within specific files
-async function searchWithinFiles(query, mappedFiles, companyId, options = {}) {
-    const { limit = 5, scoreThreshold = 0.15 } = options;  // Updated default to match Pinecone threshold
-    const allResults = [];
-    
-    try {
-        for (const mappedFile of mappedFiles) {
-            let fileResults = null;
-            
-            // Try to search by fileId first (for new files)
-            if (mappedFile.pineconeFileId) {
-                
-                fileResults = await searchWithinFileByFileId(
-                    companyId,
-                    mappedFile.pineconeFileId, 
-                    query, 
-                    Math.ceil(limit / mappedFiles.length)
-                );
-            }
-            
-            // If no results by fileId or fileId is null, fall back to filename search (for old files)
-            if (!fileResults || fileResults.length === 0) {
-                if (mappedFile.pineconeFilename) {
-                    
-                    fileResults = await searchWithinFileByName(
-                        companyId,
-                        mappedFile.pineconeFilename, 
-                        query, 
-                        Math.ceil(limit / mappedFiles.length)
-                    );
-                }
-            }
-            
-            if (fileResults && fileResults.length > 0) {
-                // Filter by score threshold and add file context
-                const filteredResults = fileResults
-                    .filter(result => result.score >= scoreThreshold)
-                    .map(result => ({
-                        ...result,
-                        sourceFile: mappedFile.filename || mappedFile.name,
-                        sourceFileId: mappedFile.pineconeFileId,
-                        pineconeFilename: mappedFile.pineconeFilename,
-                        matchType: mappedFile.matchType || 'unknown'
-                    }));
-                
-                allResults.push(...filteredResults);
-            }
-        }
-        
-        // Sort by score and limit results
-        const sortedResults = allResults
-            .sort((a, b) => b.score - a.score)
-            .slice(0, limit);
-        
-        return sortedResults;
-        
-    } catch (error) {
-        logger.error('Error searching within files:', error);
-        return [];
-    }
-}
-
 // Helper function to build agent context from system prompt, goals, and instructions
 function buildAgentContext(agent) {
     let agentContext = '\n\nAgent Configuration:\n';
@@ -1123,25 +903,12 @@ async function fetchAgentDetails(agentId) {
 }
 
 async function streamAndLog(app, data, socket, threadId = null) {
-    console.log("🚀 ~ streamAndLog ~ data:", data)
     let proccedMsg = '';
-    let costCallback = null;
-    
-    try {
-        // Extract cost callback from the model if available
-        if (app?.llm?._costCallback) {
-            costCallback = app.llm._costCallback;
-        }
-    } catch (error) {
-        logger.error('Error extracting cost callback:', error);
-    }
-    
     // Set global query data for tool execution (including API key)
     global.currentQueryData = data;
     
     // Check flow type and build appropriate context
     let inputs;
-    let isRagEnabled = false;
     let isAgentEnabled = false;
     let agentDetails = null;
     
@@ -1455,38 +1222,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 }
             },
 
-            [langGraphEventName.ON_CHAIN_MODEL_END]: async () => { 
-                // Update token usage in database if cost callback is available
-                if (costCallback && threadId) {
-                    try {
-                    
-                    const usage = costCallback.getUsage();
-                    
-                    if (usage.totalTokens > 0) {
-                        await costCallback.updateTokenUsage(threadId, usage);
-                    }
-                    } catch (error) {
-                    logger.error(`❌ [STREAM_LOG] Error updating token usage for thread ${threadId}:`, error);
-                }
-                } else {
-                }
-
-                // Deduct message credit from user (similar to Python implementation)
-                // if (data.companyId || (data.user && data.user.company && data.user.company.id)) {
-                //     try {
-                //         const companyId = data.companyId || data.user.company.id;
-                //         // Use model-specific credit amount from frontend (msgCredit field) and ensure it's stored as double
-                //         const creditValue = Number((parseFloat(data.msgCredit || data.usedCredit || 1.0)).toFixed(1));
-                        
-                        
-                //         // const creditResult = await deductUserMsgCredit(companyId, creditValue);
-                //     } catch (error) {
-                //         logger.error(`❌ [CREDIT_DEDUCT] Error deducting credit:`, error);
-                //     }
-                // } else {
-                //     logger.warn(`⚠️ [CREDIT_DEDUCT] No company ID found in data for credit deduction`);
-                // }
-                
+            [langGraphEventName.ON_CHAIN_MODEL_END]: async () => {                 
                 socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
                     chunk: llmStreamingEvents.RESPONSE_DONE,
                     proccedMsg,
@@ -1558,6 +1294,7 @@ async function streamAndLog(app, data, socket, threadId = null) {
         
         // Send error message to frontend
         socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+            event: llmStreamingEvents.CONVERSATION_ERROR,
             chunk: llmStreamingEvents.RESPONSE_ERROR_MESSAGE,
         });
     } finally {
@@ -1731,6 +1468,31 @@ async function toolExecutor(data, socket) {
             threadId: data.threadId,
             userId: data.user.id
         };
+        // RAW Perplexity routing for all Perplexity models
+        const isPerplexity = mappedProvider === AI_MODAL_PROVIDER.PERPLEXITY;
+        if (isPerplexity) {
+            const rawMessages = [['user', data.query || '']];
+            await perplexityRawStream({
+                apiKey: decryptedData(data.apiKey),
+                model: data.model,
+                messages: rawMessages,
+                data,
+                socket,
+                threadId: data.threadId,
+                options: {
+                    temperature: data.temperature,
+                    maxTokens: data.maxTokens,
+                    search_recency_filter: 'month',
+                    search_domain_filter: Array.isArray(data.searchDomains) ? data.searchDomains : undefined,
+                    web_search_options: data.web_search_options,
+                    extra_body: data.extra_body,
+                    encryptedKey: data.apiKey,
+                    companyRedisId: data.user?.company?.id,
+                    additionalData: {},
+                },
+            });
+            return;
+        }
         if (shouldEnableAgent(data)) {
             agentDetails = await fetchAgentDetails(data.customGptId);
             if (agentDetails) {
@@ -1766,11 +1528,6 @@ async function toolExecutor(data, socket) {
         
     } catch (error) {
         logger.error('Error in toolExecutor:', error);
-        
-        // Emit error to frontend
-        socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
-            chunk: llmStreamingEvents.RESPONSE_ERROR_MESSAGE,
-        });
     }
 }
 
@@ -1791,7 +1548,7 @@ async function generateTitleByLLM(payload) {
             [AI_MODAL_PROVIDER.LLAMA4]: 'llama-3.1-8b-instruct',
             [AI_MODAL_PROVIDER.GROK]: 'grok-2-1212',
             [AI_MODAL_PROVIDER.QWEN]: 'qwq-32b',
-            [AI_MODAL_PROVIDER.PERPLEXITY]: 'perplexity-3.5-sonnet',
+            [AI_MODAL_PROVIDER.PERPLEXITY]: 'sonar',
         };
         
         const defaultModel = defaultModelMap[mappedProvider] || defaultModelMap[AI_MODAL_PROVIDER.OPEN_AI];

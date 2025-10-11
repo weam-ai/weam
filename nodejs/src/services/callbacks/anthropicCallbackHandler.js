@@ -1,5 +1,3 @@
-const { BaseCallbackHandler } = require('@langchain/core/callbacks/base');
-const { calculateCost } = require('./costConfig');
 const { createCostCalculator } = require('./costCalcHandler');
 const logger = require('../../utils/logger');
 
@@ -38,9 +36,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
         let completionTokens = 0;
         let tokenExtractionMethod = 'none';
         
-        logger.info(`🔍 [ANTHROPIC_COST] Analyzing Anthropic response structure`);
-        logger.info(`🔍 [ANTHROPIC_COST] Full output structure: ${JSON.stringify(output, null, 2)}`);
-        
         // Check for Anthropic's specific response format
         if (output && output.generations && Array.isArray(output.generations) && output.generations.length > 0) {
             const firstGeneration = output.generations[0];
@@ -49,18 +44,12 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
             if (Array.isArray(firstGeneration) && firstGeneration.length > 0) {
                 const generation = firstGeneration[0];
                 
-                logger.info(`🔍 [ANTHROPIC_COST] Examining generation: ${JSON.stringify(generation, null, 2)}`);
-                
                 // Primary path: Check for usage_metadata directly in generationInfo
                 if (generation.generationInfo && generation.generationInfo.usage_metadata) {
                     const usageMetadata = generation.generationInfo.usage_metadata;
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0][0].generationInfo.usage_metadata';
-                    
-                    logger.info(`✅ [ANTHROPIC_COST] Found token usage in generationInfo.usage_metadata`);
-                    logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
-                    logger.info(`🔍 [ANTHROPIC_COST] Full usage_metadata: ${JSON.stringify(usageMetadata, null, 2)}`);
                 }
                 // Check for usage_metadata directly in generation
                 else if (generation.usage_metadata) {
@@ -69,8 +58,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0][0].usage_metadata';
                     
-                    logger.info(`✅ [ANTHROPIC_COST] Found token usage directly in generation.usage_metadata`);
-                    logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                 }
                 // Alternative path: Check for usage_metadata in message.kwargs
                 else if (generation.message && generation.message.kwargs && generation.message.kwargs.usage_metadata) {
@@ -78,9 +65,7 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0][0].message.kwargs.usage_metadata';
-                    
-                    logger.info(`✅ [ANTHROPIC_COST] Found token usage in message.kwargs.usage_metadata`);
-                    logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
+
                 }
                 // Check for response_metadata in message.kwargs (Anthropic specific)
                 else if (generation.message && generation.message.kwargs && generation.message.kwargs.response_metadata) {
@@ -90,13 +75,9 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                         completionTokens = responseMetadata.usage.output_tokens || 0;
                         tokenExtractionMethod = 'generations[0][0].message.kwargs.response_metadata.usage';
                         
-                        logger.info(`✅ [ANTHROPIC_COST] Found token usage in response_metadata.usage`);
-                        logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                     }
                 }
                 else {
-                    logger.info(`⚠️ [ANTHROPIC_COST] No usage_metadata found in expected Anthropic format`);
-                    logger.info(`🔍 [ANTHROPIC_COST] Available generation properties: ${Object.keys(generation)}`);
                     if (generation.generationInfo) {
                         logger.info(`🔍 [ANTHROPIC_COST] generationInfo properties: ${Object.keys(generation.generationInfo)}`);
                     }
@@ -109,17 +90,12 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
             else if (firstGeneration && !Array.isArray(firstGeneration)) {
                 const generation = firstGeneration;
                 
-                logger.info(`🔍 [ANTHROPIC_COST] Examining direct generation: ${JSON.stringify(generation, null, 2)}`);
-                
                 // Check for usage_metadata directly in generation
                 if (generation.usage_metadata) {
                     const usageMetadata = generation.usage_metadata;
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0].usage_metadata';
-                    
-                    logger.info(`✅ [ANTHROPIC_COST] Found token usage directly in generation.usage_metadata`);
-                    logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                 }
                 // Check for usage_metadata in generationInfo
                 else if (generation.generationInfo && generation.generationInfo.usage_metadata) {
@@ -127,9 +103,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0].generationInfo.usage_metadata';
-                    
-                    logger.info(`✅ [ANTHROPIC_COST] Found token usage in direct generation format`);
-                    logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                 }
                 // Check for response_metadata in message.kwargs
                 else if (generation.message && generation.message.kwargs && generation.message.kwargs.response_metadata) {
@@ -138,9 +111,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                         promptTokens = responseMetadata.usage.input_tokens || 0;
                         completionTokens = responseMetadata.usage.output_tokens || 0;
                         tokenExtractionMethod = 'generations[0].message.kwargs.response_metadata.usage';
-                        
-                        logger.info(`✅ [ANTHROPIC_COST] Found token usage in response_metadata.usage`);
-                        logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                     }
                 }
             }
@@ -153,9 +123,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                 promptTokens = tokenUsage.promptTokens || tokenUsage.input_tokens || 0;
                 completionTokens = tokenUsage.completionTokens || tokenUsage.output_tokens || 0;
                 tokenExtractionMethod = 'llmOutput.tokenUsage';
-                
-                logger.info(`✅ [ANTHROPIC_COST] Found token usage in llmOutput fallback`);
-                logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
             }
         }
         
@@ -165,9 +132,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                 promptTokens = output.usage.input_tokens || 0;
                 completionTokens = output.usage.output_tokens || 0;
                 tokenExtractionMethod = 'output.usage';
-                
-                logger.info(`✅ [ANTHROPIC_COST] Found token usage in direct output.usage`);
-                logger.info(`📊 [ANTHROPIC_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
             }
         }
         
@@ -175,8 +139,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
         if (promptTokens === 0 && state.estimatedPromptTokens > 0) {
             promptTokens = state.estimatedPromptTokens;
             tokenExtractionMethod = 'estimated_prompt_tokens';
-            
-            logger.info(`⚠️ [ANTHROPIC_COST] Using estimated prompt tokens as fallback: ${promptTokens}`);
         }
         
         return {
@@ -194,7 +156,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
      */
     async function handleLLMEnd(output, runId, parentRunId) {
         try {
-            logger.info(`🏁 [ANTHROPIC_COST] LLM End - Model: ${state.modelName}, Run ID: ${runId}`);
             
             const { promptTokens, completionTokens, tokenExtractionMethod } = extractAnthropicTokenUsage(output);
             
@@ -202,16 +163,11 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                 // Add token usage to cost calculator
                 costCalculator.addTokenUsage(promptTokens, completionTokens, state.modelName);
                 
-                logger.info(`💰 [ANTHROPIC_COST] Token extraction method: ${tokenExtractionMethod}`);
-                logger.info(`📊 [ANTHROPIC_COST] Final tokens - Prompt: ${promptTokens}, Completion: ${completionTokens}`);
-                
                 // Save to thread if threadRepo is available
                 if (state.threadRepo && state.threadId) {
                     await saveTokenUsageToThread(promptTokens, completionTokens);
                 }
             } else {
-                logger.info(`⚠️ [ANTHROPIC_COST] No token usage found in Anthropic response`);
-                logger.info(`🔍 [ANTHROPIC_COST] Full output structure:`, JSON.stringify(output, null, 2));
             }
         } catch (error) {
             logger.error('❌ [ANTHROPIC_COST] Error in handleLLMEnd:', error);
@@ -226,7 +182,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
     async function saveTokenUsageToThread(promptTokens, completionTokens) {
         try {
             if (!state.threadRepo || !state.threadId) {
-                logger.info(`⚠️ [ANTHROPIC_COST] No thread repository or thread ID available`);
                 return;
             }
 
@@ -243,7 +198,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
             };
 
             await state.threadRepo.updateTokenUsage(state.threadId, threadData);
-            logger.info(`💾 [ANTHROPIC_COST] Saved token usage to thread ${state.threadId}`);
         } catch (error) {
             logger.error('❌ [ANTHROPIC_COST] Error saving to thread:', error);
         }
@@ -285,7 +239,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
      */
     async function handleChatModelStart(llm, messages, runId, parentRunId, extraParams) {
         try {
-            logger.info(`🚀 [ANTHROPIC_COST] Chat Model Start - Model: ${state.modelName}, Run ID: ${runId}`);
             
             const messageText = extractTextFromMessages(messages);
             const estimatedPromptTokens = estimateTokens(messageText);
@@ -293,9 +246,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
             state.currentRunId = runId;
             state.startTime = Date.now();
             state.estimatedPromptTokens = estimatedPromptTokens;
-            
-            logger.info(`📊 [ANTHROPIC_COST] Estimated prompt tokens: ${estimatedPromptTokens}`);
-            logger.info(`💰 [ANTHROPIC_COST] Thread ID: ${state.threadId}`);
         } catch (error) {
             logger.error('❌ [ANTHROPIC_COST] Error in handleChatModelStart:', error);
         }

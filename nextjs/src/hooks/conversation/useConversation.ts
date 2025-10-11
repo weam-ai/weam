@@ -914,7 +914,8 @@ const useConversation = () => {
                     model:m?.model,
                     coverImage:gptCoverImage,
                     responseAddKeywords: answer.data.additional_kwargs,
-                    citations: m.citations
+                    citations: m.citations,
+                    responseMetadata: answer.data.response_metadata
                 }
             });
            
