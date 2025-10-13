@@ -1877,13 +1877,7 @@ function mapProviderCode(code) {
 }
 
 async function toolExecutor(data, socket) {
-    console.log('🚀 [TOOL_EXECUTOR] Starting with data:', JSON.stringify({
-        query: data.query,
-        model: data.model,
-        code: data.code,
-        chatId: data.chatId,
-        messageId: data.messageId
-    }, null, 2));
+
 
     // Make socket available globally for Ollama streaming
     global.currentSocket = socket;

@@ -5,6 +5,7 @@ import { getDisplayModelName } from '@/utils/helper';
 import Toast from '@/utils/toast';
 import commonApi from '@/api';
 import { MODULE_ACTIONS } from '@/utils/constant';
+import { LINK } from '@/config/config';
 
 const OllamaModelProvider = ({ configs }) => {
     const { ollamaHealthCheck, pullSelectedModel, refreshOllamaTags, loading, pulling, MODEL_OPTIONS, selectedModel, setSelectedModel } = useOllama();
@@ -14,9 +15,8 @@ const OllamaModelProvider = ({ configs }) => {
     const [connectionStatus, setConnectionStatus] = useState('');
     
     // Use host.docker.internal:11434 for Docker compatibility
-  const baseUrl = 'http://host.docker.internal:11434';
+  const baseUrl = LINK.OLLAMA_API_URL;
   // Ensure we're using the correct URL for Docker compatibility
-  console.log("Using Docker-compatible baseUrl for Ollama:", baseUrl);
     
     // Check connection status on mount using commonApi
     useEffect(() => {
@@ -33,7 +33,7 @@ const OllamaModelProvider = ({ configs }) => {
                     data: {}
                 });
                 
-                console.log('Ollama health check response:', response);
+
                 
                 // The API might return success even if Ollama is not running
                 // We need to check if the response contains the expected data
@@ -64,6 +64,18 @@ const OllamaModelProvider = ({ configs }) => {
             isMounted = false;
         };
     }, []); // Only run once on mount
+
+    // Refresh available Ollama models on mount to populate size/context
+    useEffect(() => {
+        (async () => {
+            try {
+                await refreshOllamaTags(baseUrl);
+            } catch (e) {
+                console.warn('Failed to refresh Ollama tags on mount:', e);
+            }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     
     return (
         <div className={`relative mb-4`}>
@@ -150,7 +162,7 @@ const OllamaModelProvider = ({ configs }) => {
                                      data: {}
                                  });
                                  
-                                 console.log('Ollama health check response:', response);
+
                                  if (!response?.success) {
                                      throw new Error(`Ollama API returned ${response?.status || 'Unknown error'}`);
                                  }
@@ -170,7 +182,7 @@ const OllamaModelProvider = ({ configs }) => {
                                          }
                                      });
                                      
-                                     console.log('Ollama pull response:', pullResponse);
+
                                      
                                      // Continue even if pull fails - we'll just use the model if it's already downloaded
                                      if (!pullResponse?.success) {
@@ -187,7 +199,7 @@ const OllamaModelProvider = ({ configs }) => {
                                  // Save the settings
                                  const saveData = {
                                      model: selectedModel,
-                                     baseUrl: 'http://host.docker.internal:11434',
+                                     baseUrl: baseUrl,
                                      provider: 'OLLAMA'
                                  };
                                  
@@ -196,10 +208,10 @@ const OllamaModelProvider = ({ configs }) => {
                                      data: saveData
                                  });
                                  
-                                 console.log('Save Ollama settings response:', saveResponse);
                                  setProgressPct(100);
+                                //  console.log("save response", saveResponse); return true;
                                  
-                                 if (saveResponse?.code === 'SUCCESS' || saveResponse?.status === 204) {
+                                 if (saveResponse?.success === true || saveResponse?.status === 204) {
                                      Toast('Ollama configured successfully!', 'success');
                                      setConnectionStatus('connected');
                                  } else {

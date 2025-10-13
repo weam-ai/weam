@@ -287,12 +287,7 @@ const commonApi = async ({
                 'x-brain-id': config?.['x-brain-id']
             });
 
-            console.log("commonApi",{
-                type: api.method,
-                url: api.url(...parameters as string[]),
-                data: data,
-                config
-            })
+
             const response = await fetchUrl({
                 type: api.method,
                 url: api.url(...parameters as string[]),

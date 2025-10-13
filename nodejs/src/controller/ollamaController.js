@@ -1,10 +1,11 @@
 const ollamaService = require('../services/ollamaService');
 const ollamaAnalytics = require('../services/ollamaAnalytics');
 const fs = require('fs');
+const LINK = require('../config/config').LINK;
 
 // Resolve a usable Ollama base URL across host and Docker environments
 function resolveOllamaCandidates(inputUrl) {
-    const provided = inputUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    const provided = inputUrl || LINK.OLLAMA_API_URL;
     const candidates = [provided];
 
     // Detect Docker container environment
@@ -23,15 +24,15 @@ function resolveOllamaCandidates(inputUrl) {
             candidates.push(hostInternal);
         }
         // Also include explicit default port on host.docker.internal
-        const defaultPort = 'http://host.docker.internal:11434';
+        const defaultPort = LINK.OLLAMA_API_URL;
         if (!candidates.includes(defaultPort)) {
             candidates.push(defaultPort);
         }
     }
 
     // Add common Docker Compose service fallback
-    candidates.push('http://localhost:11434');
-    candidates.push('http://host.docker.internal:11434');
+    // candidates.push('http://localhost:11434');
+    candidates.push(LINK.OLLAMA_API_URL);
 
     // De-duplicate while preserving order
     return [...new Set(candidates)];
@@ -695,9 +696,6 @@ class OllamaController {
      */
     async saveOllamaModelToDatabase(modelName, companyId, baseUrl = 'http://localhost:11434') {
         try {
-            console.log("modelName111",modelName)
-            console.log("companyId11",companyId)
-            console.log("baseUr1111l",baseUrl)
             // Skip saving if no valid company ID is available
             if (!companyId) {
                 logger.info('Skipping model save - no valid company ID available');

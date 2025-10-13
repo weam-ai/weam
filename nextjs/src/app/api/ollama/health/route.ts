@@ -1,13 +1,14 @@
 export const runtime = 'nodejs';
 
 import { NextRequest } from 'next/server';
+import { LINK } from '@/config/config';
 
 // Proxies Ollama health checks to the upstream Ollama instance provided by baseUrl.
 // Falls back to localhost for local setups.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const baseUrl = searchParams.get('baseUrl') || 'http://host.docker.internal:11434';
+    const baseUrl = LINK.OLLAMA_API_URL;
     const apiKey = searchParams.get('apiKey') || undefined;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };

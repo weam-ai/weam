@@ -62,10 +62,10 @@ const APIModelChoose = () => {
     const selectedModel = watch('model');
     
     // Debug: Log when selectedModel changes
-    useEffect(() => {
-        console.log('Selected model changed:', selectedModel);
-        console.log('Is Ollama selected?', selectedModel?.value === AI_MODEL_CODE.OLLAMA);
-    }, [selectedModel]);
+    // useEffect(() => {
+    //     console.log('Selected model changed:', selectedModel);
+    //     console.log('Is Ollama selected?', selectedModel?.value === AI_MODEL_CODE.OLLAMA);
+    // }, [selectedModel]);
 
     const handleSave = useCallback(async (data: ModelKeysSchemaType) => {
         const response = await checkApiKey(data.model.value, data.key);
@@ -117,7 +117,7 @@ const APIModelChoose = () => {
             {selectedModel && selectedModel.value === AI_MODEL_CODE.OLLAMA && (
                 <div className="relative mb-4">
                     {/* Ollama does not require API key; just configure connection */}
-                    <p>Debug: Rendering OllamaModelProvider</p>
+                    {/* <p>Debug: Rendering OllamaModelProvider</p> */}
                     <OllamaModelProvider configs={{}} />
                 </div>
             )}

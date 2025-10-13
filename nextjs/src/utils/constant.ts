@@ -1,4 +1,5 @@
 import { ProAgentCode } from "@/types/common";
+import * as yup from 'yup';
 
 export const API_RESPONSE_LOGIN = 'LOGIN';
 export const DEFAULT_NEXT_API_HEADER = { 'Content-Type': 'application/json' };
@@ -134,7 +135,6 @@ export const MODULE_ACTIONS = {
     ANTHROPIC_HEALTH: 'anthropicKeyCheck',
     CHECK_GEMINI_API_KEY: 'geminiKeyCheck',
     OLLAMA_HEALTH: 'ollamaKeyCheck',
-    TEST_OLLAMA_CONNECTION: 'testOllamaConnection',
     SAVE_OLLAMA_SETTINGS: 'saveOllamaSettings',
     OLLAMA_PULL_MODEL: 'ollamaPullModel',
     OLLAMA_LIST_TAGS: 'ollamaListTags',
@@ -574,6 +574,12 @@ export const MODAL_NAME_CONVERSION = {
     OPEN_ROUTER: 'Open Router',
     OLLAMA: 'Ollama'
 }
+
+// Ollama schema moved from schema/usermodal.ts
+export const ollamaKeys = yup.object({
+    baseUrl: yup.string().url('Please enter a valid URL').required('Base URL is required'),
+    key: yup.string().optional()
+});
 
 export const MODEL_CREDIT_INFO = [
     // GPT-5 models (moved to first for priority in chat dropdown)

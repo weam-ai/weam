@@ -608,14 +608,7 @@ const ChatPage = memo(() => {
             brainId: getDecodedObjectId(),
             usedCredit: modelCredit
         })
-        console.log("LLM_RESPONSE_SEND============",{
-            query: query,
-            chatId: params.id,
-            model: matchedModel.name,
-            code: selectedAIModal.bot.code,
-            apiKey: selectedAIModal?.config?.apikey,
-            usedCredit: modelCredit
-        })
+
         if (chatTitle == '' || chatTitle === undefined) {
             // Check if the selected model is an Ollama model
             const isOllamaModel = selectedAIModal.bot.code === 'OLLAMA';

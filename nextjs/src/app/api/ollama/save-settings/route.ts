@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { LINK } from '@/config/config';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const token = req.cookies.get('token')?.value || '';
 
-
-    console.log('Saving Ollama settings with token:', token);
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4050'}/napi/v1/ollama/save-settings`, {
+    const response = await fetch(`${LINK.SERVER_NODE_API_URL || 'http://localhost:4050'}/napi/v1/ollama/save-settings`, {
       method: 'POST',
       headers: {
         'Authorization': `JWT ${token}`,

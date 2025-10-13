@@ -3,6 +3,7 @@ import APIModelChoose, { ModelDeleteButton } from './APIModelChoose';
 import { fetchAiModal } from '@/actions/modals';
 import { getModelImageByName, MODAL_NAME_CONVERSION } from '@/utils/constant';
 import { DynamicImage } from '@/widgets/DynamicImage';
+import { LINK } from '@/config/config';
 
 type APIKeyConfigProps = {
     tab: string;
@@ -17,7 +18,7 @@ const RenderModelList = async () => {
         acc.push(model);
         return acc;
     }, []);
-    console.log("Model list :", modelList)
+
     if (!modelList.length) return <div className="text-font-14 mt-5">No model added yet</div>
     return (
         <div className="flex flex-col text-font-14 mt-5">
@@ -26,7 +27,7 @@ const RenderModelList = async () => {
                     return (
                         <div className="border-b px-2 py-3 last:border-none flex items-center gap-2" key={model._id}>
                             <DynamicImage
-                                src={model.bot.code === 'OLLAMA' ? '/ollama-model.svg' : getModelImageByName(model.name)}
+                                src={model.bot.code === 'OLLAMA' ? LINK.OLLAMA_IMAGE_PATH : getModelImageByName(model.name)}
                                 alt={'API Key Placeholder'}
                                 width={40}
                                 height={40}
