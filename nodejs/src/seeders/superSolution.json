@@ -1,12 +1,12 @@
 {
     "solutionApps": [
       {
-        "name": "AI Docs",
+        "name": "Docs",
         "description": "AI-powered document editor with dual editor modes (Rich Text & Markdown), smart templates, and OpenAI integration for document generation and formatting",
         "icon": "ai-docs-icon",
         "category": "Productivity & Document Management",
         "isActive": true,
-        "pathToOpen": "/ai-docs",
+        "pathToOpen": "/docs",
         "sequence": 1
       },
       {
