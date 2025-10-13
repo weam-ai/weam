@@ -798,7 +798,7 @@ async function llmFactory(modelName, opts = {}) {
         [AI_MODAL_PROVIDER.QWEN]: () => chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
         [AI_MODAL_PROVIDER.OLLAMA]: () => {
             // For Docker containers, use host.docker.internal to access host machine
-            const defaultBaseUrl = 'http://host.docker.internal:11434';
+            const defaultBaseUrl = LINK.OLLAMA_COMMON_URL;
             const baseUrl = opts.baseUrl || process.env.OLLAMA_URL || defaultBaseUrl;
 
             console.log(`🤖 [OLLAMA] Creating Ollama model: ${modelName} with baseUrl: ${baseUrl}`);
@@ -1976,10 +1976,10 @@ async function toolExecutor(data, socket) {
             try {
                 const companyId = data.companyId || data.user?.company?.id;
                 const settings = await ollamaService.getCompanyOllamaSettings(companyId);
-                const resolvedBaseUrl = settings?.baseUrl || process.env.OLLAMA_URL || 'http://host.docker.internal:11434';
+                const resolvedBaseUrl = settings?.baseUrl || LINK.OLLAMA_API_URL;
                 options.baseUrl = resolvedBaseUrl;
             } catch (e) {
-                options.baseUrl = process.env.OLLAMA_URL || 'http://host.docker.internal:11434';
+                options.baseUrl = LINK.OLLAMA_API_URL;
             }
         }
         if (shouldEnableAgent(data)) {

@@ -1,12 +1,13 @@
 export const runtime = 'nodejs';
 
+import { LINK } from '@/config/config';
 import { NextRequest } from 'next/server';
 
 // Proxies Ollama tags listing to the upstream Ollama instance.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const baseUrl = searchParams.get('baseUrl') || 'http://host.docker.internal:11434';
+    const baseUrl = LINK.OLLAMA_API_URL;
     const apiKey = searchParams.get('apiKey') || undefined;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };

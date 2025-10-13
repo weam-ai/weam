@@ -14,7 +14,7 @@ const OllamaModelProvider = ({ configs }) => {
     const [progressStatus, setProgressStatus] = useState('');
     const [connectionStatus, setConnectionStatus] = useState('');
     
-    // Use host.docker.internal:11434 for Docker compatibility
+
   const baseUrl = LINK.OLLAMA_API_URL;
   // Ensure we're using the correct URL for Docker compatibility
     

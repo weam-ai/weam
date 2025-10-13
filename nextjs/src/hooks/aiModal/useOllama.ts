@@ -1,4 +1,5 @@
 import commonApi from '@/api';
+import { LINK } from '@/config/config';
 import { assignModelListAction } from '@/lib/slices/aimodel/assignmodelslice';
 import { ollamaKeys } from '@/schema/usermodal'
 import { MODULE_ACTIONS } from '@/utils/constant';
@@ -9,7 +10,7 @@ import { useForm } from 'react-hook-form'
 import { useSelector, useDispatch } from 'react-redux';
 
 const defaultValues: any = {
-    baseUrl: 'http://host.docker.internal:11434'
+    baseUrl: LINK.OLLAMA_API_URL,
 };
 
 // Structured local model metadata for better option rendering
