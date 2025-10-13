@@ -1,5 +1,3 @@
-const { BaseCallbackHandler } = require('@langchain/core/callbacks/base');
-const { calculateCost } = require('./costConfig');
 const { createCostCalculator } = require('./costCalcHandler');
 const logger = require('../../utils/logger');
 
@@ -38,9 +36,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
         let completionTokens = 0;
         let tokenExtractionMethod = 'none';
         
-        logger.info(`🔍 [GEMINI_COST] Analyzing Gemini response structure`);
-        logger.info(`🔍 [GEMINI_COST] Full output: ${JSON.stringify(output, null, 2)}`);
-        
         // Check for Gemini's specific response format
         if (output && output.generations && Array.isArray(output.generations) && output.generations.length > 0) {
             const firstGeneration = output.generations[0];
@@ -55,10 +50,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0][0].message.kwargs.usage_metadata';
-                    
-                    logger.info(`✅ [GEMINI_COST] Found token usage in message.kwargs.usage_metadata`);
-                    logger.info(`📊 [GEMINI_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
-                    logger.info(`🔍 [GEMINI_COST] Full usage_metadata: ${JSON.stringify(usageMetadata, null, 2)}`);
                 }
                 // Alternative path: Check for usage_metadata in generationInfo.kwargs
                 else if (generation.generationInfo && generation.generationInfo.kwargs && generation.generationInfo.kwargs.usage_metadata) {
@@ -66,9 +57,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0][0].generationInfo.kwargs.usage_metadata';
-                    
-                    logger.info(`✅ [GEMINI_COST] Found token usage in generationInfo.kwargs.usage_metadata`);
-                    logger.info(`📊 [GEMINI_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                 }
                 // New path: Check directly in generationInfo
                 else if (generation.generationInfo && generation.generationInfo.usage_metadata) {
@@ -76,18 +64,8 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0][0].generationInfo.usage_metadata';
-                    
-                    logger.info(`✅ [GEMINI_COST] Found token usage in generationInfo.usage_metadata`);
-                    logger.info(`📊 [GEMINI_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                 }
                 else {
-                    logger.info(`⚠️ [GEMINI_COST] No usage_metadata found in expected Gemini format`);
-                    logger.info(`🔍 [GEMINI_COST] Available generation properties: ${Object.keys(generation)}`);
-                    
-                    // If generationInfo exists, log its structure
-                    if (generation.generationInfo) {
-                        logger.info(`🔍 [GEMINI_COST] GenerationInfo structure: ${JSON.stringify(generation.generationInfo, null, 2)}`);
-                    }
                 }
             }
             // Handle case where generations[0] is a direct object
@@ -100,9 +78,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0].message.kwargs.usage_metadata';
-                    
-                    logger.info(`✅ [GEMINI_COST] Found token usage in direct generation format`);
-                    logger.info(`📊 [GEMINI_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                 }
                 // Check directly in generationInfo
                 else if (generation.generationInfo && generation.generationInfo.usage_metadata) {
@@ -110,9 +85,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                     promptTokens = usageMetadata.input_tokens || 0;
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0].generationInfo.usage_metadata';
-                    
-                    logger.info(`✅ [GEMINI_COST] Found token usage in generationInfo.usage_metadata`);
-                    logger.info(`📊 [GEMINI_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
                 }
             }
         }
@@ -124,9 +96,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                 promptTokens = tokenUsage.promptTokens || tokenUsage.input_tokens || state.estimatedPromptTokens || 0;
                 completionTokens = tokenUsage.completionTokens || tokenUsage.output_tokens || 0;
                 tokenExtractionMethod = 'llmOutput.tokenUsage';
-                
-                logger.info(`✅ [GEMINI_COST] Found token usage in llmOutput fallback`);
-                logger.info(`📊 [GEMINI_COST] Input tokens: ${promptTokens}, Output tokens: ${completionTokens}`);
             }
         }
         
@@ -134,7 +103,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
         if (promptTokens === 0 && state.estimatedPromptTokens > 0) {
             promptTokens = state.estimatedPromptTokens;
             tokenExtractionMethod += ' + estimatedPromptTokens';
-            logger.info(`⚠️ [GEMINI_COST] Using estimated prompt tokens as fallback: ${promptTokens}`);
         }
         
         return {
@@ -152,7 +120,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
      */
     async function handleLLMEnd(output, runId, parentRunId) {
         try {
-            logger.info(`🏁 [GEMINI_COST] LLM End - Model: ${state.modelName}, Run ID: ${runId}`);
             
             const { promptTokens, completionTokens, tokenExtractionMethod } = extractGeminiTokenUsage(output);
             
@@ -160,16 +127,11 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                 // Add token usage to cost calculator
                 costCalculator.addTokenUsage(promptTokens, completionTokens, state.modelName);
                 
-                logger.info(`💰 [GEMINI_COST] Token extraction method: ${tokenExtractionMethod}`);
-                logger.info(`📊 [GEMINI_COST] Final tokens - Prompt: ${promptTokens}, Completion: ${completionTokens}`);
-                
                 // Save to thread if threadRepo is available
                 if (state.threadRepo && state.threadId) {
                     await saveTokenUsageToThread(promptTokens, completionTokens);
                 }
             } else {
-                logger.info(`⚠️ [GEMINI_COST] No token usage found in Gemini response`);
-                logger.info(`🔍 [GEMINI_COST] Full output structure: ${JSON.stringify(output, null, 2)}`);
             }
         } catch (error) {
             logger.error('❌ [GEMINI_COST] Error in handleLLMEnd:', error);
@@ -184,7 +146,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
     async function saveTokenUsageToThread(promptTokens, completionTokens) {
         try {
             if (!state.threadRepo || !state.threadId) {
-                logger.info(`⚠️ [GEMINI_COST] No thread repository or thread ID available`);
                 return;
             }
 
@@ -201,7 +162,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
             };
 
             await state.threadRepo.updateTokenUsage(state.threadId, threadData);
-            logger.info(`💾 [GEMINI_COST] Saved token usage to thread ${state.threadId}`);
         } catch (error) {
             logger.error('❌ [GEMINI_COST] Error saving to thread:', error);
         }
@@ -243,7 +203,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
      */
     async function handleChatModelStart(llm, messages, runId, parentRunId, extraParams) {
         try {
-            logger.info(`🚀 [GEMINI_COST] Chat Model Start - Model: ${state.modelName}, Run ID: ${runId}`);
             
             const messageText = extractTextFromMessages(messages);
             const estimatedPromptTokens = estimateTokens(messageText);
@@ -251,9 +210,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
             state.currentRunId = runId;
             state.startTime = Date.now();
             state.estimatedPromptTokens = estimatedPromptTokens;
-            
-            logger.info(`📊 [GEMINI_COST] Estimated prompt tokens: ${estimatedPromptTokens}`);
-            logger.info(`💰 [GEMINI_COST] Thread ID: ${state.threadId}`);
         } catch (error) {
             logger.error('❌ [GEMINI_COST] Error in handleChatModelStart:', error);
         }

@@ -134,7 +134,13 @@ export type ConversationType = {
     _id?: string;
     customGptTitle?: string;
     coverImage?: string;
-    citations?: CitationResponseType[]
+    citations?: CitationResponseType[],
+    responseMetadata?: {
+        search_results: any[];
+        citations: any[];
+        images: string[];
+        videos: string[];
+    };
 }
 
 export type ForkChatType = {

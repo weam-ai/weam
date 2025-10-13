@@ -169,7 +169,7 @@ export const MODULE_ACTIONS = {
     GET_ALL_PAGES: 'getAllPages',
     SOLUTION_INSTALL: 'solutionInstall',
     ENHANCE_PROMPT_BY_LLM: 'enhancePromptByLLM',
-
+    GET_IMAGES: 'getImages',
 } as const;
 
 export const DATE_TIME_FORMAT = 'DD/MM/YYYY hh:mm A';
@@ -1568,4 +1568,5 @@ export const STREAMING_RESPONSE_STATUS = {
     CITATION: '[CITATION]',
     WEB_SEARCH: '[WEB_SEARCH]',
     IMAGE_GENERATION_START: '[IMAGE_GENERATION_TOOL]',
+    CONVERSATION_ERROR: '[CONVERSATION_ERROR]'
 }
