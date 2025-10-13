@@ -204,7 +204,7 @@ export default function Home() {
                                             title="Let's build your first Prompt!"
                                             description="Anything can be a prompt in Weam. Client brief, brand description, product description, anything. You can also add the website URL of your company or client and Weam will create a short summary of the company. Check out the video to learn more."
                                             subtitle="" 
-                                            note={`Need inspiration? Here's our <a href="custom-templates" class="text-blue font-bold" rel="noreferrer">pre-made Prompt Library</a>.`}
+                                            note={`Need inspiration? Here's our <a href="custom-templates" class="text-b2 underline hover:text-b5 font-bold" rel="noreferrer">pre-made Prompt Library</a>.`}
                                             videourl="https://www.youtube.com/embed/fS6x7AduVuQ?si=GSY9cnYxrzkdzaMN"
                                             />
                                         </div>

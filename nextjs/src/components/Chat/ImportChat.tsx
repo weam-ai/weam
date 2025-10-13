@@ -203,7 +203,7 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
                                     <DialogClose asChild>
                                         <button
                                             type="button"
-                                            className="px-4 py-2 btn btn-outline-gray"
+                                            className="btn btn-outline-gray"
                                             onClick={() => onClose()}
                                         >
                                             Cancel
@@ -212,7 +212,7 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="px-4 py-2 btn btn-blue text-white rounded-md hover:bg-blue-700"
+                                        className="btn btn-black"
                                     >
                                         Import
                                     </button>

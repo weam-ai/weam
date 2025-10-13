@@ -72,7 +72,7 @@ const CustomPromptList = ({ defaultprompts }) => {
             <CustomPromptTag setSelectedTag={setSelectedTag} selectedTag={selectedTag} />
             {loading ? <ThreeDotLoader /> : ''}
             {!loading &&
-                <div className="mt-7 w-full px-2 lg:px-0 overflow-y-auto pb-5 lg:pb-0 lg:h-[calc(100vh-290px)]">
+                <div className="mt-7 w-full px-2 overflow-y-auto pb-5 lg:pb-0 lg:h-[calc(100vh-290px)]">
                     <div className="grid lg:grid-cols-2 gap-4 ">
                         {promptsrecords?.map((prompt) => (
                             <div key={prompt?._id} className="border p-5 rounded-lg hover:bg-b12 transition duration-150 ease-in-out group">

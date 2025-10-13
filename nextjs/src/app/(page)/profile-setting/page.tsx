@@ -129,7 +129,7 @@ const ProfileSetting = () => {
 
                         </div>
                         <div className="flex items-center gap-2.5 mt-4">
-                            <button className='btn btn-blue' disabled={loading}>Save Changes</button>
+                            <button className='btn btn-black' disabled={loading}>Save Changes</button>
                         </div>
                     </div>
                 </form>

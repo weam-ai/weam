@@ -26,7 +26,7 @@ const ResetPasswordForm = () => {
                 />
                 <ValidationError errors={errors} field={'confirmPassword'} />
             </div>
-            <button type="submit" className="btn btn-blue btn-lg mt-5 w-full">
+            <button type="submit" className="btn btn-black btn-lg mt-5 w-full">
                 Update
             </button>
         </form>

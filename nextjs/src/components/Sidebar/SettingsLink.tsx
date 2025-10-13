@@ -14,7 +14,7 @@ const SettingsLink = () => {
   return (
     <Link
       href={routes.settingReports}
-      className={`group relative w-10 h-10 flex items-center justify-center rounded-full ease-in-out duration-150 hover:bg-b5 hover:bg-opacity-[0.2] ${isActive ? ' bg-b10' : 'bg-transparent'}`}
+      className={`group relative w-10 h-10 flex items-center justify-center rounded-full ease-in-out duration-150 hover:bg-b5 hover:bg-opacity-[0.2] ${isActive ? ' bg-b11' : 'bg-transparent'}`}
       onClick={closeSidebar}
     >
       <Setting

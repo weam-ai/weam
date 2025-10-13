@@ -3,6 +3,7 @@ const { formatUser, handleError, formatBrain, arraysEqual } = require('../utils/
 const dbService = require('../utils/dbService');
 const { LINK, API } = require('../config/config');
 const { JWT_STRING, ROLE_TYPE } = require('../config/constants/common');
+const { scrapeWebsitesForPrompts } = require('./promptWebScraper');
 const Brain = require('../models/brains');
 const ShareBrain = require('../models/shareBrain');
 const { accessOfBrainToUser } = require('./common');
@@ -52,11 +53,11 @@ const addPrompt = async (req) => {
                     child_prompt_ids.push(prompt._id.toString());
                 }
             });
-            // scrappingPromptData(req, { 
-            //     parent_prompt_ids: prompt_ids,
-            //     company_id: companyId.toString(),
-            //     child_prompt_ids: child_prompt_ids,
-            // });
+            scrappingPromptData(req, { 
+                parent_prompt_ids: prompt_ids,
+                company_id: companyId.toString(),
+                child_prompt_ids: child_prompt_ids,
+            });
         }
         return result;
     } catch (error) {
@@ -127,24 +128,25 @@ const updatePrompt = async (req) => {
         let newEditedPrompts
         if (bulkPrompts.length) newEditedPrompts = await Prompt.insertMany(bulkPrompts);
         
-        if (scrapeCondition) {
+      const result = await Prompt.findOne({ _id: req.params.id }, { 'website': 1 });
+        const reqWebsites = website || [];
+        const resultWebsites = result?.website?.length ? result.website : [];
+        const websitesMatch = arraysEqual(reqWebsites, resultWebsites);
+
+        // Store scraping info for after the update
+        let shouldTriggerScraping = false;
+        let scrapingPayload = null;
+
+        if (!websitesMatch) {
+            shouldTriggerScraping = true;
             const companyId = req.roleCode === ROLE_TYPE.COMPANY ? req.user.company.id : req.user.invitedBy;
             const child_prompt_ids = newEditedPrompts?.map(prompt => prompt._id.toString()) || [];
-            const payload = { 
+            scrapingPayload = {
                 parent_prompt_ids: [req.params.id],
                 company_id: companyId.toString(),
                 child_prompt_ids: child_prompt_ids,
-            }
-            
-            const result = await Prompt.findOne({ _id: req.params.id }, { 'website': 1 })
-            const reqWebsites = website;
-            const resultWebsites = result?.website?.length ? result.website : [];
-
-            const websitesMatch = arraysEqual(reqWebsites, resultWebsites);
-            if (!websitesMatch) {
-                req.body.isCompleted = false;
-                // scrappingPromptData(req, payload);
-            }
+            };
+            req.body.isCompleted = false;
         }
         const updateOperation = {
             $set: {
@@ -170,11 +172,19 @@ const updatePrompt = async (req) => {
             };
         }
 
-        return Prompt.findByIdAndUpdate(
-            { _id: req.params.id }, 
+      const updatedPrompt = await Prompt.findByIdAndUpdate(
+            { _id: req.params.id },
             updateOperation,
             { new: true }
         );
+
+        // Trigger scraping AFTER the prompt has been updated
+        // This ensures the scraping service gets the updated website list and can properly remove summaries
+        if (shouldTriggerScraping && scrapingPayload) {
+            scrappingPromptData(req, scrapingPayload);
+        }
+
+        return updatedPrompt;
     } catch (error) {
         handleError(error, 'Error - updatePrompt');
     }
@@ -182,21 +192,17 @@ const updatePrompt = async (req) => {
   
 const scrappingPromptData = async (req, payload) => {
     try {
-        const token = extractAuthToken(req);
-        const response = await fetch(`${LINK.PYTHON_API_URL}/${API.PYTHON_API_PREFIX}/scrape/scrape-url`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `${JWT_STRING}${token}`,
-                Origin: LINK.FRONT_URL
-            },
-            body: JSON.stringify(payload)
-        })
-        logger.info(`scrape url return ${response.status}`);
-        if (response.ok) return true;
+        logger.info(`Starting website scraping for prompts:`);
+
+        // Use the Node.js scraping service instead of Python API
+        const result = await scrapeWebsitesForPrompts(req, payload);
+
+
+        if (result) return true;
         return false;
     } catch (error) {
-        handleError(error, 'Error')
+        handleError(error, 'Error in scrappingPromptData');
+        return false;
     }
 }
 

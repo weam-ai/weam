@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import moment from 'moment';
 import { DEFAULT_DATE_FORMAT, MODEL_CREDIT_INFO, MODEL_IMAGE_BY_CODE, SUBSCRIPTION_STATUS, AI_MODEL_CODE, GENERAL_BRAIN_TITLE, DEFAULT_BRAIN_TITLE, DEFAULT_CHAT_SLUG } from './constant';
 import { isIndiaByTimezone, retrieveBrainData } from './helper';
-import { FREE_TRIAL, STRIPE_SUBSCRIPTION_PRICE_ID, STRIPE_SUBSCRIPTION_PRICE_ID_IND } from '@/config/config';
+import { STRIPE_SUBSCRIPTION_PRICE_ID, STRIPE_SUBSCRIPTION_PRICE_ID_IND } from '@/config/config';
 import ExcelFileIcon from '@/icons/ExcelFileIcon';
 import TxtFileIcon from '@/icons/TXTFILEIcon';
 import CommonFileIcon from '@/icons/CommonFileIcon';

@@ -749,7 +749,7 @@ const Invitation = ({ selectedTab, isOpen, handleOpen, setTotalInvitation, total
 				const expiredDate = new Date(row?.original?.inviteExpireOn).getTime();
 				return expiredDate < new Date().getTime() || row.original.inviteSts === "EXPIRED" ? (
 					<button
-						className="btn btn-blue max-w-[250px]"
+						className="btn btn-black max-w-[250px]"
 						onClick={() => {
 							reSendVerificationEmail(row.original.email);
 							setManuallyReloadTable(true);

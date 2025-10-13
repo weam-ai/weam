@@ -258,19 +258,27 @@ export default function AgentList() {
                                             <div className="prompts-item-heading relative flex justify-between gap-2.5 w-full md:-order-none order-3 mt-2 md:mt-0">
                                                 {/* Prompt Title End */}
                                                 <div className="title-content w-full">
-                                                    <h5
-                                                        className={`text-font-14 font-semibold text-b2 md:group-hover/item:text-b15 transition duration-150 ease-in-out  ${isGridView
-                                                                ? 'mb-1.5'
-                                                                : ''
-                                                            } ${!isGridView
-                                                                ? 'w-[calc(100%-35px)] mb-0.5'
-                                                                : ''
-                                                            }`}
-                                                    >
-                                                        {gpt.title}
-                                                    </h5>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h5
+                                                            className={`text-font-14 font-semibold text-b2 md:group-hover/item:text-b15 transition duration-150 ease-in-out ${isGridView
+                                                                    ? 'mb-0'
+                                                                    : ''
+                                                                } ${!isGridView
+                                                                    ? 'mb-0'
+                                                                    : ''
+                                                                }`}
+                                                        >
+                                                            {gpt.title}
+                                                        </h5>
+                                                        <span className='text-font-12 ml-2 px-2 py-[2px] bg-b13 border rounded-full'>
+                                                            {gpt.type === 'agent' ? 'Agent' : 'Supervisor'}
+                                                        </span>
+                                                    </div>
                                                     <p className="text-font-12 text-b5 md:group-hover/item:text-b15 mt-0.5 transition duration-150 ease-in-out">
-                                                        {truncateText(gpt.systemPrompt,850)}
+                                                        {gpt.type === 'supervisor' && gpt.description ? 
+                                                            truncateText(gpt.description, 850) : 
+                                                            truncateText(gpt.systemPrompt, 850)
+                                                        }
                                                     </p>
                                                 </div>
                                                 {/* Prompt Title End */}                                               
@@ -297,7 +305,7 @@ export default function AgentList() {
                                                                 }}
                                                                 className="group-hover/item:opacity-100 md:opacity-0 rounded bg-white flex items-center justify-center w-6 min-w-6 h-6 p-0.5 [&>svg]:w-[11] [&>svg]:h-[11] [&>svg]:fill-b5"
                                                             >
-                                                                <RemoveIcon width={14} height={14} className="w-[14] h-4 object-contain fill-b4 me-2.5" />
+                                                                <RemoveIcon width={14} height={14} className="" />
                                                             </Link>
                                                             <Link
                                                                 href={`custom-gpt/edit/${gpt._id}?b=${brainId}`}
@@ -333,7 +341,7 @@ export default function AgentList() {
                                                 title="Let's build your first Agent!"
                                                 description="Custom Agents can save hours of work for your team. You can easily turn repetitive tasks and workflows into an Agent. Check out the video to learn more."
                                                 subtitle="" 
-                                                note={`Need inspiration? Here's our <a href="custom-templates" class="text-blue font-bold" rel="noreferrer">pre-made Agent Library</a>.`}
+                                                note={`Need inspiration? Here's our <a href="custom-templates" class="text-b2 font-bold" rel="noreferrer">pre-made Agent Library</a>.`}
                                                 videourl="https://www.youtube.com/embed/87QdKNMp1_4?si=HOm4hPcE84Ex-rhF"
                                             />
                                         </div>

@@ -39,7 +39,7 @@ const PromptEnhance = ({ isWebSearchActive, text, setText, apiKey }: PromptEnhan
                 <div
                 className={`transition ease-in-out duration-200 w-auto h-8 flex items-center px-2
                     ${isWebSearchActive || !text.trim() ? 'opacity-60 pointer-events-none cursor-not-allowed' : 'cursor-pointer hover:bg-b11'}
-                    ${localLoading ? 'bg-blue rounded-[15px] pointer-events-none cursor-not-allowed' : 'rounded-md'}`}
+                    ${localLoading ? 'bg-black rounded-[15px] pointer-events-none cursor-not-allowed' : 'rounded-md'}`}
                 onClick={handleEnhanceClick}
                 >
                 <PromptEnhanceIcon

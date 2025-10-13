@@ -12,10 +12,9 @@ async function initSeed () {
         await seedService.seedPrompt();
         await seedService.seedOtherRolePermission();
         await seedService.seedCountry();  
-        await seedService.seedSuperSolutionApps();      
+        await seedService.seedSuperSolutionApps();            
     } catch (error) {
-        logger.error('Error in initSeed function', error);
-        
+        throw error; // Re-throw to ensure the application startup fails if seeding fails
     }
 }
 

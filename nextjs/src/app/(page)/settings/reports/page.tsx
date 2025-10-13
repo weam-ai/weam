@@ -5,7 +5,7 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { Calendar } from 'react-date-range';
 import { DateRangePicker, defaultStaticRanges } from 'react-date-range';
-import Select from 'react-select';
+import MultiSelect from '@/components/ui/multi-select';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -24,6 +24,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import FilterIcon from "@/icons/FilterIcon";
+import FiltersAnalytics from "@/components/Dashboard/FiltersAnalytics";
 
 
 export default function DashboardReport() {
@@ -117,14 +118,14 @@ export default function DashboardReport() {
     return (
         <>
         <div className="max-lg:h-[50px] max-lg:sticky max-lg:top-0 bg-white z-10"></div>
-            <div className="flex flex-col flex-1 relative h-full overflow-hidden lg:pt-20 pb-10 px-2 ">
-                <div className="h-full overflow-y-auto w-full relative">
-                    <div className="mx-auto max-w-[950px]">
-                        <h5 className="text-font-18 font-bold text-b2 mb-1">
+            <div className="flex flex-col flex-1 relative h-full lg:pt-20 pb-2 px-5 overflow-y-auto ">
+                <div className="h-full w-full relative">
+                    <div className="mx-auto 3xl:max-w-[1450px]">
+                        <h5 className="text-font-18 font-bold text-b2">
                             { 
                                 isCompanyAdminOrManager(user)
-                                ? 'Usage of ' + user?.company?.name
-                                : 'Usage'
+                                ? 'AI Adoption Report of ' + user?.company?.name
+                                : 'AI Adoption Report'
                             }                            
                         </h5>
                         <p className="text-font-15 font-normal text-b5 mb-2 flex md:items-center justify-between max-md:flex-col">
@@ -134,11 +135,14 @@ export default function DashboardReport() {
                                     : 'Detailed Report of usage ' + showNameOrEmail(user)
                             }                             
                             { isWeamAdminOrManager(user) &&
-                                <Link href="/settings/weekly-report" className="text-font-14 underline hover:text-blue text-b2 mb-2">
+                                <Link href="/settings/weekly-report" className="text-font-14 underline hover:text-b2 text-b4 mb-2">
                                     Companies Weekly Usage Report
                                 </Link>
                             }
                         </p>
+                        {/* Filters & Analytics Component - Only for Company Admin/Manager */}
+                        {isCompanyAdminOrManager(user) && <FiltersAnalytics />}
+                        
                         <div className='hidden md:flex my-3 items-center'>
                             {
                                 isCompanyAdminOrManager(user) && (
@@ -163,33 +167,29 @@ export default function DashboardReport() {
 
                                     {/* Popover Date Picker */}
                                     {showDatePicker && (
-                                        <div className="absolute z-10 mt-2 shadow-lg bg-white p-2 rounded-md">
+                                        <div className="absolute z-10 mt-2 right-0 shadow-lg bg-white p-2 rounded-md">
                                             <DateRangePicker
                                                 ranges={[dateRange]}
                                                 onChange={handleSelect}
                                                 staticRanges={defaultStaticRanges}
                                                 inputRanges={[]}
                                                 placeholder="Select Date"
+                                                color="#323232"
+                                                rangeColors={['#323232']}
                                             />
                                         </div>
                                     )}
                                 </div>
                                 <div className="max-w-40 md:min-w-[150px]">
-                                    <Select placeholder="Select Model" 
-                                        options={modelOptions} 
-                                        menuPlacement='auto' 
-                                        id="selectModelYourDeployment" 
-                                        className="react-select-container" 
-                                        classNamePrefix="react-select"                                     
-                                        onChange={(selectedOptions) => {
-                                            setSelectModel(selectedOptions.map(option => option.value)); // Store an array of values
-                                        }}
-                                        isMulti={true}
-                                        value={modelOptions.filter(option => selectModel.includes(option.value))}
+                                    <MultiSelect
+                                        options={modelOptions}
+                                        value={selectModel}
+                                        onChange={setSelectModel}
+                                        placeholder="Select Model"
                                     />
                                 </div>
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
+                                    {/*<DropdownMenuTrigger asChild>
                                         <div className="relative cursor-pointer border h-10 w-9 flex items-center justify-center rounded-md bg-white border-gray-300">
                                             <FilterIcon width={18} height={18} className="h-5 w-auto fill-b6" />
                                         </div>
@@ -210,7 +210,7 @@ export default function DashboardReport() {
                                         >
                                             Free Plan
                                         </DropdownMenuItem>
-                                    </DropdownMenuContent>
+                                    </DropdownMenuContent>*/}
                                 </DropdownMenu>
                                 <button
                                         onClick={clearAll}
@@ -224,7 +224,7 @@ export default function DashboardReport() {
                                     <ExportIcon width={18}
                                         height={18}
                                         className="w-[26px] h-[18px] object-contain fill-white mr-1" />
-                                    <span className="text-font-14 font-semibold ">
+                                    <span className="text-sm font-semibold ">
                                         Export
                                     </span>
                                 </span> */}

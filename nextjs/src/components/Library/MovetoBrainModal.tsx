@@ -78,7 +78,7 @@ const MovetoBrainModal = ({ title, brains, persistCustombot, botMoveToBrain, set
                     }
                 </div>
                 <DialogFooter className="flex items-center justify-center gap-2.5 pb-[30px] px-[30px]">
-                    <button type="button" className="btn btn-blue" disabled={loading || selectedBrain.length == 0}
+                    <button type="button" className="btn btn-black" disabled={loading || selectedBrain.length == 0}
                         onClick={
                             (persistCustombot.botdata == undefined) ? movePrompt :  botMoveToBrain}>
                         {btnTitle}

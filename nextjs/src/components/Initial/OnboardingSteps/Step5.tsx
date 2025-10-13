@@ -17,7 +17,7 @@ const Step5 = () => {
         />
       </div>
       <div className="md:w-1/2 max-md:text-center z-[2]">
-        <h5 className="text-font-14 text-blue">Let's make epic stuff</h5>
+        <h5 className="text-font-14 text-b2">Let's make epic stuff</h5>
         <h2 className="md:text-[36px] text-font-20 font-bold text-black">
           Be Part of the AI World
         </h2>

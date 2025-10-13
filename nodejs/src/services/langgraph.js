@@ -2,10 +2,10 @@ const { ChatOpenAI } = require('@langchain/openai');
 const { StateGraph, END } = require('@langchain/langgraph');
 const { ToolMessage, HumanMessage, SystemMessage } = require('@langchain/core/messages');
 const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription, IS_MCP_TOOLS } = require('../config/constants/llm');
-const { SOCKET_EVENTS } = require('../config/constants/socket');
+const { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } = require('../config/constants/socket');
 const Messages = require('../models/thread');
 const Brain = require('../models/brains');
-const { decryptedData } = require('../utils/helper');
+const { decryptedData, catchSocketAsync } = require('../utils/helper');
 const { LINK } = require('../config/config');
 const { AI_MODAL_PROVIDER, MODAL_NAME , ANTHROPIC_MAX_TOKENS } = require('../config/constants/aimodal');
 const { ChatAnthropic } = require('@langchain/anthropic');
@@ -53,9 +53,13 @@ function getAnthropicMaxTokens(modelName) {
 const { createDallEImageTool } = require('./imageTool');
 const { initializeMCPClient, selectRelevantToolsWithDomainFilter } = require('./mcpService');
 const { z } = require('zod');
+// Import the custom Gemini image tool
+const { createGeminiImageTool } = require('./geminiImageTool');
 
 // Create the DALL-E image generation tool with default API key
-const imageGenerationTool = createDallEImageTool(LINK.WEAM_OPEN_AI_KEY);
+const imageGenerationTool = createDallEImageTool();
+// Create the Gemini image generation tool with default API key
+const geminiImageTool = createGeminiImageTool();
 
 // Current time tool
 const currentTimeTool = tool(
@@ -86,13 +90,16 @@ const MODEL_CONFIGS = {
         supportsVision: true,
         imageFormats: ['base64'],
         formatImage: async (imageUrl) => {
-            const { base64, mimeType } = await convertImageToBase64(imageUrl);
+            const result= await convertImageToBase64(imageUrl);
+            if (!result) {
+                return null;
+            }
             return {
                 type: 'image',
                 source: {
                     type: 'base64',
-                    media_type: mimeType,
-                    data: base64
+                    media_type: result.mimeType,
+                    data: result.base64
                 }
             };
         }
@@ -101,11 +108,14 @@ const MODEL_CONFIGS = {
         supportsVision: true,
         imageFormats: ['base64'],
         formatImage: async (imageUrl) => {
-            const { base64, mimeType } = await convertImageToBase64(imageUrl);
+            const result= await convertImageToBase64(imageUrl);
+            if (!result) {
+                return null;
+            }
             return {
                 type: 'image_url',
                 image_url: {
-                    url: `data:${mimeType};base64,${base64}`
+                    url: `data:${result.mimeType};base64,${result.base64}`
                 }
             };
         }
@@ -260,6 +270,7 @@ function getToolExecutorMap(agentDetails = null, mcpTools = []) {
     const baseTools = {
         [webSearchTool.name]: webSearchTool,
         [imageGenerationTool.name]: imageGenerationTool,
+        [geminiImageTool.name]: geminiImageTool,
         [currentTimeTool.name]: currentTimeTool,
         ...Object.fromEntries(mcpTools.map(tool => [tool.name, tool]))
     };
@@ -463,6 +474,10 @@ async function callTool(state, agentDetails = null, userData = null) {
                 // For image generation tool, pass the API key from the query data
                 let toolArgs = toolCall.args;
                 if (toolCall.name === 'dalle_api_wrapper' && global.currentQueryData && global.currentQueryData.apiKey) {
+                    const decryptedApiKey = decryptedData(global.currentQueryData.apiKey);
+                    toolArgs = { ...toolCall.args, apiKey: decryptedApiKey };
+                }
+                if (toolCall.name === 'gemini_image_generator' && global.currentQueryData && global.currentQueryData.apiKey) {
                     const decryptedApiKey = decryptedData(global.currentQueryData.apiKey);
                     toolArgs = { ...toolCall.args, apiKey: decryptedApiKey };
                 }
@@ -692,8 +707,8 @@ async function llmFactory(modelName, opts = {}) {
                 }
             });
             
-            // chatgpt-4o-latest doesn't support tools, so don't bind them
-            if (modelName.toLowerCase().includes('chatgpt-4o-latest')) {
+            // chatgpt-4o-latest and gpt-5-chat-latest doesn't support tools, so don't bind them
+            if (modelName.toLowerCase().includes('chatgpt-4o-latest') || modelName.toLowerCase().includes('gpt-5-chat-latest')) {
                 if (!needsTools) {
                     simpleModelCache.set(cacheKey, openAIModel);
                 }
@@ -763,7 +778,7 @@ async function llmFactory(modelName, opts = {}) {
                 
                 // Only bind tools if query needs them
                 if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
-                    return geminiLLM.bindTools([webSearchTool, currentTimeTool, ...selectedTools]);
+                    return geminiLLM.bindTools([webSearchTool, geminiImageTool, currentTimeTool, ...selectedTools]);
                 }
                 
                 // Cache simple model for reuse
@@ -1030,20 +1045,26 @@ async function buildGraph(model, data, agentDetails = null) {
     getToolExecutorMap(agentDetails, mcpTools);
     const workflow = new StateGraph({ channels: graphState });
     
-    // Use agent-specific tool executor if available
-    const toolExecutor = (state) => callTool(state, agentDetails, data.user);
-    
-    // Pass agentDetails to callModel
-    workflow.addNode('agent', state => callModel(state, model, data, agentDetails));
-    workflow.addNode('tools', toolExecutor);
-    workflow.setEntryPoint('agent');
-    workflow.addConditionalEdges('agent', shouldContinue, {
-        tools: 'tools',
-        end: END,
-    });
-    workflow.addEdge('tools', 'agent');
-    const app = workflow.compile();
-    return app;
+    // Check if this is a supervisor agent with agents
+    if (agentDetails && agentDetails.type === 'supervisor' && agentDetails.Agents && agentDetails.Agents.length > 0) {
+        // Build supervisor agent workflow
+        return await buildSupervisorGraph(workflow, model, data, agentDetails);
+    } else {
+        // Build regular agent workflow
+        const toolExecutor = (state) => callTool(state, agentDetails, data.user);
+        
+        // Pass agentDetails to callModel
+        workflow.addNode('agent', state => callModel(state, model, data, agentDetails));
+        workflow.addNode('tools', toolExecutor);
+        workflow.setEntryPoint('agent');
+        workflow.addConditionalEdges('agent', shouldContinue, {
+            tools: 'tools',
+            end: END,
+        });
+        workflow.addEdge('tools', 'agent');
+        const app = workflow.compile();
+        return app;
+    }
 }
 
 function pickContent(result) {
@@ -1725,13 +1746,38 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 }
             },
         };
+        // Helper to check if a stop has been requested for this chat
+        let sockets = global.io.sockets;
+        let stopRequested = false;
+
+        const forceStopHandler = catchSocketAsync((value) => {
+            if (value.chatId === data.chatId) {
+                const roomName = `${SOCKET_ROOM_PREFIX.CHAT}${value.chatId}`;
+                sockets.to(roomName).emit(SOCKET_EVENTS.FORCE_STOP, { proccedMsg: value.proccedMsg, userId: value.userId });
+                stopRequested = true;
+            }
+        });
+
+        // Listen once for stop; upon receiving, mark and break the stream loop
+        socket.once(SOCKET_EVENTS.FORCE_STOP, forceStopHandler);
+
         for await (const chunk of app.streamEvents(inputs, {
             streamMode: 'messages',
             version: 'v2',
         })) {
+            if (stopRequested) {
+                logger.info('isStopRequested', stopRequested);
+                break;
+            }
+
             const handler = eventHandlers[chunk.event];
             if (handler) {
                 handler(chunk);
+            }
+
+            if (stopRequested) {
+                logger.info('isStopRequested post-chunk', stopRequested);
+                break;
             }
         }
     } catch (error) {
@@ -1747,11 +1793,34 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 await createLLMConversation({ 
                     ...data, 
                     answer: proccedMsg, 
-                    usedCredit:  data.usedCredit || 1 
+                    usedCredit: data.usedCredit || 1 
                 });
             } catch (saveError) {
                 logger.error('❌ Error saving conversation to database:', saveError);
             }
+        } else {
+            try {
+                await createLLMConversation({ 
+                    ...data, 
+                    answer: '', 
+                    usedCredit: data.usedCredit || 1 
+                });
+            } catch (saveError) {
+                logger.error('❌ Error saving conversation to database:', saveError);
+            }
+        }
+
+        // Clean up stop listeners if they never fired
+        try {
+            if (typeof forceStopHandler === 'function') {
+                socket.off(SOCKET_EVENTS.FORCE_STOP, forceStopHandler);
+            }
+            if (typeof stopStreamingHandler === 'function') {
+                socket.off(SOCKET_EVENTS.STOP_STREAMING, stopStreamingHandler);
+            }
+        } catch (cleanupError) {
+            // Non-fatal: log and continue
+            logger.warn('Stop listener cleanup warning:', cleanupError?.message || cleanupError);
         }
         proccedMsg = '';
         
@@ -1884,7 +1953,6 @@ async function toolExecutor(data, socket) {
 
     try {
         let apiKey, model, app, agentDetails = null;
-        
 
         // Map the provider code to the correct constant
         const mappedProvider = mapProviderCode(data.code);
@@ -2042,7 +2110,7 @@ async function enhancePromptByLLM(payload) {
             throw new Error('Invalid or missing API key');
         }
         
-        const model = await llmFactory(MODAL_NAME.GPT_4O_MINI, { 
+        const model = await llmFactory(MODAL_NAME.GPT_4_1_MINI, { 
             streaming: false, 
             apiKey: decryptedApiKey, 
             llmProvider: AI_MODAL_PROVIDER.OPEN_AI 
@@ -2053,10 +2121,252 @@ async function enhancePromptByLLM(payload) {
             new HumanMessage(query)
         ];
         const result = await model.invoke(messages);
-        const parsedResult = JSON.parse(result.content);
-        return parsedResult;
+        return result.content;
     } catch (error) {
         handleError(error, 'Error in enhancePromptByLLM');
+    }
+}
+
+// Helper function to build supervisor agent workflow
+async function buildSupervisorGraph(workflow, model, data, supervisorAgent) {
+    try {
+        // Fetch agent details
+        const agentDetails = await Promise.all(
+            supervisorAgent.Agents.map(async (agentId) => {
+                try {
+                    const agent = await CustomGpt.findById(agentId).lean();
+                    return agent;
+                } catch (error) {
+                    logger.error(`Error fetching tool agent ${agentId}:`, error);
+                    return null;
+                }
+            })
+        );
+        
+        // Filter out null agents
+        const validAgents = AgentDetails.filter(agent => agent !== null);
+        
+        if (validAgents.length === 0) {
+            logger.warn('No valid agents found for supervisor, falling back to regular workflow');
+            // Fallback to regular workflow
+            const toolExecutor = (state) => callTool(state, supervisorAgent, data.user);
+            workflow.addNode('supervisor', state => callModel(state, model, data, supervisorAgent));
+            workflow.addNode('tools', toolExecutor);
+            workflow.setEntryPoint('supervisor');
+            workflow.addConditionalEdges('supervisor', shouldContinue, {
+                tools: 'tools',
+                end: END,
+            });
+            workflow.addEdge('tools', 'supervisor');
+            return workflow.compile();
+        }
+        
+        // Add supervisor node
+        workflow.addNode('supervisor', state => callSupervisorModel(state, model, data, supervisorAgent, validAgents));
+        
+        // Add tool agent nodes
+        validAgents.forEach((Agent, index) => {
+            const nodeName = `tool_agent_${index}`;
+            workflow.addNode(nodeName, state => callAgent(state, model, data, Agent, supervisorAgent));
+        });
+        
+        // Add tools node for regular tools (web search, image generation, etc.)
+        const toolExecutor = (state) => callTool(state, supervisorAgent, data.user);
+        workflow.addNode('tools', toolExecutor);
+        
+        // Set entry point
+        workflow.setEntryPoint('supervisor');
+        
+        // Add conditional edges from supervisor
+        workflow.addConditionalEdges('supervisor', (state) => supervisorShouldContinue(state, validAgents), {
+            ...validAgents.reduce((acc, _, index) => {
+                acc[`tool_agent_${index}`] = `tool_agent_${index}`;
+                return acc;
+            }, {}),
+            tools: 'tools',
+            end: END,
+        });
+        
+        // Add edges from agents back to supervisor
+        validAgents.forEach((_, index) => {
+            workflow.addEdge(`tool_agent_${index}`, 'supervisor');
+        });
+        
+        // Add edge from tools back to supervisor
+        workflow.addEdge('tools', 'supervisor');
+        
+        return workflow.compile();
+        
+    } catch (error) {
+        logger.error('Error building supervisor graph:', error);
+        // Fallback to regular workflow
+        const toolExecutor = (state) => callTool(state, supervisorAgent, data.user);
+        workflow.addNode('supervisor', state => callModel(state, model, data, supervisorAgent));
+        workflow.addNode('tools', toolExecutor);
+        workflow.setEntryPoint('supervisor');
+        workflow.addConditionalEdges('supervisor', shouldContinue, {
+            tools: 'tools',
+            end: END,
+        });
+        workflow.addEdge('tools', 'supervisor');
+        return workflow.compile();
+    }
+}
+
+// Helper function for supervisor decision making
+function supervisorShouldContinue(state, Agents) {
+    const messages = state.messages;
+    const lastMessage = messages[messages.length - 1];
+    
+    if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+        const toolCall = lastMessage.tool_calls[0];
+        
+        // Check if it's a tool agent call
+        const AgentMatch = toolCall.name.match(/^call_tool_agent_(\d+)$/);
+        if (AgentMatch) {
+            const agentIndex = parseInt(AgentMatch[1]);
+            if (agentIndex >= 0 && agentIndex < Agents.length) {
+                return `tool_agent_${agentIndex}`;
+            }
+        }
+        
+        // Check if it's a regular tool call
+        if (['web_search', 'generate_image', 'get_current_time'].includes(toolCall.name)) {
+            return 'tools';
+        }
+    }
+    
+    return 'end';
+}
+
+// Helper function to call supervisor model with tool agent options
+async function callSupervisorModel(state, model, data, supervisorAgent, Agents) {
+    try {
+        // Build system message with tool agent information
+        let systemMessage = supervisorAgent.systemPrompt || 'You are a supervisor agent that coordinates multiple agents.';
+        
+        systemMessage += '\n\nAvailable Agents:\n';
+        Agents.forEach((agent, index) => {
+            systemMessage += `${index + 1}. ${agent.title}: ${agent.description || agent.systemPrompt || 'No description available'}\n`;
+        });
+        
+        systemMessage += '\nTo delegate a task to a tool agent, use the call_tool_agent_X function where X is the agent index (0-based).';
+        
+        // Add tool agent functions to the model
+        const AgentFunctions = Agents.map((agent, index) => ({
+            name: `call_tool_agent_${index}`,
+            description: `Delegate task to ${agent.title}: ${agent.description || agent.systemPrompt || 'Tool agent'}`,
+            parameters: {
+                type: 'object',
+                properties: {
+                    task: {
+                        type: 'string',
+                        description: 'The specific task or query to delegate to this tool agent'
+                    }
+                },
+                required: ['task']
+            }
+        }));
+        
+        // Add regular tools
+        const regularTools = [
+            {
+                name: 'web_search',
+                description: 'Search the web for information',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        query: { type: 'string', description: 'Search query' }
+                    },
+                    required: ['query']
+                }
+            },
+            {
+                name: 'generate_image',
+                description: 'Generate an image using DALL-E',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        prompt: { type: 'string', description: 'Image generation prompt' }
+                    },
+                    required: ['prompt']
+                }
+            },
+            {
+                name: 'get_current_time',
+                description: 'Get the current date and time',
+                parameters: { type: 'object', properties: {} }
+            }
+        ];
+        
+        const allTools = [...AgentFunctions, ...regularTools];
+        
+        // Prepare messages with system message
+        const messages = [
+            new SystemMessage(systemMessage),
+            ...state.messages
+        ];
+        
+        // Call the model with tools
+        const response = await model.invoke(messages, { tools: allTools });
+        
+        return { messages: [...state.messages, response] };
+        
+    } catch (error) {
+        logger.error('Error in callSupervisorModel:', error);
+        // Fallback to regular model call
+        return await callModel(state, model, data, supervisorAgent);
+    }
+}
+
+// Helper function to call individual tool agent
+async function callAgent(state, model, data, Agent, supervisorAgent) {
+    try {
+        const messages = state.messages;
+        const lastMessage = messages[messages.length - 1];
+        
+        // Extract the task from the tool call
+        let task = data.query; // Default to original query
+        if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+            const toolCall = lastMessage.tool_calls[0];
+            if (toolCall.args && toolCall.args.task) {
+                task = toolCall.args.task;
+            }
+        }
+        
+        // Build tool agent context
+        let AgentSystemMessage = Agent.systemPrompt || 'You are a specialized tool agent.';
+        AgentSystemMessage += `\n\nTask delegated from supervisor: ${task}`;
+        
+        // Create new message chain for tool agent
+        const AgentMessages = [
+            new SystemMessage(AgentSystemMessage),
+            new HumanMessage(task)
+        ];
+        
+        // Call the model for this tool agent
+        const response = await model.invoke(AgentMessages);
+        
+        // Create tool message to return to supervisor
+        const toolMessage = new ToolMessage({
+            content: response.content,
+            tool_call_id: lastMessage.tool_calls[0].id,
+            name: lastMessage.tool_calls[0].name
+        });
+        
+        return { messages: [...state.messages, toolMessage] };
+        
+    } catch (error) {
+        logger.error('Error in callAgent:', error);
+        
+        // Return error message
+        const errorMessage = new ToolMessage({
+            content: `Error executing tool agent: ${error.message}`,
+            tool_call_id: lastMessage.tool_calls[0].id,
+            name: lastMessage.tool_calls[0].name
+        });
+        
+        return { messages: [...state.messages, errorMessage] };
     }
 }
 

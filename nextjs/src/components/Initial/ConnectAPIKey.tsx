@@ -103,7 +103,7 @@ const ConnectButton = () => {
                 <LockIcon
                     width={60}
                     height={30}
-                    className="size-[30px] object-contain fill-blue mb-2.5"
+                    className="size-[30px] object-contain fill-b2 mb-2.5"
                 />
             }
             <h5 className="text-font-16 font-semibold text-b2 mb-1.5">
@@ -118,7 +118,7 @@ const ConnectButton = () => {
                 <Link href="/settings/general?openAccordion=true">
                     <div
                         onClick={handleClick}
-                        className="p-3 bg-blue text-white font-bold rounded inline-block"
+                        className="p-3 bg-black text-white font-bold rounded inline-block"
                     >
                         Connect API Key
                     </div>

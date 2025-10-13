@@ -87,7 +87,7 @@ const TwoFactorAuthentication = () => {
                                     On
                                 </label>
                                 <input
-                                    className="me-2.5 ms-2.5 mt-[0.3rem] h-[34px] w-[67px] appearance-none rounded-[100px] bg-blue after:absolute after:z-[2] after:mt-1 after:ms-1 after:h-[26px] after:w-[26px] after:rounded-full after:border-none after:bg-white after:transition-[background-color_0.2s,transform_0.2s] after:content-[''] checked:bg-primary checked:after:absolute checked:after:z-[2] checked:after:mt-[4px] checked:after:ms-9 checked:after:h-[26px] checked:after:w-[26px] checked:after:rounded-full checked:after:border-none checked:after:bg-b15 checked:after:transition-[background-color_0.2s,transform_0.2s] checked:after:content-[''] hover:cursor-pointer focus:outline-none focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-[26px] focus:after:w-[26px] focus:after:rounded-full focus:after:content-[''] checked:focus:border-primary checked:focus:bg-primary"
+                                    className="me-2.5 ms-2.5 mt-[0.3rem] h-[34px] w-[67px] appearance-none rounded-[100px] bg-black after:absolute after:z-[2] after:mt-1 after:ms-1 after:h-[26px] after:w-[26px] after:rounded-full after:border-none after:bg-white after:transition-[background-color_0.2s,transform_0.2s] after:content-[''] checked:bg-primary checked:after:absolute checked:after:z-[2] checked:after:mt-[4px] checked:after:ms-9 checked:after:h-[26px] checked:after:w-[26px] checked:after:rounded-full checked:after:border-none checked:after:bg-b15 checked:after:transition-[background-color_0.2s,transform_0.2s] checked:after:content-[''] hover:cursor-pointer focus:outline-none focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-[26px] focus:after:w-[26px] focus:after:rounded-full focus:after:content-[''] checked:focus:border-primary checked:focus:bg-primary"
                                     type="checkbox"
                                     role="switch"
                                     id="choosePlanSwitch"
@@ -118,14 +118,14 @@ const TwoFactorAuthentication = () => {
                         your phone or tablet, such as{' '}
                         <Link
                             href="https://authy.com/"
-                            className="text-blue hover:underline"
+                            className="text-b2 underline hover:text-b5"
                         >
                             Authy
                         </Link>{' '}
                         or{' '}
                         <Link
                             href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en_IN&pli=1"
-                            className="text-blue hover:underline"
+                            className="text-black underline hover:text-b5"
                         >
                             Authenticator.
                         </Link>
@@ -177,7 +177,7 @@ const TwoFactorAuthentication = () => {
                                 ></ValidationError>
                             </div>
                             <div className="flex items-center justify-center space-x-5">
-                                <button className="btn btn-blue btn-lg flex-1">
+                                <button className="btn btn-black btn-lg flex-1">
                                     Set Up Two-Factor Now
                                 </button>
                             </div>

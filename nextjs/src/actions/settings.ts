@@ -30,6 +30,19 @@ export const sharedLinksAction = async () => {
     return response;
 };
 
+export const createSharedLinkAction = async (payload) => {
+    const sessionUser = await getSessionUser();
+    const response = await serverApi({
+        action: MODULE_ACTIONS.CREATE,
+        prefix: MODULE_ACTIONS.WEB_PREFIX,
+        module: MODULES.SHARE_CHAT,
+        common: true,
+        data: payload
+    });
+    revalidateTag(`${REVALIDATE_TAG_NAME.SHARED_LINKS}-${sessionUser._id}`);
+    return response;
+};
+
 export const deleteSharedLinkAction = async (payload) => {
     const sessionUser = await getSessionUser();
     const response = await serverApi({

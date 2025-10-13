@@ -46,7 +46,7 @@ const ThreadItem = React.memo(({ handleOpenChatModal, thread }) => {
                             </div>
                         ))}
                     </div>
-                    <div className='text-font-14 font-bold text-blue md:ml-2.5 max-md:mr-1'>{`${thread.count} replies`}</div>
+                    <div className='text-font-14 font-bold text-b2 md:ml-2.5 max-md:mr-1'>{`${thread.count} replies`}</div>
                     <div className='relative md:flex-1 *:transition-all *:ease-out'>
                         <span className='last-reply block md:absolute md:-top-2.5 text-font-14 max-md:text-font-12 max-md:mt-1 max-md:ml-0 font-medium text-b5 ml-3.5 group-hover/item:opacity-0 group-hover/item:invisible'>{`Last reply ${getTimeAgo(thread?.last_time)}`}</span>
                         <span className='view-thread block absolute -top-2.5 text-font-14 font-medium text-b5 ml-3.5 opacity-0 invisible md:group-hover/item:opacity-100 md:group-hover/item:visible'>View Thread</span>

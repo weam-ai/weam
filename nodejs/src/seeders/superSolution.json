@@ -15,7 +15,7 @@
           "icon": "foloup-icon",
           "category": "Productivity",
           "isActive": true,
-          "pathToOpen": "/ai-recruiter",
+          "pathToOpen": "/ai-recruiter/dashboard",
           "sequence": 2
       },
       {

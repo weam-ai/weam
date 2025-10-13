@@ -144,7 +144,7 @@ const RoleChangeDropdown: React.FC<RoleChangeDropdownProps> = ({
                 <AlertDialogConfirmation
                     description={`Are you sure you want to change ${userEmail}'s role from ${getRoleLabel(currentUserRole)} to ${getRoleLabel(pendingRoleChange)}?`}
                     btntext="Change Role"
-                    btnclassName="btn-blue"
+                    btnclassName="btn-black"
                     open={isConfirmOpen}
                     closeModal={closeModal}
                     handleDelete={confirmRoleChange}

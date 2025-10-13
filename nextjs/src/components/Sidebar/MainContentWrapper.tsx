@@ -12,7 +12,7 @@ const MainContentWrapper: React.FC<MainContentWrapperProps> = ({ children }) => 
     if (isCollapsed) {
       return 'lg:ml-[100px] collapsed'; // 80px sidebar + 20px margin
     }
-    return 'lg:ml-[310px]'; // 290px sidebar + 20px margin
+    return 'lg:ml-[290px]'; // 290px sidebar + 20px margin
   };
 
   return (

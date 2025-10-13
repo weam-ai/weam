@@ -12,43 +12,44 @@
       @apply transition delay-150;
   }
   .btn{
-      @apply inline-block cursor-pointer text-center rounded-custom md:px-6 px-3 py-[9px] text-font-15 leading-[20px] font-semibold border border-solid border-transparent transition duration-150 ease-in-out focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed [&>svg]:transition [&>svg]:ease-in-out;
+      @apply inline-block cursor-pointer text-center rounded-md md:px-6 px-3 py-2 text-font-14 font-medium border border-solid border-transparent transition duration-150 ease-in-out focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed [&>svg]:transition [&>svg]:ease-in-out;
   }
   .btn-blue{
       @apply bg-blue border-blue text-white hover:bg-bluehover active:bg-bluehover hover:border-bluehover active:border-bluehover disabled:hover:bg-blue;
   }
   .btn-lightblue{
     @apply bg-bluelight border-bluelight text-white hover:bg-bluehover active:bg-bluehover hover:border-bluehover active:border-bluehover disabled:hover:bg-bluelight [&>svg]:fill-blue [&:hover>svg]:fill-b15 [&:active>svg]:fill-b15;
-}
+  }
   .btn-outline-blue{
     @apply bg-transparent border-blue text-blue hover:bg-blue active:bg-blue hover:text-white hover:border-blue active:border-blue;
   }
+
   .btn-gray{
-    @apply font-semibold bg-b12 border-b12 text-b5 hover:bg-blue active:bg-blue hover:border-blue active:border-blue hover:text-b15 active:text-b15 [&>svg]:fill-b5 [&>i]:text-b5;
+    @apply bg-b12 border-b11 text-b5 hover:bg-b2 active:bg-b2 hover:border-b2 active:border-b2 hover:text-white active:text-white [&>svg]:fill-b5 [&>i]:text-b5;
   }
   .btn-black{
-    @apply font-semibold bg-black border-black text-white hover:bg-blue active:bg-blue hover:border-blue active:border-blue hover:text-b15 active:text-b15 [&>svg]:fill-white [&>i]:text-b5;
+    @apply bg-black border-black text-white hover:bg-b4 active:bg-b4 hover:border-b4 active:border-b4 hover:text-white active:text-white [&>svg]:fill-white [&>i]:text-white;
   }
   .btn-dark-gray{
-    @apply bg-b10 border-b10 text-white [&>svg]:fill-b2 [&>i]:text-b2 hover:bg-b7  active:bg-blue hover:border-b7  active:border-blue hover:text-white  active:text-white [&:hover>svg]:fill-white  [&:active>svg]:fill-white [&:hover>i]:fill-white [&:active>i]:fill-white;
+    @apply bg-b6 border-b6 text-white [&>svg]:fill-white [&>i]:text-white hover:bg-b7  active:bg-b7 hover:border-b7  active:border-b7 hover:text-white  active:text-white [&:hover>svg]:fill-white  [&:active>svg]:fill-white [&:hover>i]:fill-white [&:active>i]:fill-white;
   }
   .btn-green{
-    @apply bg-green border-green text-b15 hover:bg-success-600 active:bg-success-600 hover:border-success-600 active:border-success-600 hover:text-b15 active:text-b15;
+    @apply bg-green border-green text-white hover:bg-b4 active:bg-b4 hover:border-b4 active:border-b4 hover:text-white active:text-white;
   }
   .btn-white{
-    @apply bg-b15 border-b15 text-b2 hover:bg-b1 active:bg-b1 hover:border-b1 active:border-b1 hover:text-b15 active:text-b15;
+    @apply bg-white border-white text-b2 hover:bg-b4 active:bg-b4 hover:border-b4 active:border-b4 hover:text-white active:text-white;
   }
   .btn-outline-black{
-    @apply bg-transparent border-b2 text-b2 hover:bg-b2 hover:border-b2 hover:text-b15;
+    @apply bg-transparent border-b4 text-b2 hover:bg-b4 hover:border-b4 hover:text-white;
   }
   .btn-outline-white{
-    @apply bg-transparent border-white text-white hover:bg-white hover:border-white hover:text-blue;
+    @apply bg-transparent border-white text-white hover:bg-white hover:border-white hover:text-b2;
   }
   .btn-outline-gray{
-    @apply bg-transparent border-b10 text-b2 hover:bg-b2 hover:border-b2 hover:text-b15 [&>svg]:fill-b2 [&>i]:text-b2  [&:hover>svg]:fill-white [&:active>svg]:fill-white;
+    @apply bg-transparent border-b10 text-b2 hover:bg-b4 hover:border-b4 hover:text-white [&>svg]:fill-b2 [&>i]:text-b2  [&:hover>svg]:fill-white [&:active>svg]:fill-white;
   }
   .btn-red{
-    @apply bg-reddark border-reddark text-b15 hover:bg-reddarkhover active:bg-reddarkhover hover:border-reddarkhover active:border-reddarkhover hover:text-b15 active:text-b15;
+    @apply bg-reddark border-reddark text-white hover:bg-reddarkhover active:bg-reddarkhover hover:border-reddarkhover active:border-reddarkhover hover:text-white active:text-white;
   }
   .btn-lg{
       @apply px-6 py-1.5 lg:py-[12px] lg:px-6 text-font-16 font-bold leading-normal;
@@ -376,7 +377,7 @@ body .MuiChipsInput-TextField{
   }
 }
 .input-checkbox{
-  @apply relative float-left -ms-8 me-[6px] mt-[0.15rem] h-6 w-6 appearance-none rounded-[0.25rem] border border-solid border-b8 outline-none before:pointer-events-none before:absolute before:h-[22px] before:w-[22px] before:scale-0 before:rounded-full before:bg-transparent before:opacity-0 before:shadow-transparent before:content-[''] checked:border-blue checked:bg-blue checked:before:opacity-[0.16] checked:after:absolute checked:after:mt-0.5 checked:after:ms-2 checked:after:block checked:after:h-[0.8125rem] checked:after:w-[0.375rem] checked:after:rotate-45 checked:after:border-[0.125rem] checked:after:border-l-0 checked:after:border-t-0 checked:after:border-solid checked:after:border-white checked:after:bg-transparent checked:after:content-[''] hover:cursor-pointer hover:before:opacity-[0.04] hover:before:shadow-black/60 focus:shadow-none focus:transition-[border-color_0.2s] focus:before:scale-100 focus:before:opacity-[0.12] focus:before:shadow-black/60 focus:before:transition-[box-shadow_0.2s,transform_0.2s] focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-[22px] focus:after:w-[22px] focus:after:rounded-[0.125rem] focus:after:content-[''] checked:focus:before:scale-100  checked:focus:before:transition-[box-shadow_0.2s,transform_0.2s] checked:focus:after:mt-0.5 checked:focus:after:ms-2 checked:focus:after:h-[0.8125rem] checked:focus:after:w-[0.375rem] checked:focus:after:rotate-45 checked:focus:after:rounded-none checked:focus:after:border-[0.125rem] checked:focus:after:border-l-0 checked:focus:after:border-t-0 checked:focus:after:border-solid checked:focus:after:border-white checked:focus:after:bg-transparent rtl:float-right ;
+  @apply relative float-left -ms-8 me-[6px] mt-[0.15rem] h-6 w-6 appearance-none rounded-[0.25rem] border border-solid border-b8 outline-none before:pointer-events-none before:absolute before:h-[22px] before:w-[22px] before:scale-0 before:rounded-full before:bg-transparent before:opacity-0 before:shadow-transparent before:content-[''] checked:border-b2 checked:bg-b2 checked:before:opacity-[0.16] checked:after:absolute checked:after:mt-0.5 checked:after:ms-2 checked:after:block checked:after:h-[0.8125rem] checked:after:w-[0.375rem] checked:after:rotate-45 checked:after:border-[0.125rem] checked:after:border-l-0 checked:after:border-t-0 checked:after:border-solid checked:after:border-white checked:after:bg-transparent checked:after:content-[''] hover:cursor-pointer hover:before:opacity-[0.04] hover:before:shadow-black/60 focus:shadow-none focus:transition-[border-color_0.2s] focus:before:scale-100 focus:before:opacity-[0.12] focus:before:shadow-black/60 focus:before:transition-[box-shadow_0.2s,transform_0.2s] focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-[22px] focus:after:w-[22px] focus:after:rounded-[0.125rem] focus:after:content-[''] checked:focus:before:scale-100  checked:focus:before:transition-[box-shadow_0.2s,transform_0.2s] checked:focus:after:mt-0.5 checked:focus:after:ms-2 checked:focus:after:h-[0.8125rem] checked:focus:after:w-[0.375rem] checked:focus:after:rotate-45 checked:focus:after:rounded-none checked:focus:after:border-[0.125rem] checked:focus:after:border-l-0 checked:focus:after:border-t-0 checked:focus:after:border-solid checked:focus:after:border-white checked:focus:after:bg-transparent rtl:float-right ;
 }
 .group-button{
   @apply absolute transition duration-150 ease-in-out -right-3 -top-3 h-7 w-7 p-[5px] appearance-none rounded-full checked:bg-white checked:before:content-[''] checked:before:absolute checked:before:w-[18px] checked:before:h-[18px] checked:before:rounded-full checked:before:border-[2px] checked:before:border-green checked:after:absolute checked:after:mt-1 checked:after:ms-[7px] checked:after:block checked:after:h-2 checked:after:w-[5px] checked:after:rotate-45 checked:after:border-[0.125rem] checked:after:border-l-0 checked:after:border-t-0 checked:after:border-solid checked:after:border-green checked:after:bg-transparent checked:after:content-[''];
@@ -717,8 +718,8 @@ body .MuiChipsInput-TextField{
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #9880ff;
-  color: #9880ff;
+  background-color: #565656;
+  color: #565656;
   animation: dot-flashing 1s infinite linear alternate;
   animation-delay: 0.5s;
 }
@@ -733,8 +734,8 @@ body .MuiChipsInput-TextField{
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #9880ff;
-  color: #9880ff;
+  background-color: #565656;
+  color: #565656;
   animation: dot-flashing 1s infinite alternate;
   animation-delay: 0s;
 }
@@ -743,18 +744,18 @@ body .MuiChipsInput-TextField{
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #6637EC;
-  color: #9880ff;
+  background-color: #000000;
+  color: #565656;
   animation: dot-flashing 1s infinite alternate;
   animation-delay: 1s;
 }
 
 @keyframes dot-flashing {
   0% {
-    background-color: #9880ff;
+    background-color: #565656;
   }
   50%, 100% {
-    background-color: rgba(152, 128, 255, 0.2);
+    background-color: rgba(199, 199, 199, 0.2);
   }
 }
 
@@ -879,4 +880,39 @@ body .MuiChipsInput-TextField{
   40% {
     opacity: 1;
   }
+}
+
+/* Override react-date-range inline styles with higher specificity */
+.rdrDateRangePickerWrapper .rdrDay.rdrInRange span,
+.rdrDateRangePickerWrapper .rdrDay.rdrSelected span,
+.rdrDateRangePickerWrapper .rdrDay.rdrStartEdge span,
+.rdrDateRangePickerWrapper .rdrDay.rdrEndEdge span {
+  color: #ffffff !important;
+  background-color: #323232 !important;
+}
+
+.rdrDateRangePickerWrapper .rdrDay.rdrInRange,
+.rdrDateRangePickerWrapper .rdrDay.rdrSelected,
+.rdrDateRangePickerWrapper .rdrDay.rdrStartEdge,
+.rdrDateRangePickerWrapper .rdrDay.rdrEndEdge {
+  background-color: #323232 !important;
+}
+
+.rdrDateRangePickerWrapper .rdrDay.rdrInRange:hover span,
+.rdrDateRangePickerWrapper .rdrDay.rdrSelected:hover span,
+.rdrDateRangePickerWrapper .rdrDay.rdrStartEdge:hover span,
+.rdrDateRangePickerWrapper .rdrDay.rdrEndEdge:hover span {
+  color: #ffffff !important;
+  background-color: #323232 !important;
+}
+
+/* Override left sidebar */
+.rdrDateRangePickerWrapper .rdrDefinedRangesWrapper .rdrStaticRange:hover {
+  background-color: #323232 !important;
+  color: #000 !important;
+}
+
+.rdrDateRangePickerWrapper .rdrDefinedRangesWrapper .rdrStaticRange.rdrStaticRangeSelected {
+  background-color: #323232 !important;
+  color: #ffffff !important;
 }

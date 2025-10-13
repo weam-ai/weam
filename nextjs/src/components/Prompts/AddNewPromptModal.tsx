@@ -515,7 +515,7 @@ const AddNewPromptModal = ({ open, closeModal, mycontent, edit, flag, chatprompt
                         
                         
                         <DialogFooter className="flex items-center justify-center gap-2.5 pb-[30px] px-[30px]">
-                            <button type='submit' className='btn btn-blue' disabled={addPromptLoading}>Save</button>
+                            <button type='submit' className='btn btn-black' disabled={addPromptLoading}>Save</button>
                         </DialogFooter>
                     </div>
                 </form>

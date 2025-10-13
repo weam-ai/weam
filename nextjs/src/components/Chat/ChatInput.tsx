@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import UpLongArrow from '@/icons/UpLongArrow';
+import StopStreamButton from '@/icons/StopStreamButton';
 import Toast from '@/utils/toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { setIsWebSearchActive, setSelectedAIModal } from '@/lib/slices/aimodel/assignmodelslice';
@@ -98,44 +99,14 @@ type TextAreaFileInputProps = {
     multiple: boolean;
 };
 
+type StopStreamSubmitButtonProps = {
+    handleStop: () => void;
+};
+
 export const TextAreaSubmitButton = ({
     disabled,
     handleSubmit,
-    loading = false,
-    onStopStreaming,
-    isActivelyStreaming = false,
 }: TextAreaSubmitButtonProps) => {
-    // Show stop button when actively streaming - use isActivelyStreaming as primary indicator
-    if (isActivelyStreaming && onStopStreaming) {
-        return (
-            <div className="flex items-center ml-2">
-                <button
-                    className="chat-submit group bg-gray-800 hover:bg-gray-900 active:bg-black w-[32px] z-20 h-[32px] flex items-center justify-center rounded-full transition-all duration-200 shadow-lg border-2 border-gray-600 hover:border-gray-500"
-                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-                        event.preventDefault();
-                        onStopStreaming();
-                    }}
-                    title="Stop generating"
-                    style={{
-                        boxShadow: '0 0 10px rgba(31, 41, 55, 0.6)',
-                        animation: 'pulse 2s infinite'
-                    }}
-                >
-                    <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 14 14"
-                        className="fill-white drop-shadow-sm"
-                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5))' }}
-                    >
-                        <rect x="2" y="2" width="10" height="10" rx="1" />
-                    </svg>
-                </button>
-            </div>
-        );
-    }
-
-    // Show regular submit button
     return (
         <button
             className={`chat-submit ml-2 group bg-b2 w-[32px] z-10 h-[32px] flex items-center justify-center rounded-full transition-colors ${
@@ -152,6 +123,20 @@ export const TextAreaSubmitButton = ({
                 height="19"
                 className="fill-b15 group-disabled:fill-b7"
             />
+        </button>
+    );
+};
+
+export const StopStreamSubmitButton = ({ handleStop }: StopStreamSubmitButtonProps) => {
+    return (
+        <button
+            className="chat-submit ml-2 group bg-white w-[32px] h-[32px] z-10 flex items-center justify-center rounded-full transition-colors border border-gray-600 hover:border-gray-500 shadow-md"
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                event.preventDefault();
+                handleStop();
+            }}
+        >
+            <StopStreamButton width="30" height="30" />
         </button>
     );
 };
@@ -318,31 +303,31 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
 
         const listOptions = [
             {
-                icon: <ChatIcon width={18} height={18}  className="fill-b6 w-4 h-auto"/>,
+                icon: <ChatIcon width={18} height={18}  className="fill-b6 group-hover:fill-white w-4 h-auto"/>,
                 text: 'Chats',
                 id: 1,
                 href: routes.chat,
             },
             {
-                icon: <PromptIcon width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <PromptIcon width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Prompts',
                 id: 2,
                 href: routes.prompts,
             },
             {
-                icon: <Customgpt width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <Customgpt width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Agents',
                 id: 3,
                 href: routes.customGPT,
             },
             {
-                icon: <DocumentIcon width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <DocumentIcon width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Docs',
                 id: 4,
                 href: routes.docs,
             },
             {
-                icon: <DocumentIcon width={18} height={18} className="fill-b6 w-4 h-auto" />,
+                icon: <DocumentIcon width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
                 text: 'Pages',
                 id: 5,
                 href: routes.pages,
@@ -354,13 +339,13 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                 {listOptions.map((option) => (
                     <button
                         key={option.id}
-                        className="border rounded-md px-4 py-2 md:py-3 text-font-14 justify-center flex items-center gap-x-2 bg-white hover:bg-b12 cursor-pointer transition-colors"
+                        className="btn btn-outline-gray flex items-center justify-center gap-x-2 group"
                         onClick={() => handleNavigation(option.href)}
                     >
                         <div className="flex items-center justify-center">
                             {option.icon}
                         </div>
-                        <span className="text-b3 transition-all ease-in-out duration-500 text-font-12 md:text-font-14 font-medium sm:block">{option.text}</span>
+                        <span className="">{option.text}</span>
                     </button>
                 ))}
             </>
@@ -746,15 +731,28 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         return systemPrompt;
     };
 
+    // Don't render if AI models are not properly loaded
+    // if (!aiModals || aiModals.length == 0) {
+    //     return (
+    //         <div className="w-full h-full overflow-y-auto flex justify-center">
+    //             <div className="w-full flex flex-col max-lg:flex-col-reverse mx-auto px-5 md:max-w-[90%] lg:max-w-[980px] xl:max-w-[1100px]">
+    //                 <div className="flex items-center justify-center h-32">
+    //                     <div className="text-font-14 text-b6">Loading AI models...</div>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     );
+    // }
+
     return (
         <div className="w-full h-full overflow-y-auto flex justify-center">
             <div className={`w-full flex flex-col max-lg:flex-col-reverse mx-auto px-5 md:max-w-[90%] lg:max-w-[980px] xl:max-w-[1100px] ${isNavigating ? 'opacity-50' : ''}`}>
-                <div className='flex items-center justify-between'>
-                    <h2 className='hidden lg:block text-font-14 font-bold mt-5 mb-3'>Fresh AI Picks</h2>
+                <div className='flex items-center justify-between mt-5 mb-3'>
+                    <h2 className='hidden lg:block text-font-14 font-medium'>Fresh AI Picks</h2>
                     <p className="text-right hidden lg:block">
                         <button 
                             onClick={handleSeeMoreClick}
-                            className='text-font-14 text-blue2 underline hover:text-blue transition-colors'
+                            className='text-font-14 text-b4 underline hover:text-b2 transition-colors'
                         >
                             See More
                         </button>
@@ -767,8 +765,8 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                             className='border rounded-md p-5 bg-white hover:bg-b12 cursor-pointer transition-colors'
                             onClick={() => handleCustomPromptClick(prompt)}
                         >
-                            <h3 className='text-font-14 font-bold mb-2'>{prompt.title}</h3>
-                            <p className='text-font-14 text-b6'>
+                            <h3 className='text-font-16 font-medium mb-2'>{prompt.title}</h3>
+                            <p className='text-font-14 text-b6 font-normal'>
                                 {truncateText(prompt.content, 350)}
                             </p>
                         </div>

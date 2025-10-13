@@ -40,7 +40,7 @@ export const WorkspaceSelection = memo(({ w, brainList }) => {
     const selectedWorkSpace = useSelector((state:RootState) => state.workspacelist.selected)
 
     const handleSelectedWorkspace = (w) => {
-        if (selectedWorkSpace && selectedWorkSpace?._id != w?._id) {
+        if (selectedWorkSpace && selectedWorkSpace?._id !== w?._id) {
             dispatch(setSelectedWorkSpaceAction(w));
             encryptedPersist(w, WORKSPACE);
             if (!brainList?.length) return;
@@ -52,7 +52,7 @@ export const WorkspaceSelection = memo(({ w, brainList }) => {
     }
 
     useEffect(() => {
-        if (selectedWorkSpace && selectedWorkSpace.title != w.title && selectedWorkSpace._id == w._id) {
+        if (selectedWorkSpace && String(selectedWorkSpace.title) !== String(w.title) && selectedWorkSpace._id == w._id) {
             dispatch(setSelectedWorkSpaceAction((prev) => ({ ...prev, title: w.title })))
         }
     }, [selectedWorkSpace])
@@ -148,7 +148,7 @@ export const WorkspaceNewChatButton = memo(() => {
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <span className='text-font-14 font-medium block text-blue2'>+</span>
+                                <span className='text-font-14 font-medium block text-b7'>+</span>
                             </TooltipTrigger>
                             <TooltipContent side="right" className="border-none">
                                 <p className="text-font-14">New Chat</p>
@@ -156,7 +156,7 @@ export const WorkspaceNewChatButton = memo(() => {
                         </Tooltip>
                     </TooltipProvider>
                 ) : (
-                    <span className='text-font-14 font-medium block text-blue2'>+</span>
+                    <span className='text-font-14 font-medium block text-b5'>+</span>
                 )}
                 <span className='collapsed-text'>New Chat</span>
             </div>

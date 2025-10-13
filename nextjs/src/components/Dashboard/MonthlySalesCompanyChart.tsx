@@ -92,7 +92,7 @@ const MonthlySalesCompanyChart = () => {
       <div className='flex items-start justify-between mb-8'>
         <div className='me-3'>
           <h5 className='text-font-18 font-semibold text-b2 mb-2'>Monthly Sales Revenue by Company</h5>
-          <h4 className='text-font-24 font-semibold text-blue'>${totalSales.toFixed(2)}</h4>
+          <h4 className='text-font-24 font-semibold text-b2'>${totalSales.toFixed(2)}</h4>
         </div>
         <Select
           options={CompanyOptions}
