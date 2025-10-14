@@ -409,7 +409,7 @@ const checkApiKey = async (req) => {
             [AI_MODAL_PROVIDER.OPEN_AI]: openAIApiChecker,
             [AI_MODAL_PROVIDER.ANTHROPIC]: anthropicApiChecker,
             [AI_MODAL_PROVIDER.GEMINI]: geminiApiKeyChecker,
-            // [AI_MODAL_PROVIDER.PERPLEXITY]: perplexityApiChecker,
+            [AI_MODAL_PROVIDER.PERPLEXITY]: perplexityApiChecker,
             [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
         }
         const provider = await providerObj[code](req);
@@ -1061,6 +1061,80 @@ const addBlockedDomain = async (req) => {
         return blockedDomain;
     } catch (error) {
         handleError(error, 'Error - addBlockedDomain');     
+    }
+}
+
+async function perplexityApiChecker(req) {
+    try {
+        const companyId = getCompanyId(req.user);
+        const companydetails = req.user.company;
+        const response = await fetch(`${LINK.PERPLEXITY_API_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${req.body.key}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: MODAL_NAME.SONAR,
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Be precise and concise.'
+                    },
+                    {
+                        role: 'user',
+                        content: 'How many stars are there in our galaxy?'
+                    }
+                ]
+            })
+        });
+        if (!response.ok) return false
+        const [perplexityBot, existing] = await Promise.all([
+            Bot.findOne({ code: AI_MODAL_PROVIDER.PERPLEXITY }, { title: 1, code: 1 }),
+            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.PERPLEXITY })
+        ]);
+        const updates = [];
+        const inserts = [];
+        const encryptedKey = encryptedData(req.body.key);
+
+        PERPLEXITY_MODAL.forEach(element => {
+            const existingBot = existing.find(bot => bot.name === element.name);
+            const modelConfig = {
+                name: element.name,
+                bot: formatBot(perplexityBot),
+                company: companydetails,
+                config: {
+                    apikey: encryptedKey,
+                },
+                modelType: element.type,
+                isActive: true,
+                extraConfig: {
+                    stream: true,
+                    temperature: 0.7,
+                    topP: 0.9,
+                    topK: 10
+                }
+            };
+            if (existingBot)
+                updates.push({
+                    updateOne: {
+                        filter: { name: element.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.PERPLEXITY },
+                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                    }
+                });
+            else inserts.push(modelConfig);
+        });
+        if (updates.length) {
+            return UserBot.bulkWrite(updates);
+        }
+
+        if (inserts.length) {
+            return UserBot.insertMany(inserts);
+        }
+
+        return existing;
+    } catch (error) {
+        handleError(error, 'Error - perplexityApiChecker');
     }
 }
 

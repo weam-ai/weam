@@ -1,12 +1,12 @@
 {
     "solutionApps": [
       {
-        "name": "AI Docs",
+        "name": "Docs",
         "description": "AI-powered document editor with dual editor modes (Rich Text & Markdown), smart templates, and OpenAI integration for document generation and formatting",
         "icon": "ai-docs-icon",
         "category": "Productivity & Document Management",
         "isActive": true,
-        "pathToOpen": "/ai-docs",
+        "pathToOpen": "/docs",
         "sequence": 1
       },
       {
@@ -15,7 +15,7 @@
           "icon": "foloup-icon",
           "category": "Productivity",
           "isActive": true,
-          "pathToOpen": "/ai-recruiter",
+          "pathToOpen": "/ai-recruiter/dashboard",
           "sequence": 2
       },
       {
@@ -28,12 +28,12 @@
         "sequence": 3
       },
       {
-        "name" : "SEO Content Gen",
+        "name" : "Blog Engine",
         "description" : "AI-powered tool that helps you create high-quality, SEO-optimized articles in minutes. Whether you're a blogger, marketer, or business owner, generate keyword-rich content tailored for better search engine rankings — fast, easy, and effective.",
         "icon" : "seo-article-icon",
         "category" : "Productivity & Document Management",
         "isActive" : true,
-        "pathToOpen" : "/seo-content-gen",
+        "pathToOpen" : "/blog-engine",
         "sequence" : 4
       }
     ]
