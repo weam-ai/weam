@@ -264,19 +264,19 @@ const useChat = (b ?: string) => {
             });
 
             if (response?.code === 'SUCCESS') {
-                Toast(response?.data?.message || IMPORT_IN_PROGRESS_MESSAGE, "success");
+                Toast(response?.message || IMPORT_IN_PROGRESS_MESSAGE, "success");
                 return response
             }
 
-            if (response?.code === 'ERROR') {
-                Toast(response?.message || IMPORT_ERROR_MESSAGE, "error");
-                setShowImportChat(false);
-            }
+            // if (response?.code === 'ERROR') {
+            //     Toast(response?.message || IMPORT_ERROR_MESSAGE, "error");
+            //     setShowImportChat(false);
+            // }
 
             return response;
         } catch (error) {
             console.error('error: ', error);
-            Toast(IMPORT_ERROR_MESSAGE, "error");
+            // Toast(IMPORT_ERROR_MESSAGE, "error");
             throw error;
         }
     }

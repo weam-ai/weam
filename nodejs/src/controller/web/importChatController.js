@@ -5,8 +5,11 @@ const { catchAsync } = require('../../utils/helper');
 
 const uploadImportChat = catchAsync(async (req, res) => {
     const result = await importChatService.processImportChatJson(req);
-    res.message = _localize('module.create', req, 'import chat');
-    return util.successResponse(result, res);
+    if (result) {
+        res.message = _localize('module.create', req, 'import chat');
+        return util.successResponse(result, res);
+    }
+    return util.failureResponse(_localize('module.createError', req, 'import chat'), res);
 });
 
 const getImportChatStatus = catchAsync(async (req, res) => {

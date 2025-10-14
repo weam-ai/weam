@@ -182,14 +182,14 @@ const processImportChatJson = async (req) => {
         const currentUser = req.user; // Use req.user which already has profile data
 
         if (!file) {
-            throw new Error('No file uploaded');
+            throw new Error(_localize('import.no_file', req));
         }
 
         logger.info(`Import started by user: ${currentUser.email}`);
 
         // Validate JSON file
         if (!file.originalname.endsWith('.json')) {
-            throw new Error('Invalid file type. Only JSON files are allowed.');
+            throw new Error(_localize('import.invalid_file_type', req));
         }
 
         // Parse JSON content
@@ -197,15 +197,26 @@ const processImportChatJson = async (req) => {
         try {
             jsonData = JSON.parse(file.buffer.toString('utf-8'));
         } catch (error) {
-            throw new Error('Invalid JSON file');
+            throw new Error(_localize('import.invalid_json', req));
+        }
+        
+        // Validate if the JSON structure matches one of the two allowed formats
+        if (!Array.isArray(jsonData)) {
+            throw new Error(_localize('import.invalid_format', req));
+        }
+        
+        // Check if it's Anthropic format or OpenAI format
+        const isAnthropicFormat = jsonData.length > 0 && jsonData[0].chat_messages !== undefined;
+        const isOpenAIFormat = jsonData.length > 0 && jsonData[0].mapping !== undefined;
+        
+        // Validate that the JSON matches one of the two allowed formats
+        if (!isAnthropicFormat && !isOpenAIFormat) {
+            throw new Error(_localize('import.invalid_structure', req));
         }
         
         // Extract conversation data in the format matching Python implementation
         let hashids = [];
         const conversationData = {};
-        
-        // Check if it's Anthropic format or OpenAI format
-        const isAnthropicFormat = jsonData.length > 0 && jsonData[0].chat_messages !== undefined;
         
         // Process each conversation to extract required data
         jsonData.forEach(conversation => {
@@ -393,7 +404,7 @@ const getImportChatStatus = async (importId) => {
         const importChat = await ImportChat.findById(importId).lean();
 
         if (!importChat) {
-            throw new Error('Import chat not found');
+            throw new Error(_localize('import.not_found', req));
         }
 
         return importChat;
@@ -447,7 +458,7 @@ const processConversations = async (importId, jsonData, config, currentUser, tea
         // Get model ID
         const modelId = await getModelId(config.code);
         if (!modelId) {
-            throw new Error(`Model not found for code: ${config.code}`);
+            throw new Error(_localize('import.model_not_found', req, { code: config.code }));
         }
 
         // Detect conversation format (OpenAI vs Anthropic)

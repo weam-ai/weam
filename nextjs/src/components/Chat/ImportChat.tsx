@@ -66,7 +66,7 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
                     );
                 }
             } catch (error) {
-                setUploadMessage(IMPORT_ERROR_MESSAGE);
+                // setUploadMessage(IMPORT_ERROR_MESSAGE);
                 setShowImportChat(false);
             } finally {
                 setIsSubmitting(false);

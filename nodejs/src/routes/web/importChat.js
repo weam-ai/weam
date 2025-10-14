@@ -2,6 +2,7 @@ const { Router } = require('express');
 const importChatController = require('../../controller/web/importChatController');
 const { authentication } = require('../../middleware/authentication');
 const { importChatUpload } = require('../../middleware/multer');
+const { uploadImportChatSchema, getImportChatStatusSchema, getImportChatsSchema } = require('../../utils/validations/importChat');
 const router = Router();
 
 // Upload import chat JSON file
@@ -9,6 +10,7 @@ router.post(
     '/upload',
     authentication,
     importChatUpload.single('file'),
+    validate(uploadImportChatSchema),
     importChatController.uploadImportChat
 );
 
@@ -16,6 +18,7 @@ router.post(
 router.get(
     '/status/:importId',
     authentication,
+    validate(getImportChatStatusSchema),
     importChatController.getImportChatStatus
 );
 
@@ -23,6 +26,7 @@ router.get(
 router.get(
     '/list',
     authentication,
+    validate(getImportChatsSchema),
     importChatController.getImportChats
 );
 
