@@ -1361,9 +1361,9 @@ async function getAgentModelConfig(agentDetails, data) {
             // Return agent-specific configuration
             const agentConfig = {
                 model: responseModel.name,
-                apiKey: responseModel.config?.apikey || data.apiKey,
+                apiKey: data.apiKey,
                 llmProvider: inferredProvider,
-                temperature: responseModel.extraConfig?.temperature || 0.7,
+                temperature: 0.7,
                 streaming: true
             };
             
