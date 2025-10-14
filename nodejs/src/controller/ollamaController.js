@@ -2,6 +2,7 @@ const ollamaService = require('../services/ollamaService');
 const ollamaAnalytics = require('../services/ollamaAnalytics');
 const fs = require('fs');
 const LINK = require('../config/config').LINK;
+const logger = require('../utils/logger');
 
 // Resolve a usable Ollama base URL across host and Docker environments
 function resolveOllamaCandidates(inputUrl) {
@@ -38,8 +39,7 @@ function resolveOllamaCandidates(inputUrl) {
     return [...new Set(candidates)];
 }
 
-class OllamaController {
-    async chat(req, res) {
+const chat = async (req, res) => {
         try {
             const { messages, model, baseUrl, stream = false, options = {}, apiKey } = req.body;
             const userId = req.user.id;
@@ -105,9 +105,9 @@ class OllamaController {
                 message: error.message || 'Failed to process chat request'
             });
         }
-    }
+    };
 
-    async generate(req, res) {
+const generate = async (req, res) => {
         try {
             const { prompt, model, baseUrl, stream = false, options = {}, apiKey } = req.body;
             const userId = req.user.id;
@@ -161,9 +161,9 @@ class OllamaController {
                 message: error.message || 'Failed to generate text'
             });
         }
-    }
+    };
 
-    async listModels(req, res) {
+const listModels = async (req, res) => {
         try {
             const { baseUrl, apiKey } = req.query;
             const userId = req.user.id;
@@ -194,9 +194,9 @@ class OllamaController {
                 message: error.message || 'Failed to list models'
             });
         }
-    }
+    };
 
-    async pullModel(req, res) {
+const pullModel = async (req, res) => {
         try {
             const { model, baseUrl } = req.body;
             const streaming = req.body?.stream === true || req.query?.stream === '1';
@@ -278,9 +278,9 @@ class OllamaController {
                 ]
             });
         }
-    }
+    };
 
-    async validateModel(req, res) {
+const validateModel = async (req, res) => {
         try {
             const { model, baseUrl } = req.body;
             
@@ -301,9 +301,9 @@ class OllamaController {
                 error: error.message || 'Failed to validate model'
             });
         }
-    }
+    };
 
-    async getModelDetails(req, res) {
+const getModelDetails = async (req, res) => {
         try {
             const { modelName } = req.params;
             const { baseUrl } = req.query;
@@ -318,9 +318,9 @@ class OllamaController {
                 message: error.message || 'Failed to get model details'
             });
         }
-    }
+    };
 
-    async deleteModel(req, res) {
+const deleteModel = async (req, res) => {
         try {
             const { model, baseUrl } = req.body;
             const userId = req.user.id;
@@ -344,9 +344,9 @@ class OllamaController {
                 message: error.message || 'Failed to delete model'
             });
         }
-    }
+    };
 
-    async createEmbeddings(req, res) {
+const createEmbeddings = async (req, res) => {
         try {
             const { input, model, baseUrl } = req.body;
             const userId = req.user.id;
@@ -379,9 +379,9 @@ class OllamaController {
                 message: error.message || 'Failed to create embeddings'
             });
         }
-    }
+    };
 
-    async copyModel(req, res) {
+const copyModel = async (req, res) => {
         try {
             const { source, destination, baseUrl } = req.body;
             const userId = req.user.id;
@@ -405,9 +405,9 @@ class OllamaController {
                 message: error.message || 'Failed to copy model'
             });
         }
-    }
+    };
 
-    async getRecommendedModels(req, res) {
+const getRecommendedModels = async (req, res) => {
         try {
             const models = await ollamaService.getRecommendedModels();
             
@@ -422,9 +422,9 @@ class OllamaController {
                 message: error.message || 'Failed to get recommended models'
             });
         }
-    }
+    };
 
-    async testConnection(req, res) {
+const testConnection = async (req, res) => {
         try {
             const { baseUrl, apiKey } = req.query;
             const testUrl = baseUrl || 'http://localhost:11434';
@@ -449,9 +449,9 @@ class OllamaController {
                 url: req.query.baseUrl || 'http://localhost:11434'
             });
         }
-    }
+    };
 
-    async updateCompanySettings(req, res) {
+const updateCompanySettings = async (req, res) => {
         try {
             const { settings } = req.body;
             const userId = req.user.id;
@@ -478,9 +478,9 @@ class OllamaController {
                 message: error.message || 'Failed to update settings'
             });
         }
-    }
+    };
 
-    async getCompanySettings(req, res) {
+const getCompanySettings = async (req, res) => {
         try {
             const userId = req.user.id;
             const companyId = req.user.company_id;
@@ -498,9 +498,9 @@ class OllamaController {
                 message: error.message || 'Failed to get settings'
             });
         }
-    }
+    };
 
-    async getUsageStats(req, res) {
+const getUsageStats = async (req, res) => {
         try {
             const { timeRange = '7d' } = req.query;
             const companyId = req.user.company_id;
@@ -518,9 +518,9 @@ class OllamaController {
                 message: error.message || 'Failed to get usage stats'
             });
         }
-    }
+    };
 
-    async getModelPerformance(req, res) {
+const getModelPerformance = async (req, res) => {
         try {
             const { modelName } = req.params;
             const companyId = req.user.company_id;
@@ -538,9 +538,9 @@ class OllamaController {
                 message: error.message || 'Failed to get model performance stats'
             });
         }
-    }
+    };
 
-    async getCompanyOverview(req, res) {
+const getCompanyOverview = async (req, res) => {
         try {
             const companyId = req.user.company_id;
 
@@ -557,9 +557,9 @@ class OllamaController {
                 message: error.message || 'Failed to get company overview'
             });
         }
-    }
+    };
 
-    async healthCheck(req, res) {
+const healthCheck = async (req, res) => {
         try {
             const { baseUrl, apiKey } = req.query;
             const candidates = resolveOllamaCandidates(baseUrl);
@@ -659,9 +659,9 @@ class OllamaController {
                 ]
             });
         }
-    }
+    };
 
-    async testConnectionWithApiKey(req, res) {
+const testConnectionWithApiKey = async (req, res) => {
         try {
             const { baseUrl, apiKey } = req.body;
             const testUrl = baseUrl || 'http://localhost:11434';
@@ -685,7 +685,7 @@ class OllamaController {
                 url: req.body.baseUrl || 'http://localhost:11434'
             });
         }
-    }
+    };
 
     /**
      * Save an Ollama model to the database
@@ -694,7 +694,7 @@ class OllamaController {
      * @param {string} baseUrl - The Ollama base URL
      * @returns {Promise<Object>} - The saved model
      */
-    async saveOllamaModelToDatabase(modelName, companyId, baseUrl = 'http://localhost:11434') {
+const saveOllamaModelToDatabase = async (modelName, companyId, baseUrl = 'http://localhost:11434') => {
         try {
             // Skip saving if no valid company ID is available
             if (!companyId) {
@@ -798,9 +798,9 @@ class OllamaController {
             logger.error('Error saving Ollama model to database:', error);
             throw error;
         }
-    }
+    };
 
-    async saveOllamaSettings(req, res) {
+const saveOllamaSettings = async (req, res) => {
         try {
             const { baseUrl, apiKey, provider, model } = req.body;
             // Use a valid ObjectId for company if no authentication
@@ -841,8 +841,8 @@ class OllamaController {
 
             if (model && companyId) {
                 try {
-                    // Call the method directly without using this or ollamaController
-                    await module.exports.saveOllamaModelToDatabase(model, companyId, baseUrl);
+                    // Call the method directly
+                    await saveOllamaModelToDatabase(model, companyId, baseUrl);
                 } catch (modelError) {
                     logger.error('Failed to save Ollama model to database:', modelError);
                     // Continue with settings save even if model save fails
@@ -864,7 +864,27 @@ class OllamaController {
                 error: error.message
             });
         }
-    }
-}
+    };
 
-module.exports = new OllamaController();
+module.exports = {
+  chat,
+  generate,
+  listModels,
+  pullModel,
+  validateModel,
+  getModelDetails,
+  deleteModel,
+  createEmbeddings,
+  copyModel,
+  getRecommendedModels,
+  testConnection,
+  updateCompanySettings,
+  getCompanySettings,
+  getUsageStats,
+  getModelPerformance,
+  getCompanyOverview,
+  healthCheck,
+  testConnectionWithApiKey,
+  saveOllamaModelToDatabase,
+  saveOllamaSettings
+};

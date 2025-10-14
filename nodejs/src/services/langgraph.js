@@ -984,28 +984,24 @@ async function llmFactory(modelName, opts = {}) {
                 }
             };
         },
-        })(),
-        [AI_MODAL_PROVIDER.DEEPSEEK]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
-        [AI_MODAL_PROVIDER.LLAMA4]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
-        [AI_MODAL_PROVIDER.GROK]: await toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
-        [AI_MODAL_PROVIDER.QWEN]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
-        [AI_MODAL_PROVIDER.PERPLEXITY]: (() => {
-            // Return a special object that will be handled by perplexityRawStream
-            return {
-                _isPerplexityRaw: true,
-                model: modelName,
-                apiKey: opts.apiKey,
-                streaming: opts.streaming ?? true,
-                temperature: opts.temperature ?? 0.7,
-                maxTokens: opts.maxTokens || null,
-                search_recency_filter: 'month',
-                search_domain_filter: Array.isArray(opts.searchDomains) ? opts.searchDomains : undefined,
-                web_search_options: opts.web_search_options,
-                extra_body: opts.extra_body,
-                costCallback: costCallback,
-                threadId: opts.threadId
-            };
-        })(),
+        [AI_MODAL_PROVIDER.DEEPSEEK]: () => chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.LLAMA4]: () => toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
+        [AI_MODAL_PROVIDER.GROK]: () => toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
+        [AI_MODAL_PROVIDER.QWEN]: () => chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.PERPLEXITY]: () => ({
+            _isPerplexityRaw: true,
+            model: modelName,
+            apiKey: opts.apiKey,
+            streaming: opts.streaming ?? true,
+            temperature: opts.temperature ?? 0.7,
+            maxTokens: opts.maxTokens || null,
+            search_recency_filter: 'month',
+            search_domain_filter: Array.isArray(opts.searchDomains) ? opts.searchDomains : undefined,
+            web_search_options: opts.web_search_options,
+            extra_body: opts.extra_body,
+            costCallback: costCallback,
+            threadId: opts.threadId
+        }),
     }
     
 
@@ -1705,6 +1701,7 @@ async function toolExecutor(data, socket) {
             } catch (e) {
                 options.baseUrl = LINK.OLLAMA_API_URL;
             }
+        }
         // RAW Perplexity routing for all Perplexity models
         const isPerplexity = mappedProvider === AI_MODAL_PROVIDER.PERPLEXITY;
         if (isPerplexity) {
@@ -1789,6 +1786,7 @@ async function toolExecutor(data, socket) {
         logger.error('Error in toolExecutor:', error);
     }
 }
+
 
 async function generateTitleByLLM(payload) {
     try {
@@ -2120,5 +2118,5 @@ module.exports = {
     imageGenerationTool,
     currentTimeTool,
     enhancePromptByLLM,
-    llmFactory
+    llmFactory,
 }
