@@ -63,10 +63,7 @@ async function deleteUserBot(req) {
 
 async function getAll(req) {
     try {
-        console.log("req.body.query",req.body.query)
-        console.log("req.body.options",req.body.options)
         const result = await dbService.getAllDocuments(UserBot, req.body.query || {}, req.body.options || {});
-        console.log("result",result)
         return result;
     } catch (error) {
         handleError(error, 'Error - getAll')

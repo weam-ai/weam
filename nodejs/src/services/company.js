@@ -1169,7 +1169,6 @@ module.exports = {
     createFreeTierApiKey,
     geminiApiKeyChecker,
     sendManualInviteEmail,
-    addBlockedDomain,
-    ollamaApiChecker
+    addBlockedDomain    
 }
 

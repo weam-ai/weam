@@ -82,11 +82,11 @@ const handleErrorToast = (errorToast: boolean) => (error: AxiosError) => {
             Toast('Your request has been blocked for security reasons.', 'error');
             return;
         }
-        // Avoid auto-logout for Ollama endpoints to prevent disruption during local configuration
-        const isOllamaRequest = requestUrl.includes('/ollama/');
-        if (!isOllamaRequest && ([RESPONSE_STATUS.FORBIDDEN, RESPONSE_STATUS.UNAUTHENTICATED].includes(status) || data.code === RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND )) {
-            handleLogout();
-        }
+        // // Avoid auto-logout for Ollama endpoints to prevent disruption during local configuration
+        // const isOllamaRequest = requestUrl.includes('/ollama/');
+        // if (!isOllamaRequest && ([RESPONSE_STATUS.FORBIDDEN, RESPONSE_STATUS.UNAUTHENTICATED].includes(status) || data.code === RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND )) {
+        //     handleLogout();
+        // }
         // else if(status === RESPONSE_STATUS.UNAUTHENTICATED ){
         //     accessTokenViaRefresh();
         // } 

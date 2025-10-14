@@ -36,10 +36,7 @@ const RenderModelList = async () => {
                             {model.bot.title}
                             {model?.provider && (
                                 <span className="text-font-12 text-font-gray-500">
-                                    {model.bot.code === 'OLLAMA' 
-                                        ? `(Local)` 
-                                        :"2222"
-                                    }
+                                    ({model.provider})
                                 </span>
                             )}
                             <ModelDeleteButton modelCode={model.bot.code} />

@@ -1174,8 +1174,8 @@ const ChatPage = memo(() => {
                 }
             });
             
-            // Add explicit handler for llmresponsedone event to properly handle Ollama responses
-            socket.on('llmresponsedone', (data) => {
+            // Handle completion of LLM response stream (Ollama)
+            socket.on(SOCKET_EVENTS.LLM_RESPONSE_DONE, (data) => {
                 console.log("Received llmresponsedone event:", data);
                 // Handle the completion of the response
                 handleSocketStreamingStop({ 
@@ -1240,7 +1240,7 @@ const ChatPage = memo(() => {
                 socket.off(SOCKET_EVENTS.MESSAGE_LIST, socketAllConversation);
                 socket.off(SOCKET_EVENTS.USER_SUBSCRIPTION_UPDATE, handleUserSubscriptionUpdate);
                 socket.off(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, handleGenerateTitleByLLM);
-                socket.off('llmresponsedone'); // Clean up the llmresponsedone event handler
+                socket.off(SOCKET_EVENTS.LLM_RESPONSE_DONE); // Clean up the LLM_RESPONSE_DONE event handler
             });
 
             return () => {

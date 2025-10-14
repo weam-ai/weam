@@ -36,9 +36,9 @@ async function fetchUrl({ type = 'GET', url, data = {}, config = {} }: any) {
         // Handle 403 Forbidden errors
         if (status === RESPONSE_STATUS.FORBIDDEN) {
             // Bypass auto-logout for Ollama endpoints to avoid disrupting configuration flow
-            if (requestUrl.includes('/ollama/')) {
-                return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.SERVER_FORBIDDEN, message: data.message || 'Access forbidden' };
-            }
+            // if (requestUrl.includes('/ollama/')) {
+            //     return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.SERVER_FORBIDDEN, message: data.message || 'Access forbidden' };
+            // }
 
             // Check if it's a CSRF token issue first
             if (data.code === RESPONSE_STATUS_CODE.CSRF_TOKEN_MISSING) {

@@ -341,6 +341,7 @@ export const SOCKET_EVENTS = {
     PRIVATE_BRAIN_OFF: 'privatebrainoff',
     FETCH_SUBSCRIPTION: 'fetchsubscription',
     LLM_RESPONSE_SEND: 'llmresponsesend',
+    LLM_RESPONSE_DONE: 'llmresponsedone',
     GENERATE_TITLE_BY_LLM: 'generatetitlebyllm',
     FORCE_STOP: 'forcestop',
 }
