@@ -61,19 +61,24 @@ const useOllama = () => {
     const refreshOllamaTags = async (baseUrl?: string) => {
         try {
             setLoading(true);
-            const ollamaBaseUrl = baseUrl || 'http://host.docker.internal:11434';
+            const ollamaBaseUrl = baseUrl || LINK.OLLAMA_API_URL;
 
             const response = await commonApi({
                 action: 'ollamaListTags',
                 data: { baseUrl: ollamaBaseUrl },
             });
 
+
             // Safely extract models array with proper fallbacks
             let modelList = [];
 
             // Handle different response formats safely
-            if (response && typeof response === 'object') {
-                if (response.data) {
+             if (response && typeof response === 'object') {
+                // New tags API shape: { success, models: [...], count, ollamaUrl }
+                if (Array.isArray((response as any).models)) {
+                    modelList = (response as any).models;
+                } else if (response.data) {
+                    // Fallbacks for older shapes
                     if (Array.isArray(response.data)) {
                         modelList = response.data;
                     } else if (typeof response.data === 'object' && Array.isArray((response.data as any).models)) {
@@ -81,6 +86,7 @@ const useOllama = () => {
                     }
                 }
             }
+
 
             // Only process if we have a valid array
             if (Array.isArray(modelList) && modelList.length) {
@@ -231,9 +237,10 @@ const useOllama = () => {
                     onProgress(100, `Downloaded ${selectedModel} successfully`);
                 }
                 
-                // Check if the response indicates success
-                const success = response?.code === 'SUCCESS' || 
-                               response?.status === 200;
+                // Check if the response indicates success (typed shape + fallback)
+                const success = response?.code === 'SUCCESS' ||
+                               response?.status === 200 ||
+                               (response as any)?.success === true;
                 
                 if (success) {
                     Toast(`Successfully pulled ${selectedModel}`);
