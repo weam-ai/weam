@@ -112,7 +112,17 @@ const MODEL_COST_PER_1K_TOKENS = {
     'qwen-2.5-7b-instruct': {
         prompt_tokens: 0.00018,
         completion_tokens: 0.00018
-    }
+    },
+
+    // Perplexity Models
+    'sonar': {
+        prompt_tokens: 0.001,
+        completion_tokens: 0.001
+    },
+    'sonar-reasoning-pro': {
+        prompt_tokens: 0.002,
+        completion_tokens: 0.008
+    },
 };
 
 /**
@@ -138,10 +148,6 @@ function getModelCostConfig(modelName) {
         }
     }
     
-    // Default fallback cost if model not found
-    const logger = require('../../utils/logger');
-
-    logger.warn(`Cost configuration not found for model: ${modelName}, using default pricing`);
     return {
         prompt_tokens: 0.001,
         completion_tokens: 0.002

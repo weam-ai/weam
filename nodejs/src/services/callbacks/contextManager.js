@@ -3,7 +3,6 @@ const { createGeminiCostCalcCallbackHandler } = require('./geminiCallbackHandler
 const { createAnthropicCostCalcCallbackHandler } = require('./anthropicCallbackHandler');
 const threadService = require('../thread');
 const { AI_MODAL_PROVIDER } = require('../../config/constants/aimodal');
-const logger = require('../../utils/logger');
 
 /**
  * Create a custom callback context for managing cost tracking and callbacks
@@ -59,7 +58,6 @@ function createCustomCallbackContext(modelName, options = {}) {
             }
 
             state.isInitialized = true;
-            logger.info(`Custom callback context initialized for model: ${state.modelName}`);
             
             return state.callbackHandler;
         } catch (error) {
@@ -106,12 +104,8 @@ function createCustomCallbackContext(modelName, options = {}) {
     async function cleanup() {
         try {
             if (state.callbackHandler) {
-                logger.info('Cleaning up callback context');
                 // Log final usage before cleanup
                 const finalUsage = getUsage();
-                if (finalUsage) {
-                    logger.info('Final usage statistics:', finalUsage);
-                }
             }
             
             state.callbackHandler = null;
@@ -169,8 +163,6 @@ async function withCustomCallback(modelName, options, asyncFunction) {
     let context = null;
     
     try {
-        logger.info(`🔄 [CONTEXT_MGR] Starting custom callback context for model: ${modelName}`);
-        logger.info(`🔧 [CONTEXT_MGR] Options:`, options);
         
         // Initialize callback context
         context = await getCustomCallbackContext(modelName, options);
@@ -179,16 +171,11 @@ async function withCustomCallback(modelName, options, asyncFunction) {
         if (!callbackHandler) {
             throw new Error('Failed to initialize callback handler');
         }
-
-        logger.info(`🚀 [CONTEXT_MGR] Executing function with cost tracking enabled`);
         
         // Execute the function with the callback handler
         const result = await asyncFunction(callbackHandler, context);
         
-        logger.info(`🏁 [CONTEXT_MGR] Function execution completed, processing usage data`);
-        
         const usage = context.getUsage();
-        logger.info(`📊 [CONTEXT_MGR] Final usage:`, usage);
         
         // Return both result and usage statistics
         return {
@@ -203,7 +190,6 @@ async function withCustomCallback(modelName, options, asyncFunction) {
     } finally {
         // Cleanup context
         if (context) {
-            logger.info(`🧹 [CONTEXT_MGR] Cleaning up callback context`);
             await context.cleanup();
         }
     }
@@ -248,17 +234,13 @@ function determineProvider(modelName) {
  */
 async function createCostCallback(modelName, options = {}) {
     try {
-        logger.info(`🏗️ [CONTEXT_MGR] Creating cost callback for model: ${modelName}`);
-        logger.info(`🔧 [CONTEXT_MGR] Options:`, options);
         
         const provider = determineProvider(modelName);
-        logger.info(`🎯 [CONTEXT_MGR] Detected provider: ${provider} for model: ${modelName}`);
         
         let callbackHandler;
         
         switch (provider) {
             case AI_MODAL_PROVIDER.GEMINI:
-                logger.info(`🤖 [CONTEXT_MGR] Using Gemini callback handler`);
                 callbackHandler = createGeminiCostCalcCallbackHandler(modelName, {
                     ...options,
                     threadRepo: options.threadId ? threadService : null
@@ -266,7 +248,6 @@ async function createCostCallback(modelName, options = {}) {
                 break;
                 
             case AI_MODAL_PROVIDER.ANTHROPIC:
-                logger.info(`🤖 [CONTEXT_MGR] Using Anthropic callback handler`);
                 callbackHandler = createAnthropicCostCalcCallbackHandler(modelName, {
                     ...options,
                     threadRepo: options.threadId ? threadService : null
@@ -275,14 +256,11 @@ async function createCostCallback(modelName, options = {}) {
                 
             case AI_MODAL_PROVIDER.OPEN_AI:
             default:
-                logger.info(`🤖 [CONTEXT_MGR] Using OpenAI callback handler (default)`);
                 // Use the existing context-based approach for OpenAI
                 const context = createCustomCallbackContext(modelName, options);
                 callbackHandler = await context.initialize();
                 break;
         }
-        
-        logger.info(`✅ [CONTEXT_MGR] Cost callback created successfully for provider: ${provider}`);
         return callbackHandler;
     } catch (error) {
         logger.error('❌ [CONTEXT_MGR] Error creating cost callback:', error);

@@ -52,11 +52,6 @@ function createCostCalculator() {
         // Calculate cost
         const cost = calculateCost(promptTokens, completionTokens, state.modelName);
         state.totalCost += cost;
-        
-        logger.info(`📊 [COST_CALC] Added usage - Prompt: ${promptTokens}, Completion: ${completionTokens}`);
-                logger.info(`💰 [COST_CALC] Cost for this usage: $${cost.toFixed(6)}`);
-                logger.info(`📈 [COST_CALC] Total tokens: ${prevTotal} → ${state.totalTokens} (+${state.totalTokens - prevTotal})`);
-                logger.info(`💵 [COST_CALC] Total cost: $${prevCost.toFixed(6)} → $${state.totalCost.toFixed(6)} (+$${cost.toFixed(6)})`);
     }
 
     /**
@@ -117,7 +112,6 @@ function createCostCalcCallbackHandler(modelName, options = {}) {
      */
     async function handleLLMStart(llm, prompts, runId, parentRunId, extraParams) {
         try {
-            logger.info(`🚀 [COST_TRACKING] LLM Start - Model: ${state.modelName}, Run ID: ${runId}`);
             
             // Calculate prompt tokens (rough estimation)
             const promptText = Array.isArray(prompts) ? prompts.join(' ') : String(prompts);
@@ -127,9 +121,6 @@ function createCostCalcCallbackHandler(modelName, options = {}) {
             state.currentRunId = runId;
             state.startTime = Date.now();
             state.estimatedPromptTokens = estimatedPromptTokens;
-            
-            logger.info(`📊 [COST_TRACKING] Estimated prompt tokens: ${estimatedPromptTokens}`);
-            logger.info(`💰 [COST_TRACKING] Thread ID: ${state.threadId}`);
         } catch (error) {
             logger.error('Error in handleLLMStart:', error);
         }
@@ -145,7 +136,6 @@ function createCostCalcCallbackHandler(modelName, options = {}) {
      */
     async function handleChatModelStart(llm, messages, runId, parentRunId, extraParams) {
         try {
-            logger.info(`🚀 [COST_TRACKING] Chat Model Start - Model: ${state.modelName}, Run ID: ${runId}`);
             
             // Calculate prompt tokens from messages
             const messageText = extractTextFromMessages(messages);
@@ -154,9 +144,6 @@ function createCostCalcCallbackHandler(modelName, options = {}) {
             state.currentRunId = runId;
             state.startTime = Date.now();
             state.estimatedPromptTokens = estimatedPromptTokens;
-            
-            logger.info(`📊 [COST_TRACKING] Estimated prompt tokens: ${estimatedPromptTokens}`);
-            logger.info(`💰 [COST_TRACKING] Thread ID: ${state.threadId}`);
         } catch (error) {
             logger.error('Error in handleChatModelStart:', error);
         }

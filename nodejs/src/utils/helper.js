@@ -294,13 +294,16 @@ const formatAIMessage = (payload) => {
     }
 }
 
-const formatAIMessageResponse = (payload) => {
+const formatAIMessageResponse = (payload, response_metadata = {}) => {
     return {
         type: MESSAGE_TYPE.AI,
         data: {
             content: payload,
             additional_kwargs: {},
-            response_metadata: {},
+            response_metadata: {
+                citations: response_metadata.search_citations,
+                search_results: response_metadata.search_results,
+            },
             type: MESSAGE_TYPE.AI,
             name: null,
             id: null,

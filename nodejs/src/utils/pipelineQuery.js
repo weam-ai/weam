@@ -148,7 +148,6 @@ async function retrieveMessagesForRegeneration(chatSessionId, checkpoint = null)
     try {
         // Convert chatSessionId to string if it's an ObjectId
         const sessionId = chatSessionId.toString ? chatSessionId.toString() : chatSessionId;
-        console.log(`Retrieving messages for chat session ID: ${sessionId} (type: ${typeof sessionId})`);
         
         let allMessages = [];
         const threadCheckpoint = await retrieveThreadCheckpoint(sessionId);
@@ -164,7 +163,6 @@ async function retrieveMessagesForRegeneration(chatSessionId, checkpoint = null)
                 system: { $exists: true }
             };
             const systemMessages = await Messages.find(systemMessageQuery).lean();
-            console.log(`Retrieved ${systemMessages.length} system messages with checkpoint ${checkpointToUse}`);
             
             // Now find all human and AI messages with the same checkpoint
             const allMessagesQuery = {
@@ -172,14 +170,12 @@ async function retrieveMessagesForRegeneration(chatSessionId, checkpoint = null)
                 sumhistory_checkpoint: checkpointToUse
             };
             const checkpointMessages = await Messages.find(allMessagesQuery).lean();
-            console.log(`Retrieved ${checkpointMessages.length} total messages with checkpoint ${checkpointToUse}`);
             
             // If no messages found with the checkpoint, try to get all messages for the session
             if (checkpointMessages.length === 0) {
                 // Find all messages for this chat session
                 const allMessagesForSession = await Messages.find({ chat_session_id: sessionId }).lean();
                 allMessages = allMessagesForSession;
-                console.log(`No messages found with checkpoint ${checkpointToUse}, retrieved ${allMessagesForSession.length} total messages for session`);
             } else {
                 allMessages = checkpointMessages;
             }
@@ -194,22 +190,17 @@ async function retrieveMessagesForRegeneration(chatSessionId, checkpoint = null)
                 ]
             };
             const nonCheckpointMessages = await Messages.find(nonCheckpointQuery).lean();
-            console.log(`Retrieved ${nonCheckpointMessages.length} messages without checkpoint`);
             
             // Combine all messages
             allMessages = [...allMessages, ...nonCheckpointMessages];
         } else {
             // No checkpoint found, get all messages for this session
-            console.log(`No checkpoint found for chat ${sessionId}, retrieving all messages`);
             allMessages = await Messages.find({ chat_session_id: sessionId }).lean();
-            console.log(`Retrieved ${allMessages.length} total messages for session`);
         }
 
         // Ensure uniqueness and sort by createdAt
         const uniqueMessages = Array.from(new Map(allMessages.map(msg => [msg._id.toString(), msg])).values());
         uniqueMessages.sort((a, b) => a.createdAt - b.createdAt);
-
-        console.log(`Retrieved ${uniqueMessages.length} messages for chat ${sessionId}`);
         return uniqueMessages || [];
         
     } catch (error) {
