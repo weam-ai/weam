@@ -441,18 +441,18 @@ export const GPT_MODELS = [
 export const AI_MODAL_NAME = {
     // GPT-5 models (moved to first for priority in chat dropdown)
     GPT_5: 'gpt-5',
-    GPT_5_MINI: 'gpt-5-mini',
-    GPT_5_NANO: 'gpt-5-nano',
+    // GPT_5_MINI: 'gpt-5-mini',
+    // GPT_5_NANO: 'gpt-5-nano',
     GPT_5_CHAT: 'gpt-5-chat-latest',    
     
     // Open AI models
-    GPT_4_1: 'gpt-4.1',
-    GPT_4_O_LATEST: 'chatgpt-4o-latest',
-    GPT_4_1_MINI: 'gpt-4.1-mini',
-    GPT_4_1_NANO: 'gpt-4.1-nano',
-    O4_MINI: 'o4-mini',
-    GPT_O3: 'o3',
-    GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
+    // GPT_4_1: 'gpt-4.1',
+    // GPT_4_O_LATEST: 'chatgpt-4o-latest',
+    // GPT_4_1_MINI: 'gpt-4.1-mini',
+    // GPT_4_1_NANO: 'gpt-4.1-nano',
+    // O4_MINI: 'o4-mini',
+    // GPT_O3: 'o3',
+    // GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
 
     // Gemini models
     // GEMINI_2_5_PRO_PREVIEW_05_06: 'gemini-2.5-pro-preview-05-06',

@@ -10,7 +10,7 @@ const OPENAI_MODAL = [
     { name: 'text-embedding-3-large', type: 1 },
     { name: 'text-embedding-ada-002', type: 1 },
     //{ name: 'o3-mini', type: 2 },
-    { name: 'o3', type: 2 },
+    // { name: 'o3', type: 2 },
     // { name: 'gpt-4.1', type: 2},
     // { name: 'gpt-4.1-mini', type: 2},
     // { name: 'gpt-4.1-nano', type: 2},
