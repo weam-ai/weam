@@ -922,10 +922,10 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 isAgentEnabled = true;
                 
                 // Notify frontend that agent is being used
-                socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
-                    event: llmStreamingEvents.AGENT_ENABLED,
-                    chunk: `Agent activated`
-                });
+                // socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                //     event: llmStreamingEvents.AGENT_ENABLED,
+                //     chunk: `Agent activated`
+                // });
             }
         } catch (error) {
             logger.error('Agent flow failed:', error);

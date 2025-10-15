@@ -369,6 +369,10 @@ const apiList = {
         changeRole: {
             url: () => `${prefix}/${module}/change-role`,
             method: 'POST'
+        },
+        upload: {
+            url: () => `${prefix}/${module}/upload`,
+            method: 'POST'
         }
     })
 }

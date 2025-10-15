@@ -1,7 +1,7 @@
 const SOLUTION_CONFIGS = {
-    'ai-doc-editor': {
-        repoUrl: 'https://github.com/weam-ai/ai-doc-editor.git',
-        repoName: 'ai-doc-editor',
+    'ai-docs': {
+        repoUrl: 'https://github.com/weam-ai/ai-docs.git',
+        repoName: 'ai-docs',
         imageName: ['ai-doc-editor-img'],
         containerName: ['ai-doc-editor-container'],
         branchName: 'main',
@@ -23,13 +23,21 @@ const SOLUTION_CONFIGS = {
         branchName: 'devops',
         envFile: 'example.env'
     },
-    'seo-content-gen': {
-        repoUrl: 'https://github.com/weam-ai/seo-content-gen.git',
-        repoName: 'seo-content-gen',
-        imageName: ['seo-content-gen-frontend','seo-content-gen-node-backend','seo-content-gen-backend-python'],
+    'blog-engine': {
+        repoUrl: 'https://github.com/weam-ai/Blog-Engine.git',
+        repoName: 'blog-engine',
+        imageName: ['blog-engine-frontend','blog-engine-node-backend','blog-engine-backend-python'],
         containerName: ['seo-frontend','seo-node-backend','seo-backend-python'],
         branchName: 'devops',
         envFile: '.env.example'
+    },
+    'call-analyzer': {
+        repoUrl: 'https://github.com/weam-ai/call-analyzer.git',
+        repoName: 'call-analyzer',
+        imageName: ['call-analyzer-backend-img','call-analyzer-frontend-img'],
+        containerName: ['call-analyzer-backend-container','call-analyzer-frontend-container'],
+        branchName: 'devops',
+        envFile: 'example.env'
     },
 };
 

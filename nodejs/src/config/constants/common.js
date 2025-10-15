@@ -57,7 +57,7 @@ const QUEUE_NAME = {
     DEFAULT: 'defaultQueue',
     MAIL: 'mailQueue',
     NOTIFICATION: 'notificationQueue',
-    SUBSCRIPTION: 'subscriptionQueue'
+    IMPORT_CHAT: 'importChatQueue'
 }
 
 const JOB_TYPE = {
@@ -65,7 +65,8 @@ const JOB_TYPE = {
     SEND_NOTIFICATION: 'sendNotification',
     UPDATE_DBREF: 'updateRef',
     DELETE_DBREF: 'deleteRef',
-    SEND_SUBSCRIPTION: 'sendSubscription'
+    SEND_SUBSCRIPTION: 'sendSubscription',
+    PROCESS_IMPORT_CHAT: 'processImportChat'
 
 }
 
@@ -92,6 +93,7 @@ const EMAIL_TEMPLATE = {
     CANCEL_SUBSCRIPTION: 'CANCEL_SUBSCRIPTION',
     UN_CANCEL_SUBSCRIPTION: 'UN_CANCEL_SUBSCRIPTION',
     COMPANY_SIGNUP_INFO: 'COMPANY_SIGNUP_INFO',
+    IMPORT_CHAT_SUCCESS: 'IMPORT_CHAT_SUCCESS'
 }
 
 const MAIL_CONTAIN_LANG = {

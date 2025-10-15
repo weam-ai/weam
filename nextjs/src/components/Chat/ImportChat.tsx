@@ -6,13 +6,10 @@ import {
     DialogTitle,
     DialogClose,
 } from '@/components/ui/dialog';
-import { IMPORT_IN_PROGRESS_MESSAGE, IMPORT_ERROR_MESSAGE, MODAL_NAME_CONVERSION, VALID_PLATFORMS, FILE } from '@/utils/constant';
-import Select from "react-select";
-import  Label  from '@/widgets/Label';
+import { IMPORT_IN_PROGRESS_MESSAGE, IMPORT_ERROR_MESSAGE, VALID_PLATFORMS, FILE } from '@/utils/constant';
 import FileUpload from '@/components/FileUploadDropZone';
 import { useFormik } from 'formik';
 import FormikError from '@/widgets/FormikError';
-import { importChatSchema } from '@/schema/chat';
 import { decodedObjectId } from '@/utils/helper';
 import { getCurrentUser } from '@/utils/handleAuth';
 import { BrainListType } from '@/types/brain';
@@ -44,12 +41,10 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
 
     const formik = useFormik({
         initialValues: {
-            code: '',
             file: null,
         },
-        validationSchema: importChatSchema,
         onSubmit: async (values) => {
-            if (!values.file || !values.code) return;
+            if (!values.file) return;
             setIsSubmitting(true);
 
             const formData = new FormData();
@@ -60,17 +55,18 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
             formData.append('brain_title', currentBrain.title);
             formData.append('brain_slug', currentBrain.slug);
             formData.append('company_name', currentUser.company.name);
-            formData.append('code', values.code);
+                        // Default to OPENAI as the code value
+            formData.append('code', 'OPENAI');
 
             try {
                 const response = await pyUploadImportChat(formData, setShowImportChat);
-                if (response?.status_code === 200) {
+                if (response?.status === 200) {
                     setUploadMessage(
                         response?.data?.message || IMPORT_IN_PROGRESS_MESSAGE
                     );
                 }
             } catch (error) {
-                setUploadMessage(IMPORT_ERROR_MESSAGE);
+                // setUploadMessage(IMPORT_ERROR_MESSAGE);
                 setShowImportChat(false);
             } finally {
                 setIsSubmitting(false);
@@ -98,13 +94,6 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
 
 
 
-    const platformOptions = [];
-    for (let [key, value] of Object.entries(VALID_PLATFORMS)) {
-        platformOptions.push({
-            label: value,
-            value: key,
-        });
-    }
 
     // Add accepted file types constant
     const acceptedFileTypes = {
@@ -137,42 +126,17 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
                     <form onSubmit={handleSubmit}>
                         <div className="dialog-body flex flex-col flex-1 pb-6 px-8 max-h-[70vh] overflow-y-auto">
                             <div className="py-4">
-                                <Label title="Model" htmlFor="code" />
-                                <Select
-                                    options={platformOptions}
-                                    id="code"
-                                    className="react-select-container react-select-border-light bg-white react-select-sm"
-                                    classNamePrefix="react-select"
-                                    onChange={(
-                                        option:
-                                            | { value: string; label: string }
-                                            | any
-                                    ) => {
-                                        setFieldValue(
-                                            'code',
-                                            option?.value || ''
-                                        );
-                                    }}
-                                    name="code"
-                                />
-                                {errors.code && touched.code && (
-                                    <FormikError
-                                        errors={errors}
-                                        field={'code'}
-                                    />
-                                )}
+                               
                                 <div className='flex text-font-12 mb-2 mt-5'>
                                     <span className='w-6'>
                                         <TooltipIcon className="w-4 h-auto fill-b6" />
                                     </span>
                                     Export your chats from ChatGPT/Anthropic in a ZIP file format. Inside the ZIP file, locate the conversations.json file.
                                 </div>
-                                {/* <Label title="File" htmlFor="file" /> */}
 
                                 <FileUpload
                                 iconType="jsonIcon" 
                                 className='border border-dashed border-b8 rounded-lg text-center cursor-pointer p-[30px]'
-                                // fileFormat="file"
                                     onLoad={(uploadedFiles) =>
                                         handleFileUpload(uploadedFiles)
                                     }
@@ -191,9 +155,6 @@ const ImportChat = ({ onClose, showImportChat, setShowImportChat }: ImportChatPr
                                         field={'file'}
                                     />
                                 )}
-                                
-
-                                
 
                                 <div>
                                 {isSubmitting ? <ThreeDotLoader /> : ''}

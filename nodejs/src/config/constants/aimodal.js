@@ -10,16 +10,16 @@ const OPENAI_MODAL = [
     { name: 'text-embedding-3-large', type: 1 },
     { name: 'text-embedding-ada-002', type: 1 },
     //{ name: 'o3-mini', type: 2 },
-    { name: 'o3', type: 2 },
-    { name: 'gpt-4.1', type: 2},
-    { name: 'gpt-4.1-mini', type: 2},
-    { name: 'gpt-4.1-nano', type: 2},
-    { name: 'o4-mini', type: 2},
-    { name: 'gpt-4.1-search-medium', type: 2},
-    { name: 'chatgpt-4o-latest', type: 2},
+    // { name: 'o3', type: 2 },
+    // { name: 'gpt-4.1', type: 2},
+    // { name: 'gpt-4.1-mini', type: 2},
+    // { name: 'gpt-4.1-nano', type: 2},
+    // { name: 'o4-mini', type: 2},
+    // { name: 'gpt-4.1-search-medium', type: 2},
+    // { name: 'chatgpt-4o-latest', type: 2},
     { name: 'gpt-5', type: 2},
-    { name: 'gpt-5-mini', type: 2},
-    { name: 'gpt-5-nano', type: 2},
+    // { name: 'gpt-5-mini', type: 2},
+    // { name: 'gpt-5-nano', type: 2},
     { name: 'gpt-5-chat-latest', type: 2},
 ]
 
@@ -29,8 +29,10 @@ const ANTHROPIC_MODAL = [
     //{ name: 'claude-3-sonnet-20240229', type: 2 },
     //{ name: 'claude-3-haiku-20240307', type: 2 },
     //{ name: 'claude-3-7-sonnet-latest', type: 2 },
-    { name: 'claude-sonnet-4-20250514', type: 2 },
-    { name: 'claude-opus-4-20250514', type: 2 },
+    { name: 'claude-sonnet-4-5-20250929', type: 2 },
+    { name: 'claude-opus-4-1-20250805', type: 2 },
+    // { name: 'claude-sonnet-4-20250514', type: 2 },
+    // { name: 'claude-opus-4-20250514', type: 2 },
 ]
 const ANTHROPIC_MAX_TOKENS = {
     // Claude 3.5 Haiku
@@ -47,14 +49,19 @@ const ANTHROPIC_MAX_TOKENS = {
     // Claude 4 models
     'claude-sonnet-4-20250514': 64000,  // Claude Sonnet 4
     'claude-opus-4-20250514': 32000,    // Claude Opus 4
+    'claude-sonnet-4-5-20250929': 64000,  // Claude Sonnet 4.5
+    'claude-opus-4-1-20250805': 32000,    // Claude Opus 4.1
 
     // Default fallback for any new models
     'default': 4096
 }
+
 const GEMINI_MODAL = [
     { name: 'gemini-2.0-flash', type: 2 },
-    { name: 'gemini-2.5-flash-preview-05-20', type: 2 },
-    { name: 'gemini-2.5-pro-preview-05-06', type: 2 },
+    // { name: 'gemini-2.5-flash-preview-05-20', type: 2 },
+    // { name: 'gemini-2.5-pro-preview-05-06', type: 2 },
+    { name: 'gemini-2.5-flash', type: 2 },
+    { name: 'gemini-2.5-pro', type: 2 },
 ]
 
 const PERPLEXITY_MODAL = [
@@ -140,12 +147,16 @@ const MODAL_NAME = {
     O4_MINI: 'o4-mini',
     GEMINI_2_5_FLASH_PREVIEW_05_20: 'gemini-2.5-flash-preview-05-20',
     GEMINI_2_5_PRO_PREVIEW_05_06: 'gemini-2.5-pro-preview-05-06',
+    GEMINI_2_5_FLASH: 'gemini-2.5-flash',
+    GEMINI_2_5_PRO: 'gemini-2.5-pro',
     O3: 'o3',
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
     QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b:free',
     GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
     CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
     CLAUDE_OPUS_4_20250514: 'claude-opus-4-20250514',
+    CLAUDE_SONNET_4_5_20250929: 'claude-sonnet-4-5-20250929',
+    CLAUDE_OPUS_4_1_20250805: 'claude-opus-4-1-20250805',
     GPT_5: 'gpt-5',
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',

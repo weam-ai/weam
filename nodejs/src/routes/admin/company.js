@@ -3,6 +3,7 @@ const router = express.Router();
 const companyController = require('../../controller/admin/companyController');
 const { companyUpdateKeys, partialUpdateKeys, companyCreateKeys, addTeamMembersKeys } = require('../../utils/validations/common');
 const { authentication, checkPermission } = require('../../middleware/authentication');
+const { apiBasicAuth } = require('../../middleware/apiBasicAuth');
 
 router.post('/create', validate(companyCreateKeys), authentication, checkPermission, companyController.addCompany).descriptor('company.create');
 router.put('/update/:slug', validate(companyUpdateKeys), authentication, checkPermission, companyController.updateCompany).descriptor('company.update');
@@ -14,5 +15,8 @@ router.get('/export/list', companyController.exportCompanies);
 
 // company members
 router.post('/add-member', validate(addTeamMembersKeys), authentication, checkPermission, companyController.addTeamMembers).descriptor('company.addmember');
+
+// migration endpoint
+router.post('/migrate-company-models', apiBasicAuth, companyController.migrateCompanyModels).descriptor('company.migrate');
 
 module.exports = router;

@@ -33,6 +33,7 @@ router.use('/bookmark', require('./bookmark'));
 router.use('/page', require('./pages'));
 // router.use('/solution-install', require('./solutionInstall')); // No longer needed - using only progress endpoint
 router.use('/solution-install-progress', require('./solutionInstallProgress'));
+router.use('/import-chat', require('./importChat'));
 
 
 module.exports = router;

@@ -285,10 +285,11 @@ const SuperSolutionPage = () => {
     // Mapping from app names to solution types
     const getSolutionTypeFromAppName = (appName: string): string => {
         const mapping: { [key: string]: string } = {
-            'AI Docs': 'ai-doc-editor',
+            'AI Docs': 'ai-docs',
             'AI Recruiter': 'ai-recruiter',
             'AI Landing Page Generator': 'ai-landing-page-generator',
-            'SEO Content Gen': 'seo-content-gen'
+            'Blog Engine': 'blog-engine',
+            'Call Analyzer': 'call-analyzer'
         };
         return mapping[appName] || '';
     };
@@ -307,7 +308,7 @@ const SuperSolutionPage = () => {
 
     const handleInstall = async (solutionType?: string) => {
         // If no solutionType provided, get it from selectedApp
-        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
+        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-docs');
         console.log('SuperSolution handleInstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
         // Disable buttons immediately for this specific solution
@@ -365,7 +366,7 @@ const SuperSolutionPage = () => {
 
     const handleUninstall = async (solutionType?: string) => {
         // If no solutionType provided, get it from selectedApp
-        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
+        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-docs');
         console.log('SuperSolution handleUninstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
         // Disable buttons immediately for this specific solution
@@ -423,7 +424,7 @@ const SuperSolutionPage = () => {
 
     const handleSync = async (solutionType?: string) => {
         // If no solutionType provided, get it from selectedApp
-        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-doc-editor');
+        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-docs');
         console.log('SuperSolution handleSync - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
         // Disable buttons immediately for this specific solution

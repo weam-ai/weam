@@ -55,8 +55,12 @@ uploads/*
 dump.rdb
 newrelic_agent.log
 
-ai-doc-editor/
+docs/
 ai-recruiter/
 seo-content-gen/
 ai-chatbot/
 landing-page-content-generator/
+ai-doc-editor/
+call-analyzer/
+blog-engine/
+ai-docs/

@@ -1,11 +1,12 @@
-const { defaultQueue, mailQueue, notificationQueue } = require('./configuration');
+const { defaultQueue, mailQueue, notificationQueue, importChatQueue } = require('./configuration');
 const { JOB_TYPE } = require('../config/constants/common');
 const { createBullBoard } = require('bull-board');
 const { BullAdapter } = require('bull-board/bullAdapter');
 const { router } = createBullBoard([
     new BullAdapter(defaultQueue),
     new BullAdapter(mailQueue),
-    new BullAdapter(notificationQueue)
+    new BullAdapter(notificationQueue),
+    new BullAdapter(importChatQueue)
 ]);
 
 const createJob = async (name, data, options = {}) => {
@@ -15,7 +16,8 @@ const createJob = async (name, data, options = {}) => {
         [JOB_TYPE.SEND_MAIL]: mailQueue,
         [JOB_TYPE.SEND_NOTIFICATION]: notificationQueue,
         [JOB_TYPE.UPDATE_DBREF]: defaultQueue,
-        [JOB_TYPE.DELETE_DBREF]: defaultQueue
+        [JOB_TYPE.DELETE_DBREF]: defaultQueue,
+        [JOB_TYPE.PROCESS_IMPORT_CHAT]: importChatQueue
     }
 
     const targetQueue = queueMapping[name] || defaultQueue;
