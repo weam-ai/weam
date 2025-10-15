@@ -52,7 +52,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
     // Mapping from app names to solution types
     const getSolutionTypeFromAppName = (appName: string): string => {
         const mapping: { [key: string]: string } = {
-            'AI Docs': 'docs',
+            'AI Docs': 'ai-docs',
             'AI Recruiter': 'ai-recruiter',
             'AI Landing Page Generator': 'ai-landing-page-generator',
             'Blog Engine': 'blog-engine',

@@ -1,7 +1,7 @@
 const SOLUTION_CONFIGS = {
-    'docs': {
-        repoUrl: 'https://github.com/weam-ai/docs.git',
-        repoName: 'docs',
+    'ai-docs': {
+        repoUrl: 'https://github.com/weam-ai/ai-docs.git',
+        repoName: 'ai-docs',
         imageName: ['ai-doc-editor-img'],
         containerName: ['ai-doc-editor-container'],
         branchName: 'main',
