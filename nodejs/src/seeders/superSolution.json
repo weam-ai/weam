@@ -6,7 +6,7 @@
         "icon": "ai-docs-icon",
         "category": "Productivity & Document Management",
         "isActive": true,
-        "pathToOpen": "/ai-docs",
+        "pathToOpen": "/docs",
         "sequence": 1
       },
       {
@@ -35,6 +35,15 @@
         "isActive" : true,
         "pathToOpen" : "/blog-engine",
         "sequence" : 4
+      },
+      {
+        "name": "Call Analyzer",
+        "description": "Call Analyzer is a tool that helps you analyze your sales calls and gain valuable insights to improve performance.",
+        "icon": "/solution-characters/vibrant-4.svg",
+        "category": "Productivity & Document Management",
+        "isActive": true,
+        "pathToOpen": "/call-analyzer",
+        "sequence": 5
       }
     ]
   }
