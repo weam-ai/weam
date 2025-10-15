@@ -14,7 +14,7 @@ const chat = require('../models/chat');
 const { initializeMemory, processMemoryAfterLLMResponse, initializeMemoryForFirstMessage } = require('./memoryService');
 const { ChatOpenAI } = require('@langchain/openai');
 const logger = require('../utils/logger');
-
+const { MODAL_NAME } = require('../config/constants/aimodal');
 
 const sendMessage = async (payload) => {
     try {
@@ -689,10 +689,26 @@ async function createLLMConversation (data) {
         // Process memory for all messages (both regular and regenerated)
         try {
             // Create LLM instance for memory (using same model as response)
+           let apiKey = data.apiKey;
+            if (data.companyId) {
+                const CompanyModel = require('../models/userBot');
+                const companyModelData = await CompanyModel.findOne({
+                    'company.id': data.companyId,
+                    'bot.code': 'OPEN_AI'
+                });
+                if (companyModelData && companyModelData.config && companyModelData.config.apikey) {
+                    apiKey = companyModelData.config.apikey;
+                }
+            }
+            
+            // Create LLM instance for memory (using same model as response)
             const llmModel = new ChatOpenAI({
-                modelName: data.responseModel || 'gpt-4o-mini',
+                model: MODAL_NAME.GPT_4O_MINI,
                 temperature: 1,
-                openAIApiKey: process.env.OPENAI_API_KEY || data.apiKey
+                openAIApiKey: decryptedData(apiKey),
+                configuration: {
+                    apiKey: decryptedData(apiKey)
+                }
             });
 
             // Initialize memory with chat history

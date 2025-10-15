@@ -65,8 +65,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                     completionTokens = usageMetadata.output_tokens || 0;
                     tokenExtractionMethod = 'generations[0][0].generationInfo.usage_metadata';
                 }
-                else {
-                }
             }
             // Handle case where generations[0] is a direct object
             else if (firstGeneration && !Array.isArray(firstGeneration)) {
@@ -131,7 +129,6 @@ function createGeminiCostCalcCallbackHandler(modelName, options = {}) {
                 if (state.threadRepo && state.threadId) {
                     await saveTokenUsageToThread(promptTokens, completionTokens);
                 }
-            } else {
             }
         } catch (error) {
             logger.error('❌ [GEMINI_COST] Error in handleLLMEnd:', error);
