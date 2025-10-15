@@ -259,28 +259,8 @@ const useConversation = () => {
             const data = response.data.map((m) => {
                 const decodedMessage = decryptedData(m.message); 
                 const decodedAnswer = m.ai ? decryptedData(m.ai) : null;
-                
-                // Handle message parsing with error handling
-                let prompt;
-                try {
-                    prompt = JSON.parse(decodedMessage);
-                } catch (jsonError) {
-                    console.warn('⚠️  Message is not valid JSON, treating as plain text:', decodedMessage.substring(0, 50) + '...');
-                    prompt = { data: { content: decodedMessage } };
-                }
-                
-                // Handle answer parsing with error handling
-                let answer;
-                if (decodedAnswer) {
-                    try {
-                        answer = JSON.parse(decodedAnswer);
-                    } catch (jsonError) {
-                        console.warn('⚠️  Answer is not valid JSON, treating as plain text:', decodedAnswer.substring(0, 50) + '...');
-                        answer = { data: { content: decodedAnswer } };
-                    }
-                } else {
-                    answer = { data: { content: m.openai_error.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
-                }
+                const prompt = JSON.parse(decodedMessage);
+                const answer = decodedAnswer ? JSON.parse(decodedAnswer) : { data: { content: m.openai_error.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
 
 
                 const gptCoverImage=m?.customGptId?.coverImg?.uri?`${LINK.AWS_S3_URL}${m?.customGptId?.coverImg?.uri}`:defaultCustomGptImage.src
@@ -685,43 +665,88 @@ const useConversation = () => {
 
     const socketAllConversation = async (response: SocketConversationType) => {
         try {
-            if (!response) return;
+            if (!response) {
+                setListLoader(false);
+                return;
+            }
             setResponseLoading(true);
             const { data, paginator } = response;
             if (!data.length) {
                 dispatch(setLastConversationDataAction({}));
                 router.push(routes.main);
+                setListLoader(false);
                 return;
             }
             const conversations = data.map((m) => {
-                const decodedMessage = decryptedData(m.message); 
-                const decodedAnswer = m.ai ? decryptedData(m.ai) : null;
-                
-                // Handle message parsing with error handling
-                let prompt;
                 try {
-                    prompt = JSON.parse(decodedMessage);
-                } catch (jsonError) {
-                    console.warn('⚠️  Message is not valid JSON, treating as plain text:', decodedMessage.substring(0, 50) + '...');
-                    prompt = { content: decodedMessage };
-                }
-                
-                // Handle answer parsing with error handling
-                let answer;
-                if (m.proAgentData?.code === ProAgentCode.SEO_OPTIMISED_ARTICLES && !m.proAgentData?.hasOwnProperty('step4')) {
-                    answer = { data: { content: '' } };
-                } else if (decodedAnswer) {
+                    // Decrypt the message and answer with error handling
+                    let decodedMessage;
                     try {
-                        // Try to parse as JSON first
-                        answer = JSON.parse(decodedAnswer);
-                    } catch (jsonError) {
-                        // If JSON parsing fails, treat as plain text
-                        console.warn('⚠️  Answer is not valid JSON, treating as plain text:', decodedAnswer.substring(0, 50) + '...');
-                        answer = { data: { content: decodedAnswer } };
+                        
+                        // Check if message is already an object (not encrypted)
+                        if (typeof m.message === 'object' && m.message !== null) {
+                            // Message is already decrypted/plain object
+                            decodedMessage = JSON.stringify(m.message);
+                        } else if (typeof m.message === 'string') {
+                            // Message is encrypted string, decrypt it
+                            decodedMessage = decryptedData(m.message);
+                        } else {
+                            throw new Error('Invalid message format');
+                        }
+
+                        if (!decodedMessage || decodedMessage.trim() === '') {
+                            throw new Error('Decryption returned empty string');
+                        }
+                    } catch (decryptError) {
+                        console.error('Error decrypting message:', decryptError, 'Message ID:', m._id, 'Message type:', typeof m.message);
+                        decodedMessage = JSON.stringify({ data: { content: 'Error decrypting message' } });
                     }
-                } else {
-                    answer = { data: { content: m.openai_error.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
-                }
+
+                    let decodedAnswer = null;
+                    if (m.ai) {
+                        try {
+                            // Check if AI response is already an object (not encrypted)
+                            if (typeof m.ai === 'object' && m.ai !== null) {
+                                // AI response is already decrypted/plain object
+                                decodedAnswer = JSON.stringify(m.ai);
+                            } else if (typeof m.ai === 'string') {
+                                // AI response is encrypted string, decrypt it
+                                decodedAnswer = decryptedData(m.ai);
+                            } else {
+                                throw new Error('Invalid AI response format');
+                            }
+
+                            if (!decodedAnswer || decodedAnswer.trim() === '') {
+                                throw new Error('Decryption returned empty string');
+                            }
+                        } catch (decryptError) {
+                            console.error('Error decrypting answer:', decryptError, 'Message ID:', m._id, 'AI type:', typeof m.ai);
+                            decodedAnswer = JSON.stringify({ data: { content: 'Error decrypting response' } });
+                        }
+                    }
+
+                    // Safely parse JSON with error handling
+                    let prompt;
+                    try {
+                        prompt = JSON.parse(decodedMessage);
+                    } catch (parseError) {
+                        console.error('Error parsing message JSON:', parseError, 'Raw message:', decodedMessage?.substring(0, 100));
+                        prompt = { data: { content: m.message || 'Error parsing message' } }; // Fallback structure
+                    }
+
+                    let answer;
+                    if (m.proAgentData?.code === ProAgentCode.SEO_OPTIMISED_ARTICLES && !m.proAgentData?.hasOwnProperty('step4')) {
+                        answer = { data: { content: '' } };
+                    } else if (decodedAnswer) {
+                        try {
+                            answer = JSON.parse(decodedAnswer);
+                        } catch (parseError) {
+                            console.error('Error parsing answer JSON:', parseError, 'Raw answer:', decodedAnswer);
+                            answer = { data: { content: decodedAnswer || '' } }; // Fallback structure
+                        }
+                    } else {
+                        answer = { data: { content: m.openai_error?.content || AI_MODEL_CODE.CONVERSATION_ERROR } };
+                    }
 
             let formattedResponse = answer.data.content;
 
@@ -764,6 +789,30 @@ const useConversation = () => {
                     responseAddKeywords: answer.data.additional_kwargs,
                     citations: m.citations,
                     responseMetadata: answer.data.response_metadata
+                }
+                } catch (error) {
+                    console.error('Error processing conversation message:', error, 'Message ID:', m._id);
+                    // Return a fallback conversation object to prevent the entire map from failing
+                    return {
+                        id: m._id,
+                        user: m.user,
+                        message: 'Error loading message',
+                        response: 'Error loading response',
+                        responseModel: m.responseModel,
+                        seq: m.seq,
+                        media: m?.media,
+                        promptId: m?.promptId,
+                        customGptId: m?.customGptId,
+                        proAgentData: m?.proAgentData,
+                        answer_thread: m?.answer_thread || { count: 0, users: [] },
+                        question_thread: m?.question_thread || { count: 0, users: [] },
+                        responseAPI: m?.responseAPI,
+                        cloneMedia: m?.cloneMedia,
+                        model: m?.model,
+                        coverImage: defaultCustomGptImage.src,
+                        responseAddKeywords: {},
+                        citations: m.citations
+                    };
                 }
             });
            

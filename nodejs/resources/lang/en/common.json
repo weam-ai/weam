@@ -45,6 +45,15 @@
         "credit_expired": "Your credit limit has been reached. Please contact your administrator to increase your credit limit.",
         "trial_expired": "Your trial period has expired. Please upgrade to a paid plan to continue using our services."
     },
+    "import": {
+        "not_found": "Import chat not found",
+        "no_file": "No file uploaded",
+        "invalid_file_type": "Invalid file type. Only JSON files are allowed.",
+        "invalid_json": "Invalid JSON file",
+        "invalid_format": "Invalid JSON format: The file must contain an array of conversations",
+        "invalid_structure": "Invalid JSON format: The file structure is not recognized. Please upload a valid chat export file.",
+        "model_not_found": "Model not found for code: {code}"
+    },
     "ai": {
         "open_ai_billing_error": "You exceeded your current quota, please check your plan and billing details.",
         "api_config_success": "API key has been successfully configured!"                          
@@ -72,5 +81,8 @@
         "checkCouponError": "Error occured while validating coupon code",
         "paymentFailed": "Payment was not successfully completed",
         "uncancel": "Subscription activated successfully"        
+    },
+    "validation": {
+        "failed": "{module}"
     }
 }

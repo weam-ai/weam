@@ -359,40 +359,7 @@ export default function EditResponseModal({
         return result;
       }
       
-      // For non-code content, use word-by-word replacement
-      const originalWords = originalText.split(/\s+/);
-      const currentWords = currentText.split(/\s+/);
-      
-      // If word count is very different, use new markdown
-      if (Math.abs(originalWords.length - currentWords.length) > Math.max(originalWords.length, currentWords.length) * 0.5) {
-        return newMarkdown;
-      }
-      
-      // Try to do word-by-word replacement while preserving structure
-      let result = original;
-      
-      // Find changed words and replace them in the original markdown
-      for (let i = 0; i < Math.min(originalWords.length, currentWords.length); i++) {
-        if (originalWords[i] !== currentWords[i]) {
-          // Find and replace this word in the original markdown
-          const wordRegex = new RegExp(`\\b${escapeRegExp(originalWords[i])}\\b`, 'g');
-          result = result.replace(wordRegex, currentWords[i]);
-        }
-      }
-      
-      // Handle added words at the end
-      if (currentWords.length > originalWords.length) {
-        const addedWords = currentWords.slice(originalWords.length).join(' ');
-        result += ' ' + addedWords;
-      }
-      
-      // Handle removed words (this is more complex, so we'll be conservative)
-      if (currentWords.length < originalWords.length) {
-        // For now, just return the new markdown if words were removed
-        return newMarkdown;
-      }
-      
-      return result;
+      return newMarkdown;
     } catch (error) {
       console.error('Error preserving structure:', error);
       return newMarkdown; // Fallback to new markdown
@@ -575,10 +542,13 @@ export default function EditResponseModal({
                   border-radius: 12px !important;
                 }
                 .ql-toolbar {
+                  position: sticky !important;
+                  top: 0 !important;
+                  z-index: 10 !important;
                   border: none !important;
                   border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
                   border-radius: 12px 12px 0 0 !important;
-                  background: rgba(255, 255, 255, 0.8) !important;
+                  background: rgba(255, 255, 255, 0.95) !important;
                   backdrop-filter: blur(10px) !important;
                 }
                 .ql-editor {
