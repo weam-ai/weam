@@ -525,24 +525,34 @@ const SuperSolutionPage = () => {
 
     useEffect(() => {
         if (members?.length) {
-            const memberlist = members.map((user) => ({
-                email: user.email,
-                id: user.id,
-                fullname: showNameOrEmail(user),
-                fname: user?.fname,
-                lname: user?.lname,
-            }));
+            const memberlist = members.reduce((acc, user) => {
+                if (!currentAppMembers.some((appMember) => appMember.id === user.id)) {
+                    acc.push({
+                        email: user.email,
+                        id: user.id,
+                        fullname: showNameOrEmail(user),
+                        fname: user?.fname,
+                        lname: user?.lname,
+                    });
+                }
+                return acc;
+            }, []);
             setMemberOptions(memberlist);
         }
     }, [members]);
 
     useEffect(() => {
         if (teams?.length) {
-            const teamlist = teams.map((team) => ({
-                teamName: team.teamName,
-                id: team._id,
-                teamUsers: team.teamUsers || [],
-            }));
+            const teamlist = teams.reduce((acc, team) => {
+                if (!currentAppTeams.some((appTeam) => appTeam.id === team._id)) {
+                    acc.push({
+                        teamName: team.teamName,
+                        id: team._id,
+                        teamUsers: team.teamUsers || [],
+                    });
+                }
+                return acc;
+            }, []);
             setTeamOptions(teamlist);
         }
     }, [teams]);
