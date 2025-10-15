@@ -208,33 +208,44 @@ export const encryptedData = (data) => {
 
 export const allowImageConversation = (selectedAIModal: AiModalType) => {
     const allowedModels = [
+        // OpenAI Models
         'gpt-4o',
-        "gpt-4.1",
-        "gpt-4.1-mini",
-        "gpt-4.1-nano",
-        "gpt-4.1-search-medium",
-        "o4-mini",
-        "o3-mini",
-        "o3",
-        "chatgpt-4o-latest",
-        "gpt-5",
-        "gpt-5-mini",
-        "gpt-5-nano",
-        "gpt-5-chat-latest",
+        'gpt-4.1',
+        'gpt-4.1-mini',
+        'gpt-4.1-nano',
+        'gpt-4.1-search-medium',
+        'chatgpt-4o-latest',
+        'o3',
+        'o3-mini',
+        'o4-mini',
+        'gpt-5',
+        'gpt-5-mini',
+        'gpt-5-nano',
+        'gpt-5-chat-latest',
+        
+        // Anthropic Claude Models
         'claude-3-5-sonnet-latest',
+        'claude-3-5-haiku-latest',
+        'claude-3-7-sonnet-latest',
         'claude-3-opus-latest',
         'claude-3-sonnet-20240229',
         'claude-3-haiku-20240307',
-        'claude-3-5-haiku-latest',
-        'claude-3-7-sonnet-latest',
+        'claude-sonnet-4-5-20250929',
+        'claude-sonnet-4-20250514',
+        'claude-opus-4-1-20250805',
+        'claude-opus-4-20250514',
+        
+        // Google Gemini Models
         'gemini-1.5-pro',
         'gemini-2.0-flash',
+        'gemini-2.5-pro',
+        'gemini-2.5-flash',
         'gemini-2.5-flash-preview-05-20',
         'gemini-2.5-pro-preview-05-06',
+        
+        // Meta Llama Models
         'meta-llama/llama-4-scout',
         'meta-llama/llama-4-maverick',
-       'claude-sonnet-4-20250514',
-       'claude-opus-4-20250514',
     ];
     const result = allowedModels.includes(selectedAIModal.name);
     return result;
@@ -355,18 +366,19 @@ export function extractFileType(mimeType: string) {
 
 export function allowImageGeneration(modelName: string) {
     const allowedModels = [
+        // OpenAI Models
         'gpt-4o',
+        'gpt-4.1',
+        'gpt-4.1-mini',
+        'gpt-4.1-nano',
+        'gpt-4.1-search-medium',
+        'o3',
         'o3-mini',
-        "gpt-4.1",
-        "gpt-4.1-mini",
-        "gpt-4.1-nano",
-        "gpt-4.1-search-medium",
-        "o4-mini",
-        "o3",
-        "gpt-5",
-        "gpt-5-mini",
-        "gpt-5-nano",
-        "gpt-5-chat-latest"
+        'o4-mini',
+        'gpt-5',
+        'gpt-5-mini',
+        'gpt-5-nano',
+        'gpt-5-chat-latest',
     ];
     return allowedModels.includes(modelName);
 }

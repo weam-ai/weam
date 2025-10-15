@@ -1224,6 +1224,100 @@ async function openRouterApiChecker(req) {
     }
 }
 
+const migrateCompanyModels = async (req) => {
+    try {
+        const { models, code, api_key, model_type = 2, extra_config } = req.body;
+        
+        const Company = require('../models/company');
+        const UserBot = require('../models/userBot');
+        const Bot = require('../models/bot');
+        
+        const currentDateTime = new Date();
+        const modelsToAdd = models;
+        const updatedCompanies = [];
+        let totalMigratedCount = 0;
+
+        // Find the model/bot data
+        const modelData = await Bot.findOne({ code }, { _id: 1, title: 1, code: 1 });
+        if (!modelData) {
+            throw new Error('Model Data not found.');
+        }
+        
+        const botData = {
+            title: modelData.title,
+            code: modelData.code,
+            id: modelData._id
+        };
+
+        // Get all companies from the collection
+        const companies = await Company.find({});
+        
+        for (const company of companies) {
+            const companyId = company._id;
+            const companyName = company.companyNm;
+            const modelsInserted = [];
+            
+            for (const modelName of modelsToAdd) {
+                const existingRecord = await UserBot.findOne({ 
+                    name: modelName, 
+                    'company.id': companyId 
+                });
+
+                // If the model does not exist, insert it
+                if (!existingRecord) {
+                    const newRecord = {
+                        name: modelName,
+                        bot: botData,
+                        company: {
+                            name: companyName,
+                            slug: company.slug,
+                            id: companyId
+                        },
+                        config: { apikey: api_key },
+                        modelType: model_type,
+                        isActive: true,
+                        extraConfig: extra_config || {},
+                        createdAt: currentDateTime,
+                        updatedAt: currentDateTime
+                    };
+
+                    // Insert the new model into the companymodel collection
+                    await UserBot.create(newRecord);
+                    modelsInserted.push(modelName);
+                }
+            }
+
+            // Check if any models were inserted for this company
+            if (modelsInserted.length > 0) {
+                updatedCompanies.push({
+                    companyName: companyName,
+                    modelsInserted: modelsInserted,
+                    totalModelsInserted: modelsInserted.length
+                });
+                totalMigratedCount += 1;
+                logger.info(`Inserted ${modelsInserted.length} models for company ${companyName}.`);
+            } else {
+                logger.info(`No models inserted for company ${companyName}.`);
+            }
+        }
+
+        // Check if any companies were updated
+        if (totalMigratedCount > 0) {
+            logger.info(`Total companies migrated: ${totalMigratedCount}.`);
+        } else {
+            logger.warning('No companies were migrated.');
+        }
+
+        return {
+            message: 'Migration Companymodel completed successfully.',
+            totalMigratedCount: totalMigratedCount,
+            updatedCompanies: updatedCompanies
+        };
+    } catch (error) {
+        handleError(error, 'Error - migrateCompanyModels');
+    }
+}
+
 module.exports = {
     addCompany,
     updateCompany,
@@ -1242,6 +1336,7 @@ module.exports = {
     createFreeTierApiKey,
     geminiApiKeyChecker,
     sendManualInviteEmail,
-    addBlockedDomain
+    addBlockedDomain,
+    migrateCompanyModels
 }
 
