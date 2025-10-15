@@ -103,7 +103,7 @@ const MentionInput = ({ users, setContent, content, onTyping, handleSubmit }) =>
                 placeholder={"Reply and Mention people using '@'"}
                 allowSuggestionsAboveCursor={true}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && content.trim() !== '') {
                       handleSubmit(e);
                       e.preventDefault();
                   }
