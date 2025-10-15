@@ -1,12 +1,12 @@
 {
     "solutionApps": [
       {
-        "name": "Docs",
+        "name": "Ai Docs",
         "description": "AI-powered document editor with dual editor modes (Rich Text & Markdown), smart templates, and OpenAI integration for document generation and formatting",
         "icon": "ai-docs-icon",
         "category": "Productivity & Document Management",
         "isActive": true,
-        "pathToOpen": "/docs",
+        "pathToOpen": "/ai-docs",
         "sequence": 1
       },
       {
@@ -19,12 +19,12 @@
           "sequence": 2
       },
       {
-        "name": "AI Landing Page Generator",
-        "description": "AI Landing Page Generator is an AI-powered service that streamlines the creation of high-converting landing pages. It intelligently extracts content from PDFs or other inputs, analyzes structure, and generates responsive, SEO-optimized landing pages in minutes—saving time, reducing manual effort, and enhancing marketing efficiency.",
-        "icon": "landing-page-icon",
+        "name": "Page Revamp – AI Landing Page Generator",
+        "description": "Page Revamp is an AI-powered landing page generator that helps you redesign or create high-performing landing pages in minutes. It intelligently analyzes your existing content, extracts key elements from PDFs or documents, and generates responsive, SEO-optimized, and conversion-focused pages—reducing manual work and boosting marketing performance.",
+        "charimg": "/solution-characters/warm-2.svg",
         "category": "Productivity & Document Management",
         "isActive": true,
-        "pathToOpen": "/ai-landing-page-generator",
+        "pathToOpen": "/page-revamp",
         "sequence": 3
       },
       {
