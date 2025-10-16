@@ -15,9 +15,9 @@ const SOLUTION_CONFIGS = {
         branchName: 'main',
         envFile: '.env.example'
     },
-    'ai-landing-page-generator': {
+    'page-revamp': {
         repoUrl: 'https://github.com/weam-ai/landing-page-content-generator.git',
-        repoName: 'landing-page-content-generator',
+        repoName: 'page-revamp',
         imageName: ['landing-page-content-generator-frontend','landing-page-content-generator-backend'],
         containerName: ['landing-page-frontend','landing-page-backend'],
         branchName: 'devops',
