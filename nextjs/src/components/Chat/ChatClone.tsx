@@ -459,7 +459,7 @@ const ChatPage = memo(() => {
         let img_url;
 
         let cloneContext = selectedContext; // selected content by typing @
-        const modalName = chatCanvas ? selectedAIModal?.name : persistTagData?.responseModel || selectedAIModal?.name;
+        const modalName = persistTagData?.responseModel || selectedAIModal?.name;
         const messageId = generateObjectId();
         setText('');
         dispatch(setChatAccessAction(true));

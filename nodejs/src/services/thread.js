@@ -14,7 +14,7 @@ const chat = require('../models/chat');
 const { initializeMemory, processMemoryAfterLLMResponse, initializeMemoryForFirstMessage } = require('./memoryService');
 const { ChatOpenAI } = require('@langchain/openai');
 const logger = require('../utils/logger');
-const { MODAL_NAME } = require('../config/constants/aimodal');
+
 
 const sendMessage = async (payload) => {
     try {
@@ -68,40 +68,8 @@ const getAll = async (req) => {
                 User.find({ _id: { $in: answer_senders } }, { email: 1, profile: 1, fname: 1, lname: 1 })
             ]);
 
-            // Decrypt message and ai fields before returning
-            let decryptedMessage = message.message;
-            let decryptedAi = message.ai;
-            let decryptedSystem = message.system;
-
-            try {
-                if (message.message) {
-                    decryptedMessage = JSON.parse(decryptedData(message.message));
-                }
-            } catch (error) {
-                console.warn('Failed to decrypt message field:', error);
-            }
-
-            try {
-                if (message.ai) {
-                    decryptedAi = JSON.parse(decryptedData(message.ai));
-                }
-            } catch (error) {
-                console.warn('Failed to decrypt ai field:', error);
-            }
-
-            try {
-                if (message.system) {
-                    decryptedSystem = JSON.parse(decryptedData(message.system));
-                }
-            } catch (error) {
-                console.warn('Failed to decrypt system field:', error);
-            }
-
             return {
                 ...message._doc,
-                message: decryptedMessage,
-                ai: decryptedAi,
-                system: decryptedSystem,
                 question_thread: {
                     count: question_count,
                     users: question_users,
@@ -229,40 +197,8 @@ async function socketMessageList(filter) {
                 User.find({ _id: { $in: answer_senders } }, { email: 1, profile: 1, fname: 1, lname: 1 })
             ]);
 
-            // Decrypt message and ai fields before returning
-            let decryptedMessage = message.message;
-            let decryptedAi = message.ai;
-            let decryptedSystem = message.system;
-
-            try {
-                if (message.message) {
-                    decryptedMessage = JSON.parse(decryptedData(message.message));
-                }
-            } catch (error) {
-                console.warn('Failed to decrypt message field:', error);
-            }
-
-            try {
-                if (message.ai) {
-                    decryptedAi = JSON.parse(decryptedData(message.ai));
-                }
-            } catch (error) {
-                console.warn('Failed to decrypt ai field:', error);
-            }
-
-            try {
-                if (message.system) {
-                    decryptedSystem = JSON.parse(decryptedData(message.system));
-                }
-            } catch (error) {
-                console.warn('Failed to decrypt system field:', error);
-            }
-
             return {
                 ...message._doc,
-                message: decryptedMessage,
-                ai: decryptedAi,
-                system: decryptedSystem,
                 question_thread: {
                     count: question_count,
                     users: question_users,
@@ -606,10 +542,7 @@ const searchMessage = async (req) => {
 async function createLLMConversation (data) {
     try {
         const formatedQuestion = formatAIMessage(data.query);
-        const formatedResponse = formatAIMessageResponse(data.answer, {
-            search_citations: data.search_citations,
-            search_results: data.search_results
-        });
+        const formatedResponse = formatAIMessageResponse(data.answer);
         
         // Import generateSumhistoryCheckpoint and system message functions
         const { generateSumhistoryCheckpoint, addSystemMessage } = require('./memoryService');
@@ -689,26 +622,10 @@ async function createLLMConversation (data) {
         // Process memory for all messages (both regular and regenerated)
         try {
             // Create LLM instance for memory (using same model as response)
-           let apiKey = data.apiKey;
-            if (data.companyId) {
-                const CompanyModel = require('../models/userBot');
-                const companyModelData = await CompanyModel.findOne({
-                    'company.id': data.companyId,
-                    'bot.code': 'OPEN_AI'
-                });
-                if (companyModelData && companyModelData.config && companyModelData.config.apikey) {
-                    apiKey = companyModelData.config.apikey;
-                }
-            }
-            
-            // Create LLM instance for memory (using same model as response)
             const llmModel = new ChatOpenAI({
-                model: MODAL_NAME.GPT_4O_MINI,
+                modelName: data.responseModel || 'gpt-4o-mini',
                 temperature: 1,
-                openAIApiKey: decryptedData(apiKey),
-                configuration: {
-                    apiKey: decryptedData(apiKey)
-                }
+                openAIApiKey: process.env.OPENAI_API_KEY || data.apiKey
             });
 
             // Initialize memory with chat history

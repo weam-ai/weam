@@ -177,7 +177,7 @@ const AddNewPromptModal = ({ open, closeModal, mycontent, edit, flag, chatprompt
             isFavorite: isFavourite
         }
         const newdata = edit ? await updatePromptContain(data, closeModal, edit._id) : await createPrompt(data, closeModal);
-        setPromptState((prev) => prev + 1);
+        setPromptState && setPromptState((prev) => prev + 1);
     };
 
     const websites = watch('website') || [];
