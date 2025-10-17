@@ -94,6 +94,12 @@ import SearchIcon from '@/icons/Search';
 import ThreeDotLoader from '../Loader/ThreeDotLoader';
 import { useResponseUpdate } from '@/hooks/chat/useResponseUpdate';
 import { usePageOperations } from '@/hooks/chat/usePageOperations';
+
+
+import Plus from '@/icons/Plus';
+import BookMarkIcon from '@/icons/Bookmark';
+
+
 const defaultContext: SelectedContextType = {
     type: null,
     prompt_id: undefined,
@@ -126,6 +132,11 @@ const ChatPage = memo(() => {
     const [showAgentList, setShowAgentList] = useState(false);
     const [showPromptList, setShowPromptList] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+    const [showPlusMenu, setShowPlusMenu] = useState(false);
+    const [showBookmarkDialog, setShowBookmarkDialog] = useState(false);
+    const [isEnhanceLoading, setIsEnhanceLoading] = useState(false);
+    const plusMenuRef = useRef<HTMLDivElement>(null);
+    const plusButtonRef = useRef<HTMLButtonElement>(null);
 
     // EditResponseModal state
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -162,22 +173,30 @@ const ChatPage = memo(() => {
     const agentPromptDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-        if (
-            agentPromptDropdownRef.current &&
-            !agentPromptDropdownRef.current.contains(event.target as Node)
-        ) {
-            setShowAgentList(false);
-            setShowPromptList(false);
+        function handleClickOutside(event: MouseEvent) {
+            if (
+                agentPromptDropdownRef.current &&
+                !agentPromptDropdownRef.current.contains(event.target as Node)
+            ) {
+                setShowAgentList(false);
+                setShowPromptList(false);
+            }
+            if (
+                plusMenuRef.current &&
+                !plusMenuRef.current.contains(event.target as Node) &&
+                plusButtonRef.current &&
+                !plusButtonRef.current.contains(event.target as Node)
+            ) {
+                setShowPlusMenu(false);
+            }
         }
-    }
-    if (showAgentList || showPromptList) {
-        document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-    };
-}, [showAgentList, showPromptList]);
+        if (showAgentList || showPromptList || showPlusMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showAgentList, showPromptList, showPlusMenu]);
    
     const agentRecord = useMemo(() => {
         return globalUploadedFile.find((file) => file.isCustomGpt);
@@ -1353,7 +1372,7 @@ const ChatPage = memo(() => {
                 {isFileDragging && <DrapDropUploader isFileDragging={isFileDragging} />}
                 {/*Chat page Start  */}
                 <div
-                    className="h-full overflow-y-auto w-full relative max-md:max-h-[calc(100vh-200px)]"
+                    className="h-full overflow-y-auto w-full relative max-md:max-h-[calc(100vh-200px)] custom-scrollbar"
                     ref={contentRef}
                 >
                     {/* chat start */}
@@ -1729,7 +1748,37 @@ const ChatPage = memo(() => {
                                     ref={textareaRef}
                                 />
                                 <div className="flex items-center z-10 px-4 pb-[6px]">
-                                    
+                                    {/* Plus Menu Button */}
+                                    <button
+                                            ref={plusButtonRef}
+                                            onClick={() => setShowPlusMenu(!showPlusMenu)}
+                                            className="p-2 hover:bg-gray-100 rounded-md transition-colors relative"
+                                            type="button"
+                                            disabled={isEnhanceLoading}
+                                        >
+                                             {/* Show loading spinner when enhancing */}
+                                             {isEnhanceLoading && (
+                                                 <div className="transition ease-in-out duration-200 w-auto h-8 flex items-center px-[5px] bg-b2 rounded-[15px] hover:bg-b2">
+                                                     <div className="animate-spin h-4 w-4 border-2 border-[rgba(255,255,255,0.35)] border-t-white rounded-full"></div>
+                                                     <span className="ml-1 text-font-14 font-medium text-white">Enhancing...</span>
+                                                 </div>
+                                             )}
+                                             {/* Animated Plus/Close icon - rotates 45deg to form X shape */}
+                                             {!isWebSearchActive && !isEnhanceLoading && (
+                                                 <div className={`transform transition-all duration-300 ease-in-out ${showPlusMenu ? 'rotate-45 scale-110' : 'rotate-0 scale-100'}`}>
+                                                     <Plus width={16} height={16} className="fill-b7" />
+                                                 </div>
+                                             )}
+                                             
+                                             {isWebSearchActive && !isEnhanceLoading && (
+                                                 <WebSearchToolTip
+                                                      loading={false}
+                                                      isWebSearchActive={isWebSearchActive}
+                                                      handleWebSearchClick={handleWebSearchClick}
+                                                  />
+                                             )}
+                                        </button>
+
                                 {/* Dialog Start For tabGptList */}
                                 <Dialog
                                         open={!isWebSearchActive && dialogOpen}
@@ -1789,30 +1838,7 @@ const ChatPage = memo(() => {
                                             </DialogContent>
                                         </Dialog>
                                         {/* Dialog End For tabGptList */}
-                                        <AttachMentToolTip
-                                            fileLoader={fileLoader}
-                                            isWebSearchActive={isWebSearchActive}
-                                            handleAttachButtonClick={handleAttachButtonClick}
-                                        />
-
-                                        <BookmarkDialog
-                                            onSelect={onSelectMenu}
-                                            isWebSearchActive={isWebSearchActive}
-                                            selectedAttachment={globalUploadedFile}
-                                        />
-                                        <WebSearchToolTip
-                                            loading={loading}
-                                            isWebSearchActive={isWebSearchActive}
-                                            handleWebSearchClick={handleWebSearchClick}
-                                        />
-
-                                        {/* Prompt Enhance Component */}
-                                        <PromptEnhance 
-                                            isWebSearchActive={isWebSearchActive} 
-                                            text={text} 
-                                            setText={setText} 
-                                            apiKey={selectedAIModal?.config?.apikey}
-                                        />
+    
                                         <ToolsConnected 
                                             isWebSearchActive={isWebSearchActive} 
                                             toolStates={toolStates}
@@ -1840,6 +1866,91 @@ const ChatPage = memo(() => {
                                         )}
                                 </div>
                             </div>
+                            {/* Plus Menu Dropdown - Positioned above textarea */}
+                            {showPlusMenu && (
+                                <div
+                                    className="absolute bottom-full mb-2 left-5 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[200px] z-[100]"
+                                    ref={plusMenuRef}
+                                >
+                                    <div className="px-2 space-y-1">
+                                        {/* Attach Files */}
+                                        <div 
+                                            className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded-md transition-colors text-left cursor-pointer"
+                                            onClick={() => {
+                                                handleAttachButtonClick();
+                                                setShowPlusMenu(false);
+                                            }}
+                                        >
+                                            <AttachMentToolTip
+                                                fileLoader={fileLoader}
+                                                isWebSearchActive={isWebSearchActive}
+                                                handleAttachButtonClick={() => {}} // Empty handler, we handle click on parent
+                                            />
+                                        </div>
+                                     
+                                      {/* Bookmark Dialog Trigger */}
+                                      <button 
+                                            className="w-full flex items-center gap-2 px-2 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowBookmarkDialog(true);
+                                                setShowPlusMenu(false);
+                                            }}
+                                        >
+                                            <div className={`chat-btn cursor-pointer transition ease-in-out duration-200 rounded-md w-auto h-8 flex items-center px-[5px] ${
+                                                isWebSearchActive ? 'opacity-50 pointer-events-none' : ''
+                                            }`}>
+                                                <BookMarkIcon width={16} height={15} className='fill-b5 w-auto h-[15px]'/>
+                                                <span className={`ml-4 ${isWebSearchActive ? 'opacity-50 pointer-events-none' : ''}`}>Favorite</span>
+                                            </div>
+                                        </button>
+                                     
+                                      {/* Web Search Tooltip */}
+                                      <button
+                                            onClick={() => {
+                                                handleWebSearchClick();
+                                                setShowPlusMenu(false);
+                                            }}
+                                            className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                            type="button"
+                                        >
+                                            <WebSearchToolTip
+                                                loading={false}
+                                                isWebSearchActive={isWebSearchActive}
+                                                handleWebSearchClick={() => {}} // Empty handler, we handle click on button
+                                                showHighlight={false}
+                                            />
+                                           
+                                            <span>Web Search</span>
+                                        </button>
+    
+                                      {/* Prompt Enhance */}
+                                      <div 
+                                        className="w-full flex items-center gap-2 px-2 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                        onClick={(e) => {e.stopPropagation(); setShowPlusMenu(false)}}
+                                    >
+                                        <PromptEnhance
+                                            isWebSearchActive={isWebSearchActive}
+                                            text={text}
+                                            setText={setText}
+                                            apiKey={selectedAIModal?.config?.apikey}
+                                            onEnhanceClick={() => setShowPlusMenu(false)}
+                                            onLoadingChange={setIsEnhanceLoading}
+                                        />
+                                    </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Bookmark Dialog - Rendered outside plus menu to persist when menu closes */}
+                            <BookmarkDialog
+                                onSelect={onSelectMenu}
+                                isWebSearchActive={isWebSearchActive}
+                                selectedAttachment={globalUploadedFile}
+                                open={showBookmarkDialog}
+                                onOpenChange={setShowBookmarkDialog}
+                            />
+                            
                             <p className='text-font-12 mt-1 text-b7 text-center'>Weam can make mistakes. Consider checking the following information.</p>
                         </div>
                     </div>

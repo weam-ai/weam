@@ -24,11 +24,12 @@ import useMembers from '@/hooks/members/useMembers';
 import { useTeams } from '@/hooks/team/useTeams';
 import AutoSelectChip from '@/components/ui/AutoSelectChip';
 import ProfileImage from '@/components/Profile/ProfileImage';
-import { displayName, showNameOrEmail } from '@/utils/common';
+import { DEFAULT_CHARACTERS_SOLUTION_APP, displayName, showNameOrEmail } from '@/utils/common';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import Toast from '@/utils/toast';
+import Image from 'next/image';
 // Removed commonApi and MODULE_ACTIONS imports - using direct SSE connection instead
 
 // Validation schemas
@@ -616,14 +617,19 @@ const SuperSolutionPage = () => {
                                             }
                                         >   
                                             <div className="flex gap-3 mb-3">
-                                                <span>
+                                            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full flex-shrink-0">
                                                     {(() => {
-                                                        const IconComponent = getIconComponent(app.icon);
                                                         return (
-                                                            <IconComponent className="w-6 h-6 text-gray-600" />
+                                                            <Image
+                                                                src={app.charimg || DEFAULT_CHARACTERS_SOLUTION_APP[10]}
+                                                                alt={app.name}
+                                                                width={40}
+                                                                height={40}
+                                                                className="w-10 h-10 object-contain rounded-full"
+                                                            />
                                                         );
                                                     })()}
-                                                </span>
+                                                </div>
                                                 <div>
                                                     <h3 className="font-semibold">
                                                         {app.name}
@@ -661,14 +667,17 @@ const SuperSolutionPage = () => {
                         <DialogHeader className="border-b pb-3 mb-4">
                             <DialogTitle className="flex items-center gap-3 font-bold">
                                 <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
-                                    {(() => {
-                                        const IconComponent = getIconComponent(
-                                            selectedApp.icon
-                                        );
-                                        return (
-                                            <IconComponent className="w-5 h-5 text-gray-600" />
-                                        );
-                                    })()}
+                                {(() => {
+                                    return (
+                                        <Image
+                                            src={selectedApp.charimg || DEFAULT_CHARACTERS_SOLUTION_APP[10]}
+                                            alt={selectedApp.name}
+                                            width={40}
+                                            height={40}
+                                            className="w-10 h-10 object-contain rounded-full"
+                                        />
+                                    );
+                                })()}
                                 </div>
                                 <div>
                                     {selectedApp.name} - Access Management

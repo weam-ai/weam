@@ -69,11 +69,24 @@ import ChatIcon from '@/icons/Chat';
 import PromptIcon from '@/icons/Prompt';
 import Customgpt from '@/icons/Customgpt';
 import DocumentIcon from '@/icons/DocumentIcon';
+import BookMarkIcon from '@/icons/Bookmark';
 import { isEmptyObject, truncateText } from '@/utils/common';
 import AIPagesIcon from '@/icons/AIPagesIcon';
 import Link from 'next/link';
 import CustomPromptAction from '@/actions/CustomPromptAction';
 import PromptCardSkeleton from '@/components/Loader/PromptCardSkeleton';
+import { PagesIcon } from '@/icons/PagesIcon';
+import AgentCardSkeleton from '../Loader/AgentCardSkeleton';
+import CustomBotAction from '@/actions/CustomTemplateAction';
+import Plus from '@/icons/Plus';
+import { 
+    getCachedPrompts, 
+    getCachedAgents, 
+    setCachedPrompts, 
+    setCachedAgents, 
+    clearExpiredCache 
+} from '@/utils/promptAgentCache';
+
 
 const defaultContext = {    
     type: null,
@@ -178,6 +191,9 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     const [searchValue, setSearchValue] = useState('');
     const [randomPrompts, setRandomPrompts] = useState<BrainPromptType[]>([]);
     const [customPrompts, setCustomPrompts] = useState([]);
+    const [isLoadingCustomPrompts, setIsLoadingCustomPrompts] = useState(true);
+    const [randomAgents, setRandomAgents] = useState([]);
+    const [isLoadingAgents, setIsLoadingAgents] = useState(true);
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const dispatch = useDispatch();
@@ -324,7 +340,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                 href: routes.docs,
             },
             {
-                icon: <DocumentIcon width={18} height={18} className="fill-b6 group-hover:fill-white w-4 h-auto" />,
+                icon: <PagesIcon width={16} height={16} className="fill-b6 group-hover:fill-white" />,
                 text: 'Pages',
                 id: 5,
                 href: routes.pages,
@@ -475,6 +491,9 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
 
 
     useEffect(() => {
+        // Clear expired cache on component mount
+        clearExpiredCache();
+
         router.prefetch(`/chat/${chatId}`);     
         const defaultModal = aiModals.find(
             (el: AiModalType) => el.name === AI_MODEL_CODE.DEFAULT_OPENAI_SELECTED
@@ -627,6 +646,11 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     const [showAgentList, setShowAgentList] = useState(false);
     const [showPromptList, setShowPromptList] = useState(false);
     const agentPromptDropdownRef = useRef<HTMLDivElement>(null);
+    const [showPlusMenu, setShowPlusMenu] = useState(false);
+    const [showBookmarkDialog, setShowBookmarkDialog] = useState(false);
+    const [isEnhanceLoading, setIsEnhanceLoading] = useState(false);
+    const plusMenuRef = useRef<HTMLDivElement>(null);
+    const plusButtonRef = useRef<HTMLButtonElement>(null);
     
     const handleTextAreaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -638,10 +662,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         // Show prompt list if first character is '/'
         setShowPromptList(value.startsWith('/'));
     };
-    const handleAgentSelect = (agent) => {
-        // handle agent selection logic
-        setShowAgentList(false);
-    };
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (
@@ -651,14 +672,22 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                 setShowAgentList(false);
                 setShowPromptList(false);
             }
+            if (
+                plusMenuRef.current &&
+                !plusMenuRef.current.contains(event.target as Node) &&
+                plusButtonRef.current &&
+                !plusButtonRef.current.contains(event.target as Node)
+            ) {
+                setShowPlusMenu(false);
+            }
         }
-        if (showAgentList || showPromptList) {
+        if (showAgentList || showPromptList || showPlusMenu) {
             document.addEventListener('mousedown', handleClickOutside);
         }
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showAgentList, showPromptList]);
+    }, [showAgentList, showPromptList, showPlusMenu]);
 
 
     const {
@@ -673,19 +702,69 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     // Fetch custom prompts from prompt library on component mount
     useEffect(() => {
         const fetchCustomPrompts = async () => {
+            setIsLoadingCustomPrompts(true);
             try {
+                // Check cache first
+                const cachedData = getCachedPrompts();
+                
+                if (cachedData && cachedData.length > 0) {
+                    // Use cached data
+                    const randomPrompts = getRandomCustomPrompts(cachedData, 4);
+                    setCustomPrompts(randomPrompts);
+                    setIsLoadingCustomPrompts(false);
+                    return;
+                }
+                
+                // Fetch from API if no valid cache
                 const response = await CustomPromptAction('', '');
                 if (response && response.length > 0) {
+                    // Store in cache
+                    
+                    setCachedPrompts(response.slice(0, 6));
                     const randomPrompts = getRandomCustomPrompts(response, 4);
                     setCustomPrompts(randomPrompts);
                 }
             } catch (error) {
                 console.error('Error fetching custom prompts:', error);
+            } finally {
+                setIsLoadingCustomPrompts(false);
             }
         };
         
         fetchCustomPrompts();
     }, [getRandomCustomPrompts]);
+
+    useEffect(() => {
+        const fetchRandomAgents = async () => {
+            setIsLoadingAgents(true);
+            try {
+                // Check cache first
+                const cachedData = getCachedAgents();
+                
+                if (cachedData && cachedData.length > 0) {
+                    // Use cached data
+                    setRandomAgents(cachedData.slice(0, 5));
+                    setIsLoadingAgents(false);
+                    return;
+                }
+                
+                // Fetch from API if no valid cache
+                const response = await CustomBotAction('');
+                if (response && response.length > 0) {
+                    // Store in cache
+                    setCachedAgents(response.slice(0, 5));
+                    
+                    setRandomAgents(response.slice(0, 5));
+                }
+            } catch (error) {
+                console.error('Error fetching random agents:', error);
+            } finally {
+                setIsLoadingAgents(false);
+            }
+        };
+
+        fetchRandomAgents();
+    }, []);
 
     const [debouncedSearchValue] = useDebounce(searchValue, 500);
 
@@ -728,6 +807,9 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         return systemPrompt;
     };
 
+    // Unified loading state - both skeletons show/hide together
+    const isLoadingContent = isLoadingCustomPrompts || isLoadingAgents;
+
     // Don't render if AI models are not properly loaded
     // if (!aiModals || aiModals.length == 0) {
     //     return (
@@ -742,10 +824,12 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     // }
 
     return (
-        <div className="w-full h-full overflow-y-auto flex justify-center">
+        <div className="w-full h-full overflow-y-auto flex justify-center custom-scrollbar">
             <div className={`w-full flex flex-col max-lg:flex-col-reverse mx-auto px-5 md:max-w-[90%] lg:max-w-[980px] xl:max-w-[1100px] ${isNavigating ? 'opacity-50' : ''}`}>
-                <div className='flex items-center justify-between mt-5 mb-3'>
-                    <h2 className='hidden lg:block text-font-14 font-medium'>Fresh AI Picks</h2>
+                <div className='flex items-center justify-between mt-3 mb-3'>
+                    <h2 className="hidden lg:block font-sans font-bold text-xl leading-[20px] tracking-normal align-middle">
+                        Smart Prompt Ideas
+                    </h2>
                     <p className="text-right hidden lg:block">
                         <button 
                             onClick={handleSeeMoreClick}
@@ -755,34 +839,28 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                         </button>
                     </p>
                 </div>
-                <div className='hidden lg:grid md:grid-cols-4 gap-4 mb-10'>
-                    {customPrompts.map((prompt, index) => (
-                        <div 
-                            key={prompt._id || index}
-                            className='border rounded-md p-5 bg-white hover:bg-b12 cursor-pointer transition-colors'
-                            onClick={() => handleCustomPromptClick(prompt)}
-                        >
-                            <h3 className='text-font-16 font-medium mb-2'>{prompt.title}</h3>
-                            <p className='text-font-14 text-b6 font-normal'>
-                                {truncateText(prompt.content, 350)}
-                            </p>
-                        </div>
-                    ))}
-                    {customPrompts.length === 0 && (
+                <div className="hidden lg:grid md:grid-cols-4 gap-4 mb-10">
+                    {isLoadingContent ? (
                         <PromptCardSkeleton count={4} />
+                    ) : (
+                        customPrompts.map((prompt, index) => (
+                            <div
+                                key={prompt._id || index}
+                                className="border rounded-md p-5 bg-white hover:bg-b12 cursor-pointer transition-colors"
+                                onClick={() => handleCustomPromptClick(prompt)}
+                            >
+                                <h3 className="text-font-16 font-medium mb-2">
+                                    {truncateText(prompt.title, 60)}
+                                </h3>
+                                <p className="text-font-14 text-b6 font-normal">
+                                    {truncateText(prompt.content, 160)}
+                                </p>
+                            </div>
+                        ))
                     )}
                 </div>
-                
-                
-                {!isEmptyObject(selectedBrain) && (
-                    <div className="left-0 right-0 py-3 sm:py-4">
-                        <div className="grid md:grid-cols-5 grid-cols-3 md:gap-4 gap-2 md:mb-5 mb-2">
-                            <DefaultListOption brain={selectedBrain} />
-                        </div>
-                    </div>
-                )}
 
-                <div className='relative mt-auto md:mb-10 mb-2'>
+                <div className="relative mt-8 md:mb-10 mb-2">
                 {(showAgentList || showPromptList) && (
                     <div className='absolute bottom-full w-full z-10' ref={agentPromptDropdownRef}>
                         {showAgentList && (
@@ -931,7 +1009,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                         background: 'linear-gradient(90deg, #9D80ED 0%, #CD8AE1 50%, #F74649 100%)',
                         filter: 'blur(99px)'
                     }}></div> */}
-                    <div className="bg-white flex-none mt-auto flex flex-col text-font-16 mx-auto group overflow-hidden rounded-[18px] [&:has(textarea:focus)]:shadow-[0_2px_6px_rgba(0,0,0,.05)] w-full relative border border-b10">
+                        <div className="bg-white flex-none mt-auto flex flex-col text-font-14 sm:text-font-16 mx-auto group overflow-hidden rounded-[12px] sm:rounded-[18px] [&:has(textarea:focus)]:shadow-[0_2px_6px_rgba(0,0,0,.05)] w-full relative border border-b10">
                         <UploadFileInput
                             removeFile={removeSelectedFile}
                             fileData={uploadedFile}
@@ -947,6 +1025,36 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                             ref={textareaRef}
                         />
                         <div className="flex items-center z-10 px-4 pb-[6px] mt-3">
+                              {/* Plus Menu Button */}
+                              <button
+                                    ref={plusButtonRef}
+                                    onClick={() => setShowPlusMenu(!showPlusMenu)}
+                                    className="p-2 hover:bg-gray-100 rounded-md transition-colors relative"
+                                    type="button"
+                                    disabled={isEnhanceLoading}
+                                >
+                                    {/* Show loading spinner when enhancing */}
+                                    {isEnhanceLoading && (
+                                        <div className="transition ease-in-out duration-200 w-auto h-8 flex items-center px-[5px] bg-b2 rounded-[15px] hover:bg-b2">
+                                            <div className="animate-spin h-4 w-4 border-2 border-[rgba(255,255,255,0.35)] border-t-white rounded-full"></div>
+                                            <span className="ml-1 text-font-14 font-medium text-white">Enhancing...</span>
+                                        </div>
+                                    )}
+                                    {/* Animated Plus/Close icon - rotates 45deg to form X shape */}
+                                    {!isWebSearchActive && !isEnhanceLoading && (
+                                        <div className={`transform transition-all duration-300 ease-in-out ${showPlusMenu ? 'rotate-45 scale-110' : 'rotate-0 scale-100'}`}>
+                                            <Plus width={16} height={16} className="fill-b7" />
+                                        </div>
+                                    )}
+                                {isWebSearchActive && !isEnhanceLoading && (
+                                    <WebSearchToolTip
+                                            loading={false}
+                                            isWebSearchActive={isWebSearchActive}
+                                            handleWebSearchClick={handleWebSearchClick}
+                                        />
+                                )}
+                                </button>
+
                             <ThunderBoltDialog
                                 isWebSearchActive={isWebSearchActive}
                                 dialogOpen={dialogOpen}
@@ -964,17 +1072,17 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                                 setPromptList={setPromptList}
                                 promptList={prompts}
                             />
-                            <AttachMentToolTip
+                            {/* <AttachMentToolTip
                                 fileLoader={fileLoader}
                                 isWebSearchActive={isWebSearchActive}
                                 handleAttachButtonClick={handleAttachButtonClick}
-                            />
+                            /> */}
                             <ToolsConnected 
                                 isWebSearchActive={isWebSearchActive} 
                                 toolStates={toolStates}
                                 onToolStatesChange={handleToolStatesChange}
                             />
-                            <BookmarkDialog
+                            {/* <BookmarkDialog
                                 onSelect={onSelectMenu}
                                 isWebSearchActive={isWebSearchActive}
                                 selectedAttachment={uploadedFile}
@@ -989,7 +1097,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                                 text={message}
                                 setText={setMessage}
                                 apiKey={selectedAiModal?.config?.apikey}
-                            />                       
+                            />                        */}
                             <VoiceChat setText={setMessage} text={message} />
                             <TextAreaFileInput
                                 fileInputRef={fileInputRef}
@@ -1002,10 +1110,152 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
                             />
                         </div>                    
                     </div>
-                    <p className='text-font-12 mt-1 text-b7 text-center'>Weam can make mistakes. Consider checking the following information.</p>
+
+                      {/* Plus Menu Dropdown - Positioned below textarea */}
+                      {showPlusMenu && (
+                            <div
+                                className="absolute left-4 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[200px] z-[100]"
+                                ref={plusMenuRef}
+                            >
+                                <div className="px-2 space-y-1">
+                                    {/* Attach Files */}
+                                    <div 
+                                        className="w-full flex items-center gap-2 px-2 hover:bg-gray-100 rounded-md transition-colors text-left cursor-pointer"
+                                        onClick={() => {
+                                            handleAttachButtonClick();
+                                            setShowPlusMenu(false);
+                                        }}
+                                    >
+                                        <AttachMentToolTip
+                                            fileLoader={fileLoader}
+                                            isWebSearchActive={isWebSearchActive}
+                                            handleAttachButtonClick={() => {}} // Empty handler, we handle click on parent
+                                        />
+                                    </div>
+                                 
+                                    {/* Bookmark Dialog Trigger */}
+                                    <button 
+                                        className="w-full flex items-center gap-2 px-2 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowBookmarkDialog(true);
+                                            setShowPlusMenu(false);
+                                        }}
+                                    >
+                                        <div className={`chat-btn cursor-pointer transition ease-in-out duration-200 rounded-md w-auto h-8 flex items-center px-[5px] ${
+                                            isWebSearchActive ? 'opacity-50 pointer-events-none' : ''
+                                        }`}>
+                                            <BookMarkIcon width={16} height={15} className='fill-b5 w-auto h-[15px]'/>
+                                            <span className={`ml-4 ${isWebSearchActive ? 'opacity-50 pointer-events-none' : ''}`}>Favorite</span>
+                                        </div>
+                                    </button>
+                                 
+                                  {/* Web Search Tooltip */}
+                                  <button
+                                        onClick={() => {
+                                            handleWebSearchClick();
+                                            setShowPlusMenu(false);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                        type="button"
+                                    >
+                                        <WebSearchToolTip
+                                            loading={false}
+                                            isWebSearchActive={isWebSearchActive}
+                                            handleWebSearchClick={() => {}} // Empty handler, we handle click on button
+                                            showHighlight={false}
+                                        />
+                                      
+                                        <span>Web Search</span>
+                                    </button>
+
+                                    {/* Prompt Enhance */}
+                                    <div 
+                                        className="w-full flex items-center gap-2 px-2 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                        onClick={(e) => {e.stopPropagation(); setShowPlusMenu(false)}}
+                                    >
+                                        <PromptEnhance
+                                            isWebSearchActive={isWebSearchActive}
+                                            text={message}
+                                            setText={setMessage}
+                                            apiKey={selectedAiModal?.config?.apikey}
+                                            onEnhanceClick={() => setShowPlusMenu(false)}
+                                            onLoadingChange={setIsEnhanceLoading}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                      )}
+
+                        {/* Bookmark Dialog - Rendered outside plus menu to persist when menu closes */}
+                        <BookmarkDialog
+                            onSelect={onSelectMenu}
+                            isWebSearchActive={isWebSearchActive}
+                            selectedAttachment={uploadedFile}
+                            open={showBookmarkDialog}
+                            onOpenChange={setShowBookmarkDialog}
+                        />
+
+                        <p className='text-[10px] sm:text-font-12 md:text-font-13 mt-1 sm:mt-2 text-b7 text-center px-2 sm:px-4'>Weam can make mistakes. Consider checking the following information.</p>
                 </div>
+
+                {!isEmptyObject(selectedBrain) && (
+                    <div className="left-0 right-0 py-3 sm:pt-10">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-5">
+                        <DefaultListOption brain={selectedBrain} />
+                    </div>
+                </div>
+                )}
                 
-                
+                {/* Agents Section */}
+                <div className="hidden lg:block mt-8">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="font-sans font-bold text-xl leading-[20px] tracking-normal align-middle">
+                                Agents
+                            </h2>
+                            <button
+                                onClick={() => router.push('/custom-gpt')}
+                                className="text-font-14 text-b4 underline hover:text-b2 transition-colors"
+                            >
+                                See More
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-5 gap-4">
+                            {isLoadingContent ? (
+                                <AgentCardSkeleton count={5} />
+                            ) : (
+                                randomAgents.map((agent) => (
+                                    <button
+                                        key={agent._id}
+                                        className="btn btn-outline-gray py-2 flex items-center justify-center gap-x-2 group"
+                                        onClick={() =>
+                                            router.push(`/custom-templates`)
+                                        }
+                                    >
+                                        <div className="flex items-center justify-center">
+                                            <Image
+                                                src={
+                                                    agent?.coverImg?.uri
+                                                        ? `${LINK.AWS_S3_URL}${agent.coverImg.uri}`
+                                                        : agent?.charimg
+                                                        ? agent.charimg
+                                                        : "/cool-1.png"
+                                                }
+                                                height={20}
+                                                width={20}
+                                                className="w-6 h-auto"
+                                                alt={agent?.title || 'Agent'}
+                                            />
+                                        </div>
+                                        <span className="truncate">
+                                            {agent.title}
+                                        </span>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
             </div>
         </div>
     );

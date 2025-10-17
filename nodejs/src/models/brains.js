@@ -53,6 +53,9 @@ const schema = new Schema(
         customInstruction: {
             type: String,
             required: false
+        },
+        charimg: {
+            type: String
         }
      },
     { timestamps: true },

@@ -19,6 +19,8 @@ import { LINK, NODE_API_PREFIX } from '@/config/config';
 import { getIconComponent } from '@/utils/iconMapping';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import DashboardIcon from '@/icons/DashboardIcon';
+import Image from 'next/image';
+import { DEFAULT_CHARACTERS_SOLUTION_APP } from '@/utils/common';
 
 interface SuperSolutionHoverProps {
     className?: string;
@@ -28,7 +30,7 @@ type AppData = {
     id: string;
     _id: string;
     name: string;
-    icon: string;
+    charimg: string;
     pathToOpen: string;
 };
 
@@ -165,24 +167,27 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                             className="group flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-xl transition-all duration-200 hover:scale-105"
                         >
                             <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-all duration-200">
-                                {ROLE_TYPE.USER === user?.roleCode
+                            {ROLE_TYPE.USER === user?.roleCode
                                     ? (() => {
-                                          const IconComponent =
-                                              getIconComponent(
-                                                  solution?.appId
-                                                      ?.icon
-                                              );
-                                          return (
-                                              <IconComponent className="w-6 h-6 text-gray-600" />
+                                          return (  
+                                             <Image
+                                                src={solution?.appId?.charimg || DEFAULT_CHARACTERS_SOLUTION_APP[10]}
+                                                alt={solution?.appId?.name}
+                                                width={24}
+                                                height={24}
+                                                className="w-6 h-6 object-contain"
+                                             />
                                           );
                                       })()
                                     : (() => {
-                                          const IconComponent =
-                                              getIconComponent(
-                                                  solution?.icon
-                                              );
                                           return (
-                                              <IconComponent className="w-6 h-6 text-gray-600" />
+                                              <Image 
+                                                src={solution?.charimg || DEFAULT_CHARACTERS_SOLUTION_APP[10]}
+                                                alt={solution?.name}
+                                                width={24}
+                                                height={24}
+                                                className="w-6 h-6 object-contain"
+                                             />
                                           );
                                       })()
                                 }

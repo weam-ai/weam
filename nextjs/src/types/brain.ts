@@ -17,8 +17,8 @@ export type BrainListType = BrainType & {
     companyId: string;
     user: FormatUserType;
     team?: BrainTeamType[];
+    charimg?: string;
 }
-
 export type BrainDocType = {
     _id: string;
     userId: FormatUserType;
@@ -98,6 +98,7 @@ export type BrainCreateType = {
     title: string;
     teamsInput?: TeamType[];
     customInstruction?: string;
+    charimg?: string;
 }
 
 export type AllBrainListType = {

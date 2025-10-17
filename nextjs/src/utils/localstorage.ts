@@ -6,6 +6,8 @@ export const CONFIG_API = 'config_api'
 export const ACTIVE_PROMPTS='active_prompts'
 export const COMPANY_EMAIL = 'email';
 export const HAS_REFRESHED = 'hasRefreshed';
+export const CACHED_PROMPTS = 'weam_cached_prompts';
+export const CACHED_AGENTS = 'weam_cached_agents';
 
 const LocalStorage = {
     get: (key) => {

@@ -7,21 +7,24 @@ import {
 } from '@/components/ui/tooltip';
 import PromptEnhanceIcon from '@/icons/PromptEnhance';
 import  useChat  from '@/hooks/chat/useChat';
-import Toast from '@/utils/toast';
 
 type PromptEnhanceProps = {
     isWebSearchActive: boolean;
     text: string;
     setText: (text: string) => void;
     apiKey: string;
+    onEnhanceClick?: () => void;
+    onLoadingChange?: (loading: boolean) => void;
 };
 
-const PromptEnhance = ({ isWebSearchActive, text, setText, apiKey }: PromptEnhanceProps) => {
+const PromptEnhance = ({ isWebSearchActive, text, setText, apiKey, onEnhanceClick, onLoadingChange }: PromptEnhanceProps) => {
     const [localLoading, setLocalLoading] = useState(false);
     const { promptEnhanceByLLM } = useChat();
     const handleEnhanceClick = async () => {
         if (isWebSearchActive) return;
+        onEnhanceClick?.(); // Close plus menu when enhance is clicked
         setLocalLoading(true);
+        onLoadingChange?.(true); // Notify parent about loading state
         try {
             const response = await promptEnhanceByLLM({ query: text, apiKey: apiKey });
             setText(response);
@@ -29,6 +32,7 @@ const PromptEnhance = ({ isWebSearchActive, text, setText, apiKey }: PromptEnhan
             console.error('Error enhancing prompt:', error);
         } finally {
             setLocalLoading(false);
+            onLoadingChange?.(false); // Notify parent loading is complete
         }
     };
 
@@ -47,6 +51,7 @@ const PromptEnhance = ({ isWebSearchActive, text, setText, apiKey }: PromptEnhan
                     height="18"
                     className={`w-auto h-[15px] ${localLoading ? 'fill-white' : 'fill-b5'}`}
                 />
+                 <span className={`ml-3 ${!text.trim() ? 'opacity-50 pointer-events-none' : ''}`}>Prompt Enhance</span>
                 {localLoading && (
                     <span 
                     className="border-2 border-[rgba(255,255,255,0.35)] border-r-white animate-spin h-4 w-4 bg-transparent box-border transition-all duration-500 ease-in-out ml-2 rounded-full"

@@ -25,7 +25,7 @@ import { setEditBrainModalAction } from '@/lib/slices/modalSlice';
 import { AI_MODEL_CODE, GENERAL_BRAIN_SLUG, ROLE_TYPE } from '@/utils/constant';
 import { SettingsIcon } from '@/icons/SettingsIcon';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { createHandleOutsideClick, truncateText } from '@/utils/common';
+import { createHandleOutsideClick, getRandomCharacter, truncateText } from '@/utils/common';
 import useServerAction from '@/hooks/common/useServerActions';
 import { deleteBrainAction, updateBrainAction } from '@/actions/brains';
 import { setSelectedBrain } from '@/lib/slices/brain/brainlist';
@@ -36,6 +36,7 @@ import { SetUserData } from '@/types/user';
 import { chatMemberListAction } from '@/lib/slices/chat/chatSlice';
 import { generateObjectId } from '@/utils/helper';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type DefaultEditOptionProps = {
     onEdit: () => void;
@@ -46,7 +47,6 @@ type DefaultEditOptionProps = {
 
 type CommonListProps = {
     b: BrainListType;
-    key?: string;
     currentUser: SetUserData;
     closeSidebar: () => void;
 }
@@ -143,7 +143,7 @@ const DefaultEditOption = React.memo(
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <div className="ml-auto md:opacity-0 group-hover:opacity-100 dropdown-action transparent-ghost-btn btn-round btn-round-icon [&>svg]:h-[3px] [&>svg]:w-[13px] [&>svg]:object-contain [&>svg>circle]:fill-b6 data-[state=open]:opacity-100">
+                    <div className="ml-auto md:opacity-0 group-hover:opacity-100 dropdown-action transparent-ghost-btn btn-round btn-round-icon [&>svg]:h-[3px] [&>svg]:w-[13px] [&>svg]:object-contain [&>svg>circle]:fill-b6 data-[state=open]:opacity-100 collapsed-text">
                         <OptionsIcon />
                     </div>
                 </DropdownMenuTrigger>
@@ -182,7 +182,7 @@ const DefaultEditOption = React.memo(
     }
 );
 
-export const CommonList = ({ b, key, currentUser, closeSidebar }: CommonListProps) => {
+export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) => {
     
     const dispatch = useDispatch();
     const router = useRouter();
@@ -203,6 +203,11 @@ export const CommonList = ({ b, key, currentUser, closeSidebar }: CommonListProp
         () => (b?._id === brainId),
         [b?._id, brainId]
     );
+
+    // Memoize the default character based on brain ID to prevent re-fetching on every render
+    const defaultCharacter = useMemo(() => {
+        return getRandomCharacter();
+    }, [b?._id]); // Only changes if brain ID changes
 
     const handleEditClick = () => {
         setIsEditing(true);
@@ -293,57 +298,76 @@ export const CommonList = ({ b, key, currentUser, closeSidebar }: CommonListProp
 
     return (
         <>
-            <button
-                className={`${
-                    isActive ? 'active' : ''
-                } group relative flex w-full items-center py-1.5 px-2 text-left transition [overflow-anchor:none] hover:z-[2] focus:z-[3] focus:outline-none rounded-custom [&.active]:bg-b12 cursor-pointer`}
-                onClick={() => {
-                    handleNewChatClick();
-                    closeSidebar();
-                }}
-                key={b?._id}
-            >
-                {isEditing ? (
-                    <input
-                        type="text"
-                        ref={inputRef}
-                        className="flex-1 mr-3 p-0 m-0 border border-b2 outline-none bg-transparent rounded-custom text-font-14 font-semibold leading-[19px] text-b2 focus:border-b2"
-                        value={editedTitle}
-                        onChange={handleInputChange}
-                        maxLength={50}
-                        autoFocus
-                    />
-                ) : (
-                    <span className="collapse-editable-title flex-1 text-font-14 font-medium leading-[19px]">
-                        {b.title !== editedTitle
-                            ? truncateText(editedTitle, 29)
-                            : truncateText(b.title, 29)}
-                    </span>
-                )}
-                {isEditing ? (
-                    <button
-                        type="button"
-                        className="edit-title transparent-ghost-btn btn-round btn-round-icon"
-                        onClick={handleSaveClick}
-                        ref={buttonRef}
-                        disabled={isUpdatePending}
-                    >
-                        <CheckIcon className="size-4 object-contain fill-b6" />
-                    </button>
-                ) : null}
-                {b?.slug != `default-brain-${currentUser?._id}` &&
-                    b?.slug !== GENERAL_BRAIN_SLUG &&
-                    ((currentUser?.roleCode === ROLE_TYPE.USER &&
-                        b.user.id === currentUser?._id) ||
-                        currentUser?.roleCode !== ROLE_TYPE.USER) && (
-                        <DefaultEditOption
-                            onEdit={handleEditClick}
-                            handleEditBrain={() => handleEditBrain(b)}
-                            handleDeleteBrain={() => handleDeleteBrain(b)}
-                            isDeletePending={isDeletePending}
-                        />
-                    )}
-            </button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            className={`${
+                                isActive ? 'active' : ''
+                            } collapsed-brain-item group relative flex w-full items-center py-1.5 px-2 text-left transition [overflow-anchor:none] hover:z-[2] focus:z-[3] focus:outline-none rounded-custom [&.active]:bg-b12 cursor-pointer`}
+                            onClick={() => {
+                                handleNewChatClick();
+                                closeSidebar();
+                            }}
+                            key={b?._id}
+                        >
+                            {b.charimg ? (
+                                <Image 
+                                    src={b.charimg} 
+                                    alt={b.title} 
+                                    width={20} 
+                                    height={20}
+                                    className="mr-2 flex-shrink-0 rounded collapsed-brain-logo"
+                                />
+                             ) : <Image src={defaultCharacter.image} alt={b.title} width={20} height={20} className="mr-2 flex-shrink-0 rounded collapsed-brain-logo" />
+                            }
+                            {isEditing ? (
+                                <input
+                                    type="text"
+                                    ref={inputRef}
+                                    className="flex-1 mr-3 p-0 m-0 border border-b2 outline-none bg-transparent rounded-custom text-font-14 font-semibold leading-[19px] text-b2 focus:border-b2 collapsed-text"
+                                    value={editedTitle}
+                                    onChange={handleInputChange}
+                                    maxLength={50}
+                                    autoFocus
+                                />
+                            ) : (
+                                <span className="collapse-editable-title flex-1 text-font-14 font-medium leading-[19px] collapsed-text">
+                                    {b.title !== editedTitle
+                                        ? truncateText(editedTitle, 29)
+                                        : truncateText(b.title, 29)}
+                                </span>
+                            )}
+                            {isEditing ? (
+                                <button
+                                    type="button"
+                                    className="edit-title transparent-ghost-btn btn-round btn-round-icon collapsed-text"
+                                    onClick={handleSaveClick}
+                                    ref={buttonRef}
+                                    disabled={isUpdatePending}
+                                >
+                                    <CheckIcon className="size-4 object-contain fill-b6" />
+                                </button>
+                            ) : null}
+                            {b?.slug != `default-brain-${currentUser?._id}` &&
+                                b?.slug !== GENERAL_BRAIN_SLUG &&
+                                ((currentUser?.roleCode === ROLE_TYPE.USER &&
+                                    b.user.id === currentUser?._id) ||
+                                    currentUser?.roleCode !== ROLE_TYPE.USER) && (
+                                    <DefaultEditOption
+                                        onEdit={handleEditClick}
+                                        handleEditBrain={() => handleEditBrain(b)}
+                                        handleDeleteBrain={() => handleDeleteBrain(b)}
+                                        isDeletePending={isDeletePending}
+                                    />
+                                )}
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="border-none collapsed-only-tooltip">
+                        <p className='text-font-14'>{b.title !== editedTitle ? editedTitle : b.title}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         </>
     );
 };

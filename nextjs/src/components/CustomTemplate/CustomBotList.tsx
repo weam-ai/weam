@@ -68,7 +68,7 @@ const CustomBotList = ({ defaultbots }) => {
                 <div className="mt-7 w-full px-2 overflow-y-auto pb-5 lg:pb-0 lg:h-[calc(100vh-240px)]">
                     <div className="grid lg:grid-cols-2 gap-4" >
                            { botrecords?.map((bot) => {
-                                imageSrc = bot?.charimg ? bot.charimg : defaultCustomGptImage;
+                                imageSrc = bot?.charimg ? bot.charimg : "/cool-1.png";
                                 //console.log('Bot _id:', bot?._id, 'charimg:', bot?.charimg, 'imageSrc:', imageSrc);
                                 return (
                                 <div key={bot?._id} className="border px-5 py-3 rounded-lg hover:bg-b12 transition duration-150 ease-in-out group">

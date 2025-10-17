@@ -8,13 +8,6 @@ import {
     DialogTitle,
     DialogClose,
 } from '@/components/ui/dialog';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import BookMarkIcon from '@/icons/Bookmark';
 import SearchIcon from '@/icons/Search';
 import useFavorite from '@/hooks/users/useFavorite';
 import { capitalizeFirstLetter } from '@/utils/common';
@@ -27,29 +20,34 @@ type BookmarkDialogProps = {
     onSelect: (type: GPTTypesOptions, data: SelectedContextData) => void;
     isWebSearchActive: boolean;
     selectedAttachment: UploadedFileType[];
+    onDialogOpen?: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 };
 
-const BookmarkDialog = React.memo(({ onSelect, isWebSearchActive, selectedAttachment }: BookmarkDialogProps) => {
+const BookmarkDialog = React.memo(({ onSelect, isWebSearchActive, selectedAttachment, onDialogOpen, open, onOpenChange }: BookmarkDialogProps) => {
 
     const { getFavoriteList, favorites, loading: favoriteLoading } = useFavorite();
     const [searchValue, setSearchValue] = useState('');
-    const [bookMarkOpen, setBookMarkOpen] = useState(false);
     
-    const handleOpenChange = useCallback((open: boolean) => {
-        if (open) {
+    const handleOpenChange = useCallback((isOpen: boolean) => {
+        if (isOpen) {
             getFavoriteList();
-            setBookMarkOpen(true);
+            onDialogOpen?.();
+        } else {
+            setSearchValue(''); // Reset search when closing
         }
-    }, [getFavoriteList]);
+        onOpenChange?.(isOpen); // Parent MUST update the `open` prop
+    }, [getFavoriteList, onDialogOpen, onOpenChange]);
 
     useEffect(() => {
-        if (bookMarkOpen) {
+        if (open) {
             const timer: NodeJS.Timeout = setTimeout(() => {
                 getFavoriteList(searchValue);
             }, 500);
             return () => clearTimeout(timer);
         }
-    }, [searchValue]);
+    }, [searchValue, open, getFavoriteList]);
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchValue(e.target.value);
@@ -70,34 +68,9 @@ const BookmarkDialog = React.memo(({ onSelect, isWebSearchActive, selectedAttach
     }, []);    
 
     return (
-        <Dialog onOpenChange={handleOpenChange}>
-            <DialogTrigger
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault(); // Prevent Enter key from triggering the dialog
-                    }
-                }}
-            >
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger disabled={isWebSearchActive}>
-                            <div className={`chat-btn cursor-pointer transition ease-in-out duration-200 hover:bg-b11 rounded-md w-auto h-8 flex items-center px-[5px] ${
-                                            isWebSearchActive ? 'opacity-50 pointer-events-none' : ''
-                                            }`}
-                            >
-                                <BookMarkIcon width={16} height={15} className='fill-b5 w-auto h-[15px]'/>
-                            </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p className="text-font-14">
-                            {isWebSearchActive
-                                ? "This feature is unavailable in web search"
-                                : "Select from Favorite Prompts, Agents, or Docs"}
-                            </p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            {/* Hidden trigger for controlled mode - actual trigger is in ChatInput */}
+            {/* {open !== undefined && <DialogTrigger asChild><div className="hidden" /></DialogTrigger>} */}
             <DialogContent className="md:max-w-[550px] max-w-[calc(100%-30px)] py-7 border-none">
                 <DialogHeader className="rounded-t-10 px-[30px] pb-5 border-b">
                     <DialogTitle className="font-semibold flex items-center">

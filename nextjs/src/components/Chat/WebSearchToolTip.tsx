@@ -11,12 +11,14 @@ type WebSearchToolTipProps = {
     loading: boolean;
     isWebSearchActive: boolean;
     handleWebSearchClick: () => void;
+    showHighlight?: boolean;
 };
 
 const WebSearchToolTip = ({
     loading,
     isWebSearchActive,
     handleWebSearchClick,
+    showHighlight=true,
 }: WebSearchToolTipProps) => {
     return (
         <TooltipProvider>
@@ -24,7 +26,7 @@ const WebSearchToolTip = ({
                 <TooltipTrigger disabled={loading}>
                     <div
                        className={`web-search cursor-pointer transition ease-in-out duration-200 w-auto h-8 flex items-center px-[5px] ${
-                            isWebSearchActive ? 'bg-b2 rounded-[15px] hover:bg-b2' : 'rounded-md hover:bg-b11'
+                            isWebSearchActive && showHighlight ? 'bg-b2 rounded-[15px] hover:bg-b2' : 'rounded-md'
                         }`}
                         onClick={handleWebSearchClick}
                     >
@@ -32,13 +34,13 @@ const WebSearchToolTip = ({
                             width={'14'}
                             height={'14'}
                             className={`w-auto h-[16px] ${
-                                isWebSearchActive ? 'fill-white' : 'fill-b5'
+                                isWebSearchActive && showHighlight ? 'fill-white' : 'fill-b5'
                             }`}
                         />
-                        {isWebSearchActive && (
+                        {isWebSearchActive && showHighlight && (
                             <span
                                 className={`ml-1 text-font-14 font-medium transition-opacity duration-300 opacity-100 ${
-                                    isWebSearchActive ? 'text-white' : ''
+                                    isWebSearchActive && showHighlight ? 'text-white' : ''
                                 }`}
                             >
                                 Search

@@ -1,5 +1,38 @@
 
 @tailwind base;
+
+/* Custom scrollbar styles */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.custom-scrollbar:hover {
+  scrollbar-color: #d1d5db transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
 @layer base{
   html{
       @apply h-full font-sans text-font-16;
@@ -113,6 +146,75 @@
 }
 .collapsed .collapsed-brain{
   @apply block;
+}
+.collapsed .collapsed-brain-item{
+  @apply justify-center px-0;
+}
+.collapsed .collapsed-brain-logo{
+  @apply mr-0;
+}
+
+/* Brain divider - always visible */
+.collapsed-brain-divider {
+  @apply block;
+}
+.collapsed .collapsed-brain-divider {
+  @apply block;
+}
+
+/* Brain tooltip - visible only when collapsed */
+.collapsed-only-tooltip {
+  @apply hidden;
+}
+.collapsed .collapsed-only-tooltip {
+  @apply block;
+}
+
+/* Margin left - visible only when collapsed */
+.collapsed-margin-left {
+  @apply ml-0;
+}
+.collapsed .collapsed-margin-left {
+  @apply ml-1.5;
+}
+
+/* Brain list scrollable container - for both expanded and collapsed states */
+.brain-list-wrapper {
+  @apply relative;
+}
+
+/* Expanded state - show 6 brains with scroll */
+.brain-list-scroll {
+  @apply max-h-[300px] overflow-y-auto overflow-x-hidden;
+  scrollbar-width: thin; /* Firefox - show thin scrollbar */
+}
+.brain-list-scroll::-webkit-scrollbar {
+  @apply w-1; /* Chrome, Safari, Opera - thin scrollbar */
+}
+.brain-list-scroll::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.brain-list-scroll::-webkit-scrollbar-thumb {
+  @apply bg-b10 rounded-full;
+}
+.brain-list-scroll::-webkit-scrollbar-thumb:hover {
+  @apply bg-b7;
+}
+
+/* Blur gradient overlay when there are more brains - expanded state */
+.brain-list-wrapper.has-more-brains .brain-list-blur {
+  @apply absolute bottom-0 left-0 right-0 h-12 pointer-events-none;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 1) 100%);
+}
+
+/* Collapsed state - show 6 brains with scroll, hide scrollbar */
+.collapsed .brain-list-scroll {
+  @apply max-h-[240px] overflow-y-auto overflow-x-hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.collapsed .brain-list-scroll::-webkit-scrollbar {
+  @apply hidden; /* Chrome, Safari, Opera */
 }
 
 :root {

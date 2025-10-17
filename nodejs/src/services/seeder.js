@@ -768,6 +768,7 @@ const seedSuperSolutionApps = async () => {
         const bulkUpdates = [];
 
         for (const app of superSolutionJSON.solutionApps) {
+            console.log("🚀 ~ seedSuperSolutionApps ~ app:", app)
             const checkExistingApp = existingApps.find(existing => existing.name === app.name);
             if (!checkExistingApp) {
                 bulkApps.push({ insertOne: { document: app } });

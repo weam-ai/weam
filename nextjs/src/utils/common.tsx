@@ -8,6 +8,7 @@ import { STRIPE_SUBSCRIPTION_PRICE_ID, STRIPE_SUBSCRIPTION_PRICE_ID_IND } from '
 import ExcelFileIcon from '@/icons/ExcelFileIcon';
 import TxtFileIcon from '@/icons/TXTFILEIcon';
 import CommonFileIcon from '@/icons/CommonFileIcon';
+import { DEFAULT_CHARACTERS } from '@/components/CustomGpt/CharacterSelectionDialog';
 
 export const isArray = (data) => data.constructor.name === 'Array';
 
@@ -392,3 +393,265 @@ export const getSelectedBrain = (brains: any[], getCurrentUser: any, isDefaultNe
     );
 };
 
+// Simple debounce utility function
+export const debounce = (func: Function, delay: number) => {
+    let timeoutId: NodeJS.Timeout;
+    return (...args: any[]) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(null, args), delay);
+    };
+};
+// Default character images - you can replace these with actual character images later
+export const DEFAULT_CHARACTERS_BRAIN = {
+    '☁️ Soft': [
+        { id: 'soft-1', image: '/brain-characters/soft-1.svg' },
+        { id: 'soft-2', image: '/brain-characters/soft-2.svg' },
+        { id: 'soft-3', image: '/brain-characters/soft-3.svg' },
+        { id: 'soft-4', image: '/brain-characters/soft-4.svg' },
+        { id: 'soft-5', image: '/brain-characters/soft-5.svg' },
+        { id: 'soft-6', image: '/brain-characters/soft-6.svg' },
+        { id: 'soft-7', image: '/brain-characters/soft-7.svg' },
+        { id: 'soft-8', image: '/brain-characters/soft-8.svg' },
+        { id: 'soft-9', image: '/brain-characters/soft-9.svg' },
+        { id: 'soft-10', image: '/brain-characters/soft-10.svg' },
+        { id: 'soft-11', image: '/brain-characters/soft-11.svg' },
+        { id: 'soft-12', image: '/brain-characters/soft-12.svg' },
+        { id: 'soft-13', image: '/brain-characters/soft-13.svg' },
+        { id: 'soft-14', image: '/brain-characters/soft-14.svg' },
+        { id: 'soft-15', image: '/brain-characters/soft-15.svg' },
+        { id: 'soft-16', image: '/brain-characters/soft-16.svg' },
+        { id: 'soft-17', image: '/brain-characters/soft-17.svg' },
+        { id: 'soft-18', image: '/brain-characters/soft-18.svg' },
+    ],
+    '🌿 Nature': [
+        { id: 'nature-1', image: '/brain-characters/nature-1.svg' },
+        { id: 'nature-2', image: '/brain-characters/nature-2.svg' },
+        { id: 'nature-3', image: '/brain-characters/nature-3.svg' },
+        { id: 'nature-4', image: '/brain-characters/nature-4.svg' },
+        { id: 'nature-5', image: '/brain-characters/nature-5.svg' },
+        { id: 'nature-6', image: '/brain-characters/nature-6.svg' },
+        { id: 'nature-7', image: '/brain-characters/nature-7.svg' },
+        { id: 'nature-8', image: '/brain-characters/nature-8.svg' },
+        { id: 'nature-9', image: '/brain-characters/nature-9.svg' },
+    ],
+    '🎨 Vibrant': [
+        { id: 'vibrant-1', image: '/brain-characters/vibrant-1.svg' },
+        { id: 'vibrant-2', image: '/brain-characters/vibrant-2.svg' },
+        { id: 'vibrant-3', image: '/brain-characters/vibrant-3.svg' },
+        { id: 'vibrant-4', image: '/brain-characters/vibrant-4.svg' },
+        { id: 'vibrant-5', image: '/brain-characters/vibrant-5.svg' },
+        { id: 'vibrant-6', image: '/brain-characters/vibrant-6.svg' },
+    ],
+    '❄️ Cool': [
+        { id: 'cool-1', image: '/brain-characters/cool-1.svg' },
+        { id: 'cool-2', image: '/brain-characters/cool-2.svg' },
+        { id: 'cool-3', image: '/brain-characters/cool-3.svg' },
+        { id: 'cool-4', image: '/brain-characters/cool-4.svg' },
+        { id: 'cool-5', image: '/brain-characters/cool-5.svg' },
+        { id: 'cool-6', image: '/brain-characters/cool-6.svg' },
+        { id: 'cool-7', image: '/brain-characters/cool-7.svg' },
+        { id: 'cool-8', image: '/brain-characters/cool-8.svg' },
+        { id: 'cool-9', image: '/brain-characters/cool-9.svg' },
+        { id: 'cool-10', image: '/brain-characters/cool-10.svg' },
+        { id: 'cool-11', image: '/brain-characters/cool-11.svg' },
+        { id: 'cool-12', image: '/brain-characters/cool-12.svg' },
+        { id: 'cool-13', image: '/brain-characters/cool-13.svg' },
+        { id: 'cool-14', image: '/brain-characters/cool-14.svg' },
+        { id: 'cool-15', image: '/brain-characters/cool-15.svg' },
+        { id: 'cool-16', image: '/brain-characters/cool-16.svg' },
+        { id: 'cool-17', image: '/brain-characters/cool-17.svg' },
+    ],
+    '⛰️ Earth': [
+        { id: 'earth-1', image: '/brain-characters/earth-1.svg' },
+        { id: 'earth-2', image: '/brain-characters/earth-2.svg' },
+        { id: 'earth-3', image: '/brain-characters/earth-3.svg' },
+        { id: 'earth-4', image: '/brain-characters/earth-4.svg' },
+        { id: 'earth-5', image: '/brain-characters/earth-5.svg' },
+        { id: 'earth-6', image: '/brain-characters/earth-6.svg' },
+        { id: 'earth-7', image: '/brain-characters/earth-7.svg' },
+        { id: 'earth-8', image: '/brain-characters/earth-8.svg' },
+        { id: 'earth-9', image: '/brain-characters/earth-9.svg' },
+        { id: 'earth-10', image: '/brain-characters/earth-10.svg' },
+        { id: 'earth-11', image: '/brain-characters/earth-11.svg' },
+        { id: 'earth-12', image: '/brain-characters/earth-12.svg' },
+        { id: 'earth-13', image: '/brain-characters/earth-13.svg' },
+        { id: 'earth-14', image: '/brain-characters/earth-14.svg' },
+        { id: 'earth-15', image: '/brain-characters/earth-15.svg' },
+        { id: 'earth-16', image: '/brain-characters/earth-16.svg' },
+        { id: 'earth-17', image: '/brain-characters/earth-17.svg' },
+    ],
+    '⚡ Electric': [   
+        { id: 'electric-1', image: '/brain-characters/electric-1.svg' },
+        { id: 'electric-2', image: '/brain-characters/electric-2.svg' },
+        { id: 'electric-3', image: '/brain-characters/electric-3.svg' },
+        { id: 'electric-4', image: '/brain-characters/electric-4.svg' },
+        { id: 'electric-5', image: '/brain-characters/electric-5.svg' },
+        { id: 'electric-6', image: '/brain-characters/electric-6.svg' },
+        { id: 'electric-7', image: '/brain-characters/electric-7.svg' },
+        { id: 'electric-8', image: '/brain-characters/electric-8.svg' },
+        { id: 'electric-9', image: '/brain-characters/electric-9.svg' },
+        { id: 'electric-10', image: '/brain-characters/electric-10.svg' },
+        { id: 'electric-11', image: '/brain-characters/electric-11.svg' },
+        { id: 'electric-12', image: '/brain-characters/electric-12.svg' },
+        { id: 'electric-13', image: '/brain-characters/electric-13.svg' },
+        { id: 'electric-14', image: '/brain-characters/electric-14.svg' },
+        { id: 'electric-15', image: '/brain-characters/electric-15.svg' },
+        { id: 'electric-16', image: '/brain-characters/electric-16.svg' },
+        { id: 'electric-17', image: '/brain-characters/electric-17.svg' },
+        { id: 'electric-18', image: '/brain-characters/electric-18.svg' },
+    ],
+    '🔥 Warm': [   
+        { id: 'warm-1', image: '/brain-characters/warm-1.svg' },
+        { id: 'warm-2', image: '/brain-characters/warm-2.svg' },
+        { id: 'warm-3', image: '/brain-characters/warm-3.svg' },
+        { id: 'warm-4', image: '/brain-characters/warm-4.svg' },
+        { id: 'warm-5', image: '/brain-characters/warm-5.svg' },
+        { id: 'warm-6', image: '/brain-characters/warm-6.svg' },
+    ],
+    '🌊 Aqua': [   
+        { id: 'aqua-1', image: '/brain-characters/aqua-1.svg' },
+        { id: 'aqua-2', image: '/brain-characters/aqua-2.svg' },
+        { id: 'aqua-3', image: '/brain-characters/aqua-3.svg' },
+        { id: 'aqua-4', image: '/brain-characters/aqua-4.svg' },
+        { id: 'aqua-5', image: '/brain-characters/aqua-5.svg' },
+        { id: 'aqua-6', image: '/brain-characters/aqua-6.svg' },
+        { id: 'aqua-7', image: '/brain-characters/aqua-7.svg' },
+    ],
+    
+};
+
+export const DEFAULT_CHARACTERS_SOLUTION_APP =[
+            '/solution-characters/soft-1.svg',
+            '/solution-characters/soft-2.svg',
+            '/solution-characters/soft-3.svg',
+            '/solution-characters/soft-4.svg',
+            '/solution-characters/soft-5.svg',
+            '/solution-characters/soft-6.svg',
+            '/solution-characters/soft-7.svg',
+            '/solution-characters/soft-8.svg',
+            '/solution-characters/soft-9.svg',
+            '/solution-characters/soft-10.svg',
+            '/solution-characters/soft-11.svg',
+            '/solution-characters/soft-12.svg',
+            '/solution-characters/soft-13.svg',
+            '/solution-characters/soft-14.svg',
+            '/solution-characters/soft-15.svg',
+            '/solution-characters/soft-16.svg',
+            '/solution-characters/soft-17.svg',
+            '/solution-characters/soft-18.svg',
+          
+            '/solution-characters/nature-1.svg',
+            '/solution-characters/nature-2.svg',
+            '/solution-characters/nature-3.svg',
+            '/solution-characters/nature-4.svg',
+            '/solution-characters/nature-5.svg',
+            '/solution-characters/nature-6.svg',
+            '/solution-characters/nature-7.svg',
+            '/solution-characters/nature-8.svg',
+            '/solution-characters/nature-9.svg',
+            '/solution-characters/nature-10.svg',
+          
+            '/solution-characters/vibrant-1.svg',
+            '/solution-characters/vibrant-2.svg',
+            '/solution-characters/vibrant-3.svg',
+            '/solution-characters/vibrant-4.svg',
+            '/solution-characters/vibrant-5.svg',
+            '/solution-characters/vibrant-6.svg',
+          
+            '/solution-characters/cool-1.svg',
+            '/solution-characters/cool-2.svg',
+            '/solution-characters/cool-3.svg',
+            '/solution-characters/cool-4.svg',
+            '/solution-characters/cool-5.svg',
+            '/solution-characters/cool-6.svg',
+            '/solution-characters/cool-7.svg',
+            '/solution-characters/cool-8.svg',
+            '/solution-characters/cool-9.svg',
+            '/solution-characters/cool-10.svg',
+            '/solution-characters/cool-11.svg',
+            '/solution-characters/cool-12.svg',
+            '/solution-characters/cool-13.svg',
+            '/solution-characters/cool-14.svg',
+            '/solution-characters/cool-15.svg',
+            '/solution-characters/cool-16.svg',
+            '/solution-characters/cool-17.svg',
+          
+            '/solution-characters/earth-1.svg',
+            '/solution-characters/earth-2.svg',
+            '/solution-characters/earth-3.svg',
+            '/solution-characters/earth-4.svg',
+            '/solution-characters/earth-5.svg',
+            '/solution-characters/earth-6.svg',
+            '/solution-characters/earth-7.svg',
+            '/solution-characters/earth-8.svg',
+            '/solution-characters/earth-9.svg',
+            '/solution-characters/earth-10.svg',
+            '/solution-characters/earth-11.svg',
+            '/solution-characters/earth-12.svg',
+            '/solution-characters/earth-13.svg',
+            '/solution-characters/earth-14.svg',
+            '/solution-characters/earth-15.svg',
+            '/solution-characters/earth-16.svg',
+            '/solution-characters/earth-17.svg',
+          
+            '/solution-characters/electric-1.svg',
+            '/solution-characters/electric-2.svg',
+            '/solution-characters/electric-3.svg',
+            '/solution-characters/electric-4.svg',
+            '/solution-characters/electric-5.svg',
+            '/solution-characters/electric-6.svg',
+            '/solution-characters/electric-7.svg',
+            '/solution-characters/electric-8.svg',
+            '/solution-characters/electric-9.svg',
+            '/solution-characters/electric-10.svg',
+            '/solution-characters/electric-11.svg',
+            '/solution-characters/electric-12.svg',
+            '/solution-characters/electric-13.svg',
+            '/solution-characters/electric-14.svg',
+            '/solution-characters/electric-15.svg',
+            '/solution-characters/electric-16.svg',
+            '/solution-characters/electric-17.svg',
+            '/solution-characters/electric-18.svg',
+          
+            '/solution-characters/warm-1.svg',
+            '/solution-characters/warm-2.svg',
+            '/solution-characters/warm-3.svg',
+            '/solution-characters/warm-4.svg',
+            '/solution-characters/warm-5.svg',
+            '/solution-characters/warm-6.svg',
+          
+            '/solution-characters/aqua-1.svg',
+            '/solution-characters/aqua-2.svg',
+            '/solution-characters/aqua-3.svg',
+            '/solution-characters/aqua-4.svg',
+            '/solution-characters/aqua-5.svg',
+            '/solution-characters/aqua-6.svg',
+            '/solution-characters/aqua-7.svg'
+];
+
+export const getRandomCharacterAgent = () => {
+    const allCharacters: Array<{id: string, image: string}> = [];
+    
+    // Flatten all characters from all categories into a single array
+    Object.values(DEFAULT_CHARACTERS).forEach(category => {
+        allCharacters.push(...category);
+    });
+    
+    // Return a random character
+    const randomIndex = Math.floor(Math.random() * allCharacters.length);
+    return allCharacters[randomIndex];
+};
+
+ // Function to get a random character from all tabs
+ export const getRandomCharacter = () => {
+    const allCharacters: Array<{id: string, image: string}> = [];
+    
+    // Flatten all characters from all categories into a single array
+    Object.values(DEFAULT_CHARACTERS_BRAIN).forEach(category => {
+        allCharacters.push(...category);
+    });
+    
+    // Return a random character
+    const randomIndex = Math.floor(Math.random() * allCharacters.length);
+    return allCharacters[randomIndex];
+};

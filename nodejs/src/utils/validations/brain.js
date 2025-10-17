@@ -27,6 +27,7 @@ const createBrainKeys = joi.object({
     )
     .optional(),
     customInstruction: joi.string().optional().allow(''),
+    charimg: joi.string().optional().allow(''),
 });
 
 const updateBrainKeys = joi.object({

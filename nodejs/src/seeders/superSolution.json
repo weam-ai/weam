@@ -3,7 +3,7 @@
       {
         "name": "AI Docs",
         "description": "AI-powered document editor with dual editor modes (Rich Text & Markdown), smart templates, and OpenAI integration for document generation and formatting",
-        "icon": "ai-docs-icon",
+        "charimg": "/solution-characters/soft-1.svg",
         "category": "Productivity & Document Management",
         "isActive": true,
         "pathToOpen": "/ai-docs",
@@ -12,7 +12,7 @@
       {
         "name": "AI Recruiter",
           "description": "AI Recruiter  is a tool that helps you follow up with your interview candidates and prospects after the interview",
-          "icon": "foloup-icon",
+          "charimg": "/solution-characters/cool-1.svg",
           "category": "Productivity",
           "isActive": true,
           "pathToOpen": "/ai-recruiter/dashboard",
@@ -30,7 +30,7 @@
       {
         "name" : "Blog Engine",
         "description" : "AI-powered tool that helps you create high-quality, SEO-optimized articles in minutes. Whether you're a blogger, marketer, or business owner, generate keyword-rich content tailored for better search engine rankings — fast, easy, and effective.",
-        "icon" : "seo-article-icon",
+        "charimg" : "/solution-characters/earth-4.svg",
         "category" : "Productivity & Document Management",
         "isActive" : true,
         "pathToOpen" : "/blog-engine",
@@ -39,7 +39,7 @@
       {
         "name": "Call Analyzer",
         "description": "Call Analyzer is a tool that helps you analyze your sales calls and gain valuable insights to improve performance.",
-        "icon": "/solution-characters/vibrant-4.svg",
+        "charimg": "/solution-characters/nature-1.svg",
         "category": "Productivity & Document Management",
         "isActive": true,
         "pathToOpen": "/call-analyzer",

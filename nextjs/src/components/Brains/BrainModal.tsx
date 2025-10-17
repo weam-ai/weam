@@ -15,12 +15,16 @@ import AutoSelectChip from '../ui/AutoSelectChip';
 import { Controller } from 'react-hook-form';
 import useMembers from '@/hooks/members/useMembers';
 import { useSelector } from 'react-redux';
-import { showNameOrEmail } from '@/utils/common';
+import { getRandomCharacter, showNameOrEmail } from '@/utils/common';
 import { useTeams } from '@/hooks/team/useTeams';
 import Label from '@/widgets/Label';
 import { createBrainAction } from '@/actions/brains';
 import useServerAction from '@/hooks/common/useServerActions';
 import Toast from '@/utils/toast';
+import Image from 'next/image';
+import CharacterSelectionDialog from '@/components/CustomGpt/CharacterSelectionDialog';
+import WorkspacePlaceholder from '../../../public/wokspace-placeholder.svg';
+
 const BrainButtons = ({ text, share, click, selectedOption, onChange }:any) => {
     const buttonClick = (e) => {
         e.stopPropagation();
@@ -70,11 +74,16 @@ const BrainModal = ({ open, close, isPrivate }) => {
     const [memberOptions, setMemberOptions] = useState([]);
     const [teamOptions, setTeamOptions] = useState([]);
     const [searchTeamValue, setSearchTeamValue] = useState('');
+    const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
+    const [selectedCharacter, setSelectedCharacter] = useState<{''} | null>(null);
 
     const { members, getMembersList, loading } = useMembers();
     const selectedWorkSpace = useSelector(
         (store:any) => store.workspacelist.selected
     );
+
+    useEffect(() => {
+    }, [selectedCharacter])
 
     const [isShare, setIsShare] = useState(!isPrivate);
 
@@ -111,6 +120,25 @@ const BrainModal = ({ open, close, isPrivate }) => {
 
     const handleRadioChange = (value) => {
         setSelectedOption(value);
+    };
+
+    const handleImageSelect = (imageUrl: string, file?: File) => {
+        if (file && (file as any).isCharacter) {
+            const normalizedImageUrl = imageUrl.startsWith('/') ? imageUrl : `/brain-characters/${imageUrl}`;
+            
+            setSelectedCharacter(normalizedImageUrl);
+        } else if (file) {
+            setSelectedCharacter(imageUrl);
+        }
+    };
+
+    // Function to get a random character from all tabs
+
+
+    // Function to auto-assign a random character
+    const autoAssignRandomCharacter = () => {
+        const randomCharacter = getRandomCharacter();
+        return randomCharacter.image.startsWith('/') ? randomCharacter.image : `/brain-characters/${randomCharacter.image}`;
     };
 
     useEffect(() => {
@@ -161,8 +189,30 @@ const BrainModal = ({ open, close, isPrivate }) => {
         getMembersList({});
     }, []);
 
- const onSubmit = async ({ members, title, teamsInput, customInstruction }) => {
-        const payload = isShare ? { isShare, members, title, teamsInput, customInstruction } : { isShare, title, customInstruction };
+    // Auto-assign a random character when modal opens
+    useEffect(() => {
+        if (open) {
+            // Always assign a new random character when modal opens
+            const randomCharacterData = autoAssignRandomCharacter();
+            setSelectedCharacter(randomCharacterData);
+        } else {
+            // Reset when modal closes
+            setSelectedCharacter(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
+
+    const onSubmit = async ({ members, title, teamsInput, customInstruction }) => {
+        // Auto-assign a random character if none is selected
+        let brainIconData = selectedCharacter;
+        if (!selectedCharacter) {
+            brainIconData = autoAssignRandomCharacter();
+        }
+
+        const payload = isShare 
+            ? { isShare, members, title, teamsInput, customInstruction, charimg: brainIconData } 
+            : { isShare, title, customInstruction, charimg: brainIconData };
+            
         const response = await runAction({ ...payload, workspaceId: selectedWorkSpace._id });
         Toast(response.message);
         close();
@@ -197,10 +247,54 @@ return (
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="dialog-body flex flex-col flex-1 relative px-8 h-full ">
-                            {/*Modal Body start */}
+                            {/*Modal Body start */}             
                             <div >
                                 <div className="h-full pr-2.5 pt-5">
                                     <div className="workspace-group h-full flex flex-col ">
+                                           {/* Character Selection Section */}
+                                           <div className="relative md:mb-5 mb-3 md:px-2.5 px-0">
+                                            <Label 
+                                                htmlFor="brain-icon" 
+                                                title="Choose Brain Icon"
+                                            />
+                                            <div 
+                                                className="flex items-center gap-3 cursor-pointer group"
+                                                onClick={() => setIsCharacterDialogOpen(true)}
+                                                >
+                                                <div className="w-14 h-14 bg-b12 rounded overflow-hidden p-1 flex items-center justify-center">
+                                                    {selectedCharacter ? (
+                                                        <Image
+                                                            src={selectedCharacter}
+                                                            alt="selected character"
+                                                            width={56}
+                                                            height={56}
+                                                            className="object-cover w-10 h-auto"
+                                                        />
+                                                    ) : (
+                                                        <Image
+                                                            src={WorkspacePlaceholder}
+                                                            alt="choose character"
+                                                            width={56}
+                                                            height={56}
+                                                            className="w-10 h-auto object-cover"
+                                                        />
+                                                    )}
+                                                </div>
+                                                
+                                                <p className="text-font-14 font-medium group-hover:text-b2 text-b5">
+                                                    Choose a Character
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Character Selection Dialog */}
+                                        <CharacterSelectionDialog
+                                            isOpen={isCharacterDialogOpen}
+                                            onClose={() => setIsCharacterDialogOpen(false)}
+                                            onImageSelect={handleImageSelect}
+                                            currentImage={selectedCharacter?.previewImage}
+                                            useBrainCharacter={true}
+                                        />
                                         <div className="relative md:mb-5 mb-3 md:px-2.5 px-0">
                                             <Label
                                                 htmlFor="brain-name"
