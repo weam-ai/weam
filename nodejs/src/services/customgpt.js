@@ -531,7 +531,8 @@ const assignDefaultGpt = async (req) => {
         const slug = `${slugify(title)}-${timestamp}`;
         const createData = { ...req.body, slug, coverImg: {}, doc: [] };
 
-        const defaultModal = await CompanyModal.findOne({ 'company.id': getCompanyId(req.user), name: MODAL_NAME.GPT_4_1 });
+        const defaultModal = await CompanyModal.findOne({ 'company.id': getCompanyId(req.user), name: MODAL_NAME.GPT_5_CHAT_LATEST });
+        
         if (!defaultModal) return false;
         
         responseModel = {
