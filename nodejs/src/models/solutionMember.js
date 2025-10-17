@@ -34,8 +34,6 @@ const schema = new Schema(
     }
 );
 
-// Compound index for solution and user
-schema.index({ solutionId: 1, userId: 1 }, { unique: true });
 
 schema.plugin(mongoosePaginate);
 

@@ -95,7 +95,6 @@ const UserModalPopOver = ({ open, setOpen, selectedAIModal, handleModelChange, u
                                                         {/* Enabled Models */}
                                                         {enabled.map(
                                                             (model: AiModalType) => {
-                                                                console.log("model", model)
                                                                 const matchedModel = MODEL_CREDIT_INFO.find((m) => m.model === model.name);
                                                                 return (
                                                                     <CommandItem

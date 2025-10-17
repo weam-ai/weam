@@ -167,7 +167,6 @@ function createAnthropicCostCalcCallbackHandler(modelName, options = {}) {
                 if (state.threadRepo && state.threadId) {
                     await saveTokenUsageToThread(promptTokens, completionTokens);
                 }
-            } else {
             }
         } catch (error) {
             logger.error('❌ [ANTHROPIC_COST] Error in handleLLMEnd:', error);

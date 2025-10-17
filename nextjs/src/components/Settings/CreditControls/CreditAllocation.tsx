@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useRef , useState, useEffect } from 'react'
 import Datatable from '@/components/DataTable/DataTable'
 import DataTableSearch from '@/components/DataTable/DataTableSearch'
 import DataTablePageSizeSelector from '@/components/DataTable/DataTablePageSizeSelector'
@@ -47,6 +47,21 @@ export default function CreditAllocation() {
   useEffect(() => {
     getUsersForCreditAllocation('', pagination.pageSize, pagination.pageIndex * pagination.pageSize)
   }, [pagination.pageIndex, pagination.pageSize])
+
+  const [lastEditedUserId, setLastEditedUserId] = useState<string | null>(null);
+  const inputRefs = useRef<Record<string, HTMLInputElement>>({});
+
+
+ useEffect(() => {
+  if (lastEditedUserId) {
+    const inputToFocus = inputRefs.current[lastEditedUserId];
+    if (inputToFocus) {
+      inputToFocus.focus();
+    }
+  }
+}, [userAllocatedCredits, lastEditedUserId]);
+
+const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
 
   // Table columns
   const columns = [
@@ -128,58 +143,67 @@ export default function CreditAllocation() {
       ),
     },
    {
-    header: 'Allocated Credits',
-    accessorKey: 'allocatedCredits',
-    enableSorting: false,
-    cell: ({ row }: any) => {
-      const userId = row.original._id;
-      const original = 0;
-      const current = userAllocatedCredits[userId] ?? original;
-      const isDirty = current !== original;
-      const difference = current - original;
+  header: 'Allocated Credits',
+  accessorKey: 'allocatedCredits',
+  enableSorting: false,
+  cell: ({ row }: any) => {
+    const userId = row.original._id;
+    const original = 0;
+    const current = userAllocatedCredits[userId] ?? original;
+    const isDirty = current !== original;
+    const difference = current - original;
 
-      return (
-        <div className='flex items-center justify-center'>
-          <CommonInput
-            type="number"
-            className="px-3 py-2 border border-b10 mx-2 rounded-md w-16"
-            value={current}
-            min={-row.original.totalCredits}
-            onChange={e => {
-              const value = Number(e.target.value);
-              const validatedValue = Math.max(-row.original.totalCredits, value);
-              setUserAllocatedCredits(prev => ({
-                ...prev,
-                [userId]: validatedValue,
-              }));
+    return (
+      <div className='flex items-center justify-center'>
+        <CommonInput
+          ref={(element: HTMLInputElement) => {
+            if (element) {
+              inputRefs.current[userId] = element;
+            } else {
+              delete inputRefs.current[userId];
+            }
+          }}
+          type="number"
+          className="px-3 py-2 border border-b10 mx-2 rounded-md w-16"
+          value={current}
+          min={-row.original.totalCredits}
+          onChange={e => {
+            const value = Number(e.target.value);
+            const validatedValue = Math.max(-row.original.totalCredits, value);
+            
+            setUserAllocatedCredits(prev => ({
+              ...prev,
+              [userId]: validatedValue,
+            }));
+            setLastEditedUserId(userId);
+          }}
+        />
+        {isDirty && (
+          <button
+            className={`text-font-14 px-3 py-1.5 rounded-md text-white ${
+              difference > 0 
+                ? 'bg-green hover:bg-green-600' 
+                : 'bg-red hover:bg-red-600'
+            }`}
+            onClick={async () => {
+              try {
+                await updateUserCredits([userId], difference);
+                setLastEditedUserId(null);
+              } catch (error) {
+                setUserAllocatedCredits(prev => ({
+                  ...prev,
+                  [userId]: original,
+                }));
+              }
             }}
-          />
-          {isDirty && (
-            <button
-              className={`text-font-14 px-3 py-1.5 rounded-md text-white ${
-                difference > 0 
-                  ? 'bg-green hover:bg-green-600' 
-                  : 'bg-red hover:bg-red-600'
-              }`}
-              onClick={async () => {
-                try {
-                  await updateUserCredits([userId], difference);
-                } catch (error) {
-                  setUserAllocatedCredits(prev => ({
-                    ...prev,
-                    [userId]: original,
-                  }));
-                }
-              }}
-            >
-              {difference > 0 ? '↗' : '↘'}
-            </button>
-          )}
-        </div>
-      );
-    },
-  },  
- 
+          >
+            {difference > 0 ? '↗' : '↘'}
+          </button>
+        )}
+      </div>
+    );
+  },
+},
   ]
 
   // Table instance

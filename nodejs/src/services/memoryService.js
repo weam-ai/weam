@@ -250,7 +250,6 @@ async function initializeMemory(chatSessionId, llmModel, threadId = null) {
 
         let existingSummary = '';
         if (existingThread && existingThread.system) {
-            console.log('=================')
             try {
                 const decryptedSystem = JSON.parse(decryptedData(existingThread.system));
                 existingSummary = decryptedSystem.content || '';

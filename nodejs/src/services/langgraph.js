@@ -1150,10 +1150,10 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 isAgentEnabled = true;
                 
                 // Notify frontend that agent is being used
-                socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
-                    event: llmStreamingEvents.AGENT_ENABLED,
-                    chunk: `Agent activated`
-                });
+                // socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
+                //     event: llmStreamingEvents.AGENT_ENABLED,
+                //     chunk: `Agent activated`
+                // });
             }
         } catch (error) {
             logger.error('Agent flow failed:', error);
@@ -1589,10 +1589,10 @@ async function getAgentModelConfig(agentDetails, data) {
             // Return agent-specific configuration
             const agentConfig = {
                 model: responseModel.name,
-                apiKey: responseModel.config?.apikey || data.apiKey,
+                apiKey: data.apiKey,
                 llmProvider: inferredProvider,
                 baseUrl: responseModel.config?.baseUrl ? safeDecryptApiKey(responseModel.config.baseUrl) : undefined,
-                temperature: responseModel.extraConfig?.temperature || 0.7,
+                temperature: 0.7,
                 streaming: true
             };
             

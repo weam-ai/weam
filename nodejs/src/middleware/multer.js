@@ -124,6 +124,19 @@ const upload = multer({
 });
 
 const normalMedia = multer({ storage: AWS_storage });
+// Multer instance for import chat JSON files
+const importChatUpload = multer({
+    storage: multer.memoryStorage(), // Store in memory for JSON processing
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for import files
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype !== 'application/json') {
+            const error = new Error(_localize('file.type', req, 'JSON'));
+            error.code = FILE.INVALID_FILE_CODE;
+            return cb(error, false);
+        }
+        cb(null, true);
+    }
+});
 
 const checkAndUpdateStorage = async (req, res, next) => {
     if (!req.files && !req.file) {
@@ -173,5 +186,6 @@ const checkAndUpdateStorage = async (req, res, next) => {
 module.exports = {
     upload,
     normalMedia,
-    checkAndUpdateStorage
+    checkAndUpdateStorage,
+    importChatUpload
 };

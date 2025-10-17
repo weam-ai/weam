@@ -85,6 +85,15 @@ const addTeamMembers = catchAsync(async (req, res) => {
     return util.failureResponse(_localize('module.createError', req, USER), res);
 })
 
+const migrateCompanyModels = catchAsync(async (req, res) => {
+    const result = await companyService.migrateCompanyModels(req);
+    if (result) {
+        res.message = result.message;
+        return util.successResponse(result, res);
+    }
+    return util.failureResponse('Migration process encountered an error.', res);
+})
+
 module.exports = {
     addCompany,
     updateCompany,
@@ -93,5 +102,6 @@ module.exports = {
     getAll,
     partialUpdate,
     exportCompanies,
-    addTeamMembers
+    addTeamMembers,
+    migrateCompanyModels
 }

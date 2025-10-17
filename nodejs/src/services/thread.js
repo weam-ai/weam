@@ -51,7 +51,7 @@ const getAll = async (req) => {
             dbService.getAllDocuments(Thread, query, options),
         ])
 
-        const finalResult = await Promise.all(result.data.map(async (message) => {
+         const finalResult = await Promise.all(result.data.map(async (message) => {
             const messageId = message._id;
 
             const [question_count, answer_count, question_senders, answer_senders, question_thread_last, answer_thread_last] = await Promise.all([
@@ -180,7 +180,7 @@ async function socketMessageList(filter) {
 
 
         const creditInfo = await getUsedCredit(filter, user);
-        const finalResult = await Promise.all(reversedData.map(async (message) => {
+               const finalResult = await Promise.all(reversedData.map(async (message) => {
             const messageId = message._id;
 
             const [question_count, answer_count, question_senders, answer_senders, question_thread_last, answer_thread_last] = await Promise.all([
@@ -542,10 +542,7 @@ const searchMessage = async (req) => {
 async function createLLMConversation (data) {
     try {
         const formatedQuestion = formatAIMessage(data.query);
-        const formatedResponse = formatAIMessageResponse(data.answer, {
-            search_citations: data.search_citations,
-            search_results: data.search_results
-        });
+        const formatedResponse = formatAIMessageResponse(data.answer);
         
         // Import generateSumhistoryCheckpoint and system message functions
         const { generateSumhistoryCheckpoint, addSystemMessage } = require('./memoryService');

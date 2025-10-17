@@ -1,5 +1,5 @@
 import commonApi from '@/api';
-import { DEFAULT_SORT, MODULES, MODULE_ACTIONS, SEARCH_AND_FILTER_OPTIONS, TOKEN_PREFIX, IMPORT_ERROR_MESSAGE, API_TYPE_OPTIONS } from '@/utils/constant';
+import { DEFAULT_SORT, MODULES, MODULE_ACTIONS, SEARCH_AND_FILTER_OPTIONS, TOKEN_PREFIX, IMPORT_ERROR_MESSAGE, IMPORT_IN_PROGRESS_MESSAGE, API_TYPE_OPTIONS } from '@/utils/constant';
 import routes from '@/utils/routes';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
@@ -252,37 +252,34 @@ const useChat = (b ?: string) => {
 
     const pyUploadImportChat = async (formData: FormData, setShowImportChat:React.Dispatch<React.SetStateAction<boolean>>) => {
         try {
-            const { token } = await getCommonPythonPayload();
-            const response = await fetch(
-                `${LINK.PYTHON_API_URL}${API_PREFIX}/importchatjson/import_chat_json`,
-                {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        Authorization: `${TOKEN_PREFIX}${token}`,
-                    },
+            const response = await commonApi({
+                action: MODULE_ACTIONS.IMPORT_UPLOAD,
+                prefix: MODULE_ACTIONS.WEB_PREFIX,
+                module: MODULES.IMPORT_CHAT,
+                common: true,
+                data: formData,
+                config: {
+                    'Content-Type': 'multipart/form-data'
                 }
-            );
+            });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                if(data.status === 406){
-                    Toast(IMPORT_ERROR_MESSAGE,"error")
-                    setShowImportChat(false);
-                }else{
-                    Toast(data?.message || IMPORT_ERROR_MESSAGE,"error")
-                    // setShowImportChat(false);
-                }
-                return;
+            if (response?.code === 'SUCCESS') {
+                Toast(response?.message || IMPORT_IN_PROGRESS_MESSAGE, "success");
+                return response
             }
 
-            return data;
+            // if (response?.code === 'ERROR') {
+            //     Toast(response?.message || IMPORT_ERROR_MESSAGE, "error");
+            //     setShowImportChat(false);
+            // }
+
+            return response;
         } catch (error) {
             console.error('error: ', error);
+            // Toast(IMPORT_ERROR_MESSAGE, "error");
+            throw error;
         }
     }
-
     const promptEnhanceByLLM = async (promptPayload: PromptEnhancePayloadType) => {
         try {
             const payload = {
