@@ -119,7 +119,6 @@ class CustomGeminiImageTool extends Tool {
                 if (uploadResult.success) {
                     // Get the INTERNAL_ENDPOINT directly from environment variable
                     const internalEndpoint = process.env.INTERNAL_ENDPOINT;
-                    console.log("=====Internal Endpoint======",internalEndpoint)
                     // Only replace if it's a MinIO URL
                     let modifiedUrl = uploadResult.s3Url;
                     if (modifiedUrl.includes('http://minio:9000')) {
