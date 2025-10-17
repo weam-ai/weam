@@ -172,6 +172,7 @@ export const MODULE_ACTIONS = {
     SOLUTION_INSTALL: 'solutionInstall',
     ENHANCE_PROMPT_BY_LLM: 'enhancePromptByLLM',
     GET_IMAGES: 'getImages',
+    CONVERT_TO_SHARED: 'convertToShared',
 } as const;
 
 export const DATE_TIME_FORMAT = 'DD/MM/YYYY hh:mm A';

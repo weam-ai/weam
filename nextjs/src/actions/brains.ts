@@ -274,7 +274,7 @@ export const convertToSharedAction = async (brainId: string, data: { members?: O
         customInstruction: data?.customInstruction || '',
     };
     const response = await serverApi({
-        action: 'convertToShared',
+        action: MODULE_ACTIONS.CONVERT_TO_SHARED,
         data: payload,
         parameters: [brainId],
     });

@@ -109,7 +109,11 @@ const ConvertToSharedModal = ({ open, close, brain }: ConvertToSharedModalProps)
         try {
             const payload = {
                 members,
-                teams: teamsInput,
+                teams: teamsInput?.map(team => ({
+                    id: team.id,
+                    teamName: team.teamName,
+                    teamUsers: team.teamUsers
+                })) || [],
                 customInstruction,
             };
             
@@ -192,6 +196,7 @@ const ConvertToSharedModal = ({ open, close, brain }: ConvertToSharedModalProps)
                                                         errors={errors}
                                                         handleSearch={setSearchMemberValue}
                                                         setFormValue={setFormValue}
+                                                        required={false}
                                                         {...field}
                                                     />
                                                 )}
