@@ -53,22 +53,6 @@ const OllamaSettings: React.FC<OllamaSettingsProps> = ({
         try {
             setConnectionStatus('testing');
             
-            const response = await commonApi({
-                action: MODULE_ACTIONS.TEST_OLLAMA_CONNECTION,
-                data: {
-                    baseUrl: url,
-                    apiKey: apiKey || undefined
-                }
-            });
-
-            if (response.success) {
-                setConnectionStatus('success');
-                setAvailableModels(response.availableModels || []);
-                return true;
-            } else {
-                setConnectionStatus('error');
-                return false;
-            }
         } catch (error) {
             setConnectionStatus('error');
             console.error('Connection test failed:', error);
@@ -97,7 +81,7 @@ const OllamaSettings: React.FC<OllamaSettingsProps> = ({
                 }
             });
 
-            if (response.success) {
+            if (response.code === 'SUCCESS') {
                 setApiKeyUpdated?.(true);
                 setShowCancelAPI?.(true);
             }

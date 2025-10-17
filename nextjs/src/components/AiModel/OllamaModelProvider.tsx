@@ -211,7 +211,7 @@ const OllamaModelProvider = ({ configs }) => {
                                  setProgressPct(100);
                                 //  console.log("save response", saveResponse); return true;
                                  
-                                 if (saveResponse?.success === true || saveResponse?.status === 204) {
+                                 if (saveResponse?.code === 'SUCCESS' || saveResponse?.status === 204) {
                                      Toast('Ollama configured successfully!', 'success');
                                      setConnectionStatus('connected');
                                  } else {
