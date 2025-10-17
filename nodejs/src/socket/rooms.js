@@ -162,7 +162,6 @@ sockets.on('connection', function (socket) {
 
     }));    
     socket.on(SOCKET_EVENTS.LLM_RESPONSE_SEND, catchSocketAsync(async (data) => {
-
         await toolExecutor(data, socket);
     }));
     

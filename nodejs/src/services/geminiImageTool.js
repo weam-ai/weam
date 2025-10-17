@@ -22,7 +22,7 @@ class CustomGeminiImageTool extends Tool {
         - Image Generation: "Create a photorealistic portrait of...", "Generate an image showing..."
         - Style Operations: "Create in watercolor style...", "Make it look futuristic..."
         - Scene Creation: "Show a landscape with...", "Create an interior scene..."
-        IMPORTANT: Always call this tool for image generation query, do not consider the message history. This tool automatically handles S3 uploads and returns S3 URLs for better user experience. Always use the S3 url returned from this tool in your output for displaying the generated image. DO NOT use this tool if the user requests to generate code based on an image input and a prompt. For such cases, use the chat tool to generate code from the image and prompt.`;
+        IMPORTANT: Always call this tool for image generation query, do not consider the message history. This tool automatically handles S3 uploads and returns S3 URLs for better user experience. Always use the S3 url returned from this tool in your output for displaying the generated image. DO NOT use this tool if the user requests to generate code based on an image input and a prompt. For such cases, use the chat tool to generate code from the image and prompt.After using this tool, always include the tool result (e.g. image URLs or Markdown) in your final response in this format ![Image Description](image_url).`;
 
         // Define the tool schema for function calling
         this.schema = {
@@ -117,9 +117,17 @@ class CustomGeminiImageTool extends Tool {
                 });
                 
                 if (uploadResult.success) {
+                    // Get the INTERNAL_ENDPOINT directly from environment variable
+                    const internalEndpoint = process.env.INTERNAL_ENDPOINT;
+                    // Only replace if it's a MinIO URL
+                    let modifiedUrl = uploadResult.s3Url;
+                    if (modifiedUrl.includes('http://minio:9000')) {
+                        // Replace minio:9000 with the value from INTERNAL_ENDPOINT including http part
+                        modifiedUrl = modifiedUrl.replace(/http:\/\/minio:9000/g, internalEndpoint);
+                    }
                     
-                    // Return S3 URL in markdown format like imageTool.js
-                    const s3Result = `![${query}](${uploadResult.s3Url})`;
+                    // Return the image URL in markdown format
+                    const s3Result = `![${query}](${modifiedUrl})`;
                     return s3Result;
                     
                 } else {
