@@ -79,12 +79,18 @@ const MODEL_CONFIGS = {
     [AI_MODAL_PROVIDER.OPEN_AI]: {
         supportsVision: true,
         imageFormats: ['url'],
-        formatImage: (imageUrl) => ({
-            type: 'image_url',
-            image_url: {
-                url: imageUrl
+        formatImage: async (imageUrl) => {
+            const result= await convertImageToBase64(imageUrl);
+            if (!result) {
+                return null;
             }
-        })
+            return {
+                type: 'image_url',
+                image_url: {
+                    url: `data:${result.mimeType};base64,${result.base64}`
+                }
+            };
+        }
     },
     [AI_MODAL_PROVIDER.ANTHROPIC]: {
         supportsVision: true,
@@ -428,7 +434,6 @@ async function callModel(state, model, data, agentDetails = null) {
             content = '[Content parsing error]';
         }
     });
-    
     const response = await model.invoke(context);
     
     // Safe logging for response content
