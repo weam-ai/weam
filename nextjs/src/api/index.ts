@@ -76,17 +76,14 @@ const makeResponse = (response: APIResponseType<any>) => {
 
 const handleErrorToast = (errorToast: boolean) => (error: AxiosError) => { 
     if (Object.getPrototypeOf(error).toString() !== 'Cancel') {
-        const { data = {}, status, config: reqConfig } = error.response as AxiosResponse || {};
-        const requestUrl = (reqConfig && (reqConfig as any).url) || '';
+        const { data = {}, status } = error.response as AxiosResponse || {};
         if (status === RESPONSE_STATUS.FORBIDDEN && [RESPONSE_STATUS_CODE.CSRF_TOKEN_NOT_FOUND, RESPONSE_STATUS_CODE.INVALID_CSRF_TOKEN].includes(data.code)) {
             Toast('Your request has been blocked for security reasons.', 'error');
             return;
         }
-        // // Avoid auto-logout for Ollama endpoints to prevent disruption during local configuration
-        // const isOllamaRequest = requestUrl.includes('/ollama/');
-        // if (!isOllamaRequest && ([RESPONSE_STATUS.FORBIDDEN, RESPONSE_STATUS.UNAUTHENTICATED].includes(status) || data.code === RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND )) {
-        //     handleLogout();
-        // }
+        if ([RESPONSE_STATUS.FORBIDDEN, RESPONSE_STATUS.UNAUTHENTICATED].includes(status) || data.code === RESPONSE_STATUS_CODE.TOKEN_NOT_FOUND ) {
+            handleLogout();
+        }
         // else if(status === RESPONSE_STATUS.UNAUTHENTICATED ){
         //     accessTokenViaRefresh();
         // } 
@@ -135,7 +132,7 @@ const getUrl = (config: ConfigOptions, resourceUrl: string, query?: string) => {
     let finalUrl = `${baseUrl}${appendUrl || ''}`;
     if (query) {
         // Support both raw query strings and ones already starting with '?'
-        finalUrl = finalUrl + (query.startsWith('?') ? query : `?${query}`);
+        finalUrl = finalUrl + `?${query}`;
     }
     return finalUrl;
 };
