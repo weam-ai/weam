@@ -52,6 +52,18 @@ const deleteBrainKeys = joi.object({
     isShare: joi.boolean().required(),
 });
 
+const convertToSharedKeys = joi.object({
+    shareWith: joi
+        .array()
+        .items(joi.object(userSchemaKeys).unknown(true))
+        .optional(),
+    teams: joi
+        .array()
+        .items(joi.object(teamSchemaKeys).optional())
+        .optional(),
+    customInstruction: joi.string().optional().allow(''),
+});
+
 const shareBrainKeys = joi.object({
     isShare: joi.boolean().required(),
     slug: joi.string().required(),
@@ -84,5 +96,6 @@ module.exports = {
     shareBrainKeys,
     unshareBrainKeys,
     shareDocKeys,
-    deleteBrainKeys
+    deleteBrainKeys,
+    convertToSharedKeys
 };

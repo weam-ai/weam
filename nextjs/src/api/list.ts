@@ -229,6 +229,10 @@ const apiList = {
         url: () => `${WEB}/message/global-search`,
         method: 'POST'
     },
+    convertToShared: {
+        url: (id: string) => `${WEB}/brain/convert-to-shared/${id}`,
+        method: 'PUT'
+    },
     getUsage: {
         url: () => `${ADMIN}/report/company-usage`,
         method: 'POST'

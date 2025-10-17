@@ -121,6 +121,15 @@ const workspaceWiseList = catchAsync(async (req, res) => {
     return util.recordNotFound(null, res);
 })
 
+const convertToShared = catchAsync(async (req, res) => {
+    const result = await brainService.convertToShared(req);
+    if (result) {
+        res.message = _localize('module.convertToShared', req, BRAIN);
+        return util.successResponse(result, res);
+    }
+    return util.failureResponse(_localize('module.convertToSharedError', req, BRAIN), res);
+})
+
 module.exports = {
     createBrain,
     updateBrain,
@@ -134,6 +143,7 @@ module.exports = {
     getAllBrainUser,
     restoreBrain,
     deleteAllBrain,
-    workspaceWiseList
+    workspaceWiseList,
+    convertToShared
 } 
 
