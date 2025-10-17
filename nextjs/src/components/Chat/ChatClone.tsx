@@ -558,7 +558,7 @@ const ChatPage = memo(() => {
             companyId: companyId,
             user: formatMessageUser(currentUser),
             isPaid: true,
-            apiKey: selectedAIModal.config.apikey,
+            apiKey: selectedAIModal?.config?.apikey,
             usedCredit: modelCredit
         };
         img_url = handleImageConversation(globalUploadedFile);
@@ -608,16 +608,25 @@ const ChatPage = memo(() => {
             isPaid: true,
             responseAPI: API_TYPE,
             proAgentData: serializableProAgentData,
-            apiKey: matchedModel.config.apikey,
+            apiKey: matchedModel.config?.apikey ,
             brainId: getDecodedObjectId(),
             usedCredit: modelCredit
         })
+
         if (chatTitle == '' || chatTitle === undefined) {
+            // Check if the selected model is an Ollama model
+            const isOllamaModel = selectedAIModal.bot.code === 'OLLAMA';
+            
+            // Find an OpenAI model in the available models
+            const openAiModel = userModal.find((modal: AiModalType) => modal.bot.code === 'OPEN_AI');
+            
             socket.emit(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, {
                 query: query,
                 chatId: params.id,
-                code: selectedAIModal.bot.code,
-                apiKey: selectedAIModal.config.apikey
+                code: isOllamaModel ? 'OPEN_AI' : selectedAIModal.bot.code, // Use OpenAI for title generation if Ollama is selected
+                apiKey: isOllamaModel ? (openAiModel?.config?.apikey || '') : selectedAIModal?.config?.apikey,
+                isOllamaModel: isOllamaModel, // Flag to indicate this is an Ollama model
+                companyId: companyId, // Send company ID to help backend find OpenAI API key
             })
         }
     };
@@ -1167,8 +1176,22 @@ const ChatPage = memo(() => {
     };
 
     const handleGenerateTitleByLLM = useCallback((payload: { title: string }) => {
+        // Persist the title in local storage to prevent it from disappearing
+        if (payload.title) {
+            localStorage.setItem(`chat_title_${params.id}`, payload.title);
+        }
         dispatch(setChatMessageAction(payload.title));
-    }, [socket]);
+    }, [socket, params.id]);
+
+    // Load saved chat title from localStorage if it exists
+    useEffect(() => {
+        if (params.id) {
+            const savedTitle = localStorage.getItem(`chat_title_${params.id}`);
+            if (savedTitle && (!chatTitle || chatTitle === '')) {
+                dispatch(setChatMessageAction(savedTitle));
+            }
+        }
+    }, [params.id, chatTitle, dispatch]);
 
     // Start Socket Connection and disconnection configuration
     useEffect(() => {
@@ -1196,6 +1219,24 @@ const ChatPage = memo(() => {
                 if (data.chunk) {
                     handleSocketStreaming(data);
                 }
+            });
+            
+            // Handle completion of LLM response stream (Ollama)
+            socket.on(SOCKET_EVENTS.LLM_RESPONSE_DONE, (data) => {
+                console.log("Received llmresponsedone event:", data);
+                // Handle the completion of the response
+                handleSocketStreamingStop({ 
+                    proccedMsg: data.text,
+                    userId: currentUser._id
+                });
+                // Re-fetch messages to ensure database updates are reflected
+                socket.emit(SOCKET_EVENTS.MESSAGE_LIST, { 
+                    chatId: params.id, 
+                    companyId, 
+                    userId: currentUser._id, 
+                    offset: conversationPagination?.offset || 0, 
+                    limit: conversationPagination?.perPage || 10 
+                });
             });
             
             socket.emit(SOCKET_EVENTS.MESSAGE_LIST, { chatId: params.id, companyId, userId: currentUser._id, offset: conversationPagination?.offset || 0, limit: conversationPagination?.perPage || 10 });
@@ -1246,6 +1287,7 @@ const ChatPage = memo(() => {
                 socket.off(SOCKET_EVENTS.MESSAGE_LIST, socketAllConversation);
                 socket.off(SOCKET_EVENTS.USER_SUBSCRIPTION_UPDATE, handleUserSubscriptionUpdate);
                 socket.off(SOCKET_EVENTS.GENERATE_TITLE_BY_LLM, handleGenerateTitleByLLM);
+                socket.off(SOCKET_EVENTS.LLM_RESPONSE_DONE); // Clean up the LLM_RESPONSE_DONE event handler
             });
 
             return () => {

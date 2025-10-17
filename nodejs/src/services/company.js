@@ -526,6 +526,7 @@ async function createPinecornIndex(user, req) {
         
         logger.info(`Pinecone index created successfully for company: ${user.company.id}`);
     } catch (error) {
+        console.log("🚀 ~ createPinecornIndex ~ error:", error)
         handleError(error, 'Error - createPinecornIndex'); 
     }
 }
@@ -1337,6 +1338,6 @@ module.exports = {
     geminiApiKeyChecker,
     sendManualInviteEmail,
     addBlockedDomain,
-    migrateCompanyModels
+    migrateCompanyModels    
 }
 

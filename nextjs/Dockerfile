@@ -68,8 +68,9 @@ RUN pnpm build
 # Final stage: production image
 FROM node:20-alpine AS production
 WORKDIR /usr/src/app
-RUN npm install -g pnpm
+RUN npm install -g pnpm && apk add --no-cache docker-cli docker-cli-compose bash curl
 ENV NODE_ENV=production
+ENV DOCKER_HOST=unix:///var/run/docker.sock
 
 COPY --from=builder /usr/src/app/next.config.js ./
 COPY --from=builder /usr/src/app/public ./public

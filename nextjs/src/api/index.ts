@@ -131,6 +131,7 @@ const getUrl = (config: ConfigOptions, resourceUrl: string, query?: string) => {
     // Building finalUrl
     let finalUrl = `${baseUrl}${appendUrl || ''}`;
     if (query) {
+        // Support both raw query strings and ones already starting with '?'
         finalUrl = finalUrl + `?${query}`;
     }
     return finalUrl;
@@ -164,14 +165,25 @@ export const getHeaders = async (config: ConfigOptions, fetchConfig: FetchConfig
 };
 
 export function serialize(obj: Record<string, any>) {
-    const qs = Object.keys(obj)
-        .reduce(function (a, k) {
-            a.push(k + '=' + encodeURIComponent(obj[k]));
-            return a;
-        }, [])
-        .join('&');
-    if (qs) return '?' + qs;
-    else return '';
+    const pairs: string[] = [];
+    Object.keys(obj).forEach((k) => {
+        const v = (obj as any)[k];
+        if (v === undefined || v === null) return;
+        let enc: string;
+        if (typeof v === 'object') {
+            try {
+                enc = encodeURIComponent(JSON.stringify(v));
+            } catch (_) {
+                // Skip non-serializable values
+                return;
+            }
+        } else {
+            enc = encodeURIComponent(String(v));
+        }
+        pairs.push(`${k}=${enc}`);
+    });
+    // Return raw query string without leading '?'. Caller decides whether to prepend.
+    return pairs.length ? pairs.join('&') : '';
 }
 
 const streamlineUrl = (url: string) => {
@@ -271,6 +283,8 @@ const commonApi = async ({
                 // csrfTokenRaw: decryptedCsrfTokenRaw,
                 'x-brain-id': config?.['x-brain-id']
             });
+
+
             const response = await fetchUrl({
                 type: api.method,
                 url: api.url(...parameters as string[]),

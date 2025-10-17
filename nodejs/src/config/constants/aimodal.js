@@ -112,6 +112,7 @@ const AI_MODAL_PROVIDER = {
     GROK: 'GROK',
     QWEN: 'QWEN',
     OPEN_ROUTER: 'OPEN_ROUTER',
+    OLLAMA: 'OLLAMA',
 }
 
 const OPENROUTER_PROVIDER = {

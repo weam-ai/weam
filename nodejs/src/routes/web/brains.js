@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const brainController = require('../../controller/web/brainController');
-const { createBrainKeys, updateBrainKeys, shareBrainKeys, unshareBrainKeys, shareDocKeys } = require('../../utils/validations/brain');
+const { createBrainKeys, updateBrainKeys, shareBrainKeys, unshareBrainKeys, shareDocKeys, convertToSharedKeys } = require('../../utils/validations/brain');
 const { partialUpdateKeys } = require('../../utils/validations/common');
 const { authentication } = require('../../middleware/authentication');
 const { checkPromptLimit } = require('../../middleware/promptlimit');
@@ -18,5 +18,6 @@ router.post('/share-doc', validate(shareDocKeys), authentication, brainControlle
 router.post('/share/list', authentication, checkPromptLimit, brainController.shareList);
 router.post('/restore/:id', authentication, brainController.restoreBrain);
 router.post('/list-all', authentication, checkPromptLimit, brainController.workspaceWiseList);
+router.put('/convert-to-shared/:id', validate(convertToSharedKeys), authentication, checkPromptLimit, brainController.convertToShared);
  
 module.exports = router;

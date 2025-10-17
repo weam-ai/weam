@@ -16,7 +16,7 @@ const notificationQueue = new Queue(QUEUE_NAME.NOTIFICATION, { ...queueOptions, 
 const importChatQueue = new Queue(QUEUE_NAME.IMPORT_CHAT, { ...queueOptions, db: 5 });
 
 
-logger.info('bull-job-queue loaded 🍺🍻');
+logger.info('bull-job-queue loaded');
 
 const handleFailure = async (job, err) => {
     if (job.attemptsMade >= job.opts.attempts) {

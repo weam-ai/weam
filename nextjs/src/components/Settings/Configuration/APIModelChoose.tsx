@@ -15,6 +15,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useMemo, useCallback, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import Select from 'react-select';
+import OllamaModelProvider from '@/components/AiModel/OllamaModelProvider';
 
 type APIModelChooseProps = {
     modelCode: string;
@@ -43,6 +44,10 @@ const APIModelChoose = () => {
                 value: AI_MODEL_CODE.OPEN_ROUTER,
                 label: MODAL_NAME_CONVERSION.OPEN_ROUTER,
             },
+            {
+                value: AI_MODEL_CODE.OLLAMA,
+                label: MODAL_NAME_CONVERSION.OLLAMA || 'Ollama',
+            },
         ];
         return options;
     }, []);
@@ -55,6 +60,12 @@ const APIModelChoose = () => {
 
     const [checkApiKey, pending] = useServerAction(checkApiKeyAction);
     const selectedModel = watch('model');
+    
+    // Debug: Log when selectedModel changes
+    // useEffect(() => {
+    //     console.log('Selected model changed:', selectedModel);
+    //     console.log('Is Ollama selected?', selectedModel?.value === AI_MODEL_CODE.OLLAMA);
+    // }, [selectedModel]);
 
     const handleSave = useCallback(async (data: ModelKeysSchemaType) => {
         const response = await checkApiKey(data.model.value, data.key);
@@ -86,24 +97,30 @@ const APIModelChoose = () => {
                     )}
                 />
             </div>
-            {
-                selectedModel && (
-                    <div className="relative mb-4 api-key-input">
-                        <Label title={'API Key'} htmlFor={'api-input'} />
-                        <CommonInput
-                            type="password"
-                            className="default-form-input"
-                            id="api-input"
-                            placeholder="Enter your API key"
-                            {...register('key')}
-                        />
-                        <ValidationError errors={errors} field={'key'} />
-                        <button className="btn btn-black mt-4" onClick={handleSubmit(handleSave)} disabled={pending}>
-                            Save
-                        </button>
-                    </div>
-                )
-            }
+            {selectedModel && selectedModel.value !== AI_MODEL_CODE.OLLAMA && (
+                <div className="relative mb-4 api-key-input">
+                    <Label title={'API Key'} htmlFor={'api-input'} />
+                    <CommonInput
+                        type="password"
+                        className="default-form-input"
+                        id="api-input"
+                        placeholder="Enter your API key"
+                        {...register('key')}
+                    />
+                    <ValidationError errors={errors} field={'key'} />
+                    <button className="btn btn-black mt-4" onClick={handleSubmit(handleSave)} disabled={pending}>
+                        Save
+                    </button>
+                </div>
+            )}
+
+            {selectedModel && selectedModel.value === AI_MODEL_CODE.OLLAMA && (
+                <div className="relative mb-4">
+                    {/* Ollama does not require API key; just configure connection */}
+                    {/* <p>Debug: Rendering OllamaModelProvider</p> */}
+                    <OllamaModelProvider configs={{}} />
+                </div>
+            )}
         </>
     )
 }

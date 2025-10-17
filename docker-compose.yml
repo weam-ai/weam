@@ -19,10 +19,13 @@ services:
     restart: always
     env_file:
       - .env  # Load environment variables from a .env file
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - ./nextjs:/usr/src/app
       - /usr/src/app/node_modules
       - /usr/src/app/.next
+      - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -44,12 +47,15 @@ services:
       - .env  # Load environment variables from a .env file
     environment:
       - MCP_SERVER_URL=http://localhost:3006  # Override for Docker networking
+      - OLLAMA_URL=http://host.docker.internal:11434  # Ollama access from Docker container
     volumes:
       - ./nodejs:/usr/src/app        
       - /usr/src/app/node_modules 
       - ./nodejs/storage:/usr/src/app/storage
       - /var/run/docker.sock:/var/run/docker.sock
       - ${PWD}:/workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - app-network
     depends_on:

@@ -78,6 +78,15 @@ const brain = createSlice({
         },
         setArchiveSelectedId: (state, action) => {
             state.archiveSelectedId = action.payload
+        },
+        convertBrainToShared: (state, action) => {
+            const { brainId, convertedBrain } = action.payload;
+            // Remove from private list
+            state.privateList = state.privateList.filter(brain => brain._id !== brainId);
+            // Add to share list
+            state.shareList.unshift(convertedBrain);
+            // Update combined list
+            state.combined = [...state.privateList, ...state.shareList];
         }
     },
 });
@@ -91,7 +100,8 @@ export const {
     setModalStatus,
     setSelectedBrain,
     archiveBrainList,
-    setArchiveSelectedId
+    setArchiveSelectedId,
+    convertBrainToShared
 } = brain.actions;
 
 export default brain.reducer;

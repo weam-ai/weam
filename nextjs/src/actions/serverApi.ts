@@ -29,11 +29,17 @@ async function fetchUrl({ type = 'GET', url, data = {}, config = {} }: any) {
         const response = await handler(url, data, config);
         return response;
     } catch (error) {
-        const { status } = (error.response || {});
+        const { status, config: reqConfig } = (error.response || {});
         const data = (error.data || {});
+        const requestUrl = (reqConfig && reqConfig.url) || '';
         
-        // Handle 403 Forbidden errors - automatically logout user
+        // Handle 403 Forbidden errors
         if (status === RESPONSE_STATUS.FORBIDDEN) {
+            // Bypass auto-logout for Ollama endpoints to avoid disrupting configuration flow
+            // if (requestUrl.includes('/ollama/')) {
+            //     return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.SERVER_FORBIDDEN, message: data.message || 'Access forbidden' };
+            // }
+
             // Check if it's a CSRF token issue first
             if (data.code === RESPONSE_STATUS_CODE.CSRF_TOKEN_MISSING) {
                 return { status: RESPONSE_STATUS.FORBIDDEN, code: RESPONSE_STATUS_CODE.CSRF_TOKEN_MISSING }

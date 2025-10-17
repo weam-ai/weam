@@ -172,6 +172,27 @@ const apiList = {
         url: () => `${WEB}/company/gemini/apikey`,
         method: 'POST'
     },
+    // For Ollama, no API key is required. Use a health/test endpoint.
+    ollamaKeyCheck: {
+        url: () => `ollama/health`,
+        method: 'GET'
+    },
+    // Ollama model management (download removed by request)
+    ollamaPullModel: {
+        url: () => `ollama/pull`,
+        method: 'POST'
+    },
+    ollamaListTags: {
+        url: () => `ollama/tags`,
+        method: 'GET'
+    },
+    // Save Ollama settings (baseUrl, apiKey, selected model) via Node API
+    saveOllamaSettings: {
+        // This hits the Node backend route: /napi/v1/ollama/save-settings
+        // The commonApi builds base as LINK.COMMON_NODE_API_URL + NODE_API_PREFIX
+        url: () => `ollama/save-settings`,
+        method: 'POST'
+    },
     brainListAll: {
         url: () => `${WEB}/brain/list-all`,
         method: 'POST'
@@ -207,6 +228,10 @@ const apiList = {
     globalSearch: {
         url: () => `${WEB}/message/global-search`,
         method: 'POST'
+    },
+    convertToShared: {
+        url: (id: string) => `${WEB}/brain/convert-to-shared/${id}`,
+        method: 'PUT'
     },
     getUsage: {
         url: () => `${ADMIN}/report/company-usage`,

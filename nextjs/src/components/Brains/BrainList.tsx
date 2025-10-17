@@ -37,12 +37,16 @@ import { chatMemberListAction } from '@/lib/slices/chat/chatSlice';
 import { generateObjectId } from '@/utils/helper';
 import Link from 'next/link';
 import Image from 'next/image';
+import ConvertToSharedModal from './ConvertToSharedModal';
+import { ShareBrainIcon } from '@/icons/Share';
 
 type DefaultEditOptionProps = {
     onEdit: () => void;
     handleEditBrain: () => void;
     handleDeleteBrain: () => void;
+    handleConvertToShared?: () => void;
     isDeletePending: boolean;
+    isPrivate?: boolean;
 }
 
 type CommonListProps = {
@@ -139,7 +143,7 @@ export const LinkItems = React.memo(({ icon, text, href, data }: LinkItemsProps)
 });
 
 const DefaultEditOption = React.memo(
-    ({ onEdit, handleEditBrain, handleDeleteBrain, isDeletePending }: DefaultEditOptionProps) => {
+    ({ onEdit, handleEditBrain, handleDeleteBrain, handleConvertToShared, isDeletePending, isPrivate }: DefaultEditOptionProps) => {
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -159,6 +163,19 @@ const DefaultEditOption = React.memo(
                         />
                         Rename
                     </DropdownMenuItem>
+                    {isPrivate && handleConvertToShared && (
+                        <DropdownMenuItem
+                            className="edit-collapse-title border-0"
+                            onClick={handleConvertToShared}
+                        >
+                            <ShareBrainIcon
+                                width={14}
+                                height={16}
+                                className="w-[14] h-4 object-contain fill-b4 me-2.5"
+                            />
+                            Convert to Shared
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={handleDeleteBrain} disabled={isDeletePending} className="border-0">
                         <RemoveIcon
                             width={14}
@@ -195,6 +212,7 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
     const buttonRef=useRef(null)
     const [deleteBrain, isDeletePending] = useServerAction(deleteBrainAction);
     const [updateBrain, isUpdatePending] = useServerAction(updateBrainAction);
+    const [showConvertModal, setShowConvertModal] = useState(false);
 
     const searchParams = useSearchParams();
     const brainId = searchParams.get('b') ? decodedObjectId(searchParams.get('b')) : null;
@@ -279,6 +297,10 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
         Toast(response?.message);
     };
 
+    const handleConvertToShared = () => {
+        setShowConvertModal(true);
+    };
+
     const handleNewChatClick = () => {
         const brainId = encodedObjectId(b?._id);
         const objectId = generateObjectId();
@@ -298,6 +320,12 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
 
     return (
         <>
+
+<ConvertToSharedModal
+                open={showConvertModal}
+                close={() => setShowConvertModal(false)}
+                brain={b}
+            />
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -358,8 +386,10 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
                                         onEdit={handleEditClick}
                                         handleEditBrain={() => handleEditBrain(b)}
                                         handleDeleteBrain={() => handleDeleteBrain(b)}
+                                        handleConvertToShared={!b.isShare ? handleConvertToShared : undefined}
                                         isDeletePending={isDeletePending}
-                                    />
+                                        isPrivate={!b.isShare}
+                        />
                                 )}
                         </button>
                     </TooltipTrigger>

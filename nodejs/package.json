@@ -7,7 +7,11 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "node index.js",
         "dev": "nodemon index.js",
-        "dev:two": "NODE_ENV=two nodemon index.js"
+        "dev:two": "NODE_ENV=two nodemon index.js",
+        "setup-ollama": "bash setup-ollama.sh",
+        "setup-ollama-win": "setup-ollama.bat",
+        "test-ollama": "node test-local-ollama.js",
+        "test-ollama-integration": "node test-ollama-integration.js"
     },
     "keywords": [],
     "author": "",
@@ -61,6 +65,7 @@
         "multer-s3": "^2.10.0",
         "newrelic": "latest",
         "nodemailer": "^6.9.9",
+        "ollama": "^0.5.17",
         "otplib": "^12.0.1",
         "pdf-parse": "^1.1.1",
         "qrcode": "^1.5.3",

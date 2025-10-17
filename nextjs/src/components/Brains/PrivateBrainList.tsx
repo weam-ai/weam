@@ -32,7 +32,9 @@ const PrivateBrainList = ({ brainList, workspaceFirst }: PrivateBrainListProps) 
 
     const currentUser = useMemo(() => getCurrentUser(), []);
 
-    const selectedWorkSpaceBrainList = brainList.find(brain => brain._id.toString() === selectedWorkSpace._id.toString());
+    const selectedWorkSpaceBrainList = brainList.find(
+        (brain) => brain._id.toString() === selectedWorkSpace?._id?.toString()
+    );
 
     const privateBrains = selectedWorkSpaceBrainList?.brains.filter(brain => !brain.isShare && brain.user.email === currentUser.email);
 

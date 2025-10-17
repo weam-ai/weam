@@ -6,7 +6,9 @@ export const LINK = {
     WEAM_PRICING_URL: process.env.NEXT_PUBLIC_WEAM_PRICING_URL || 'https://weam.ai/pricing',
     SERVER_NODE_API_URL: process.env.NEXT_PUBLIC_SERVER_NODE_API_URL,
     COMMON_NODE_API_URL: process.env.NEXT_PUBLIC_COMMON_NODE_API_URL,
-    PYTHON_API_URL: "http://gateway_service:9089/pyapi"
+    PYTHON_API_URL: "http://gateway_service:9089/pyapi",
+    OLLAMA_API_URL: process.env.OLAMA_COMMON_URL,
+    OLLAMA_IMAGE_PATH: '/ollama-model.svg'
 };
 
 export const FIREBASE = {

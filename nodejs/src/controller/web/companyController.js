@@ -75,5 +75,5 @@ module.exports = {
     huggingFaceApiChecker,
     anthropicApiChecker,
     geminiApiKeyChecker,
-    addBlockedDomain
+    addBlockedDomain,
 };

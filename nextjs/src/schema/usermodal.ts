@@ -1,4 +1,5 @@
 import * as yup from 'yup'
+import { ollamaKeys } from '@/utils/constant'
 
 export const defaultModalKeys = yup.object({
     modal: yup.object().nullable().required('please choose modal.'),
@@ -40,5 +41,8 @@ export const anthropicKeys = yup.object({
 export const geminiKeys = yup.object({
     key: yup.string().required('please enter your key')
 })
+
+// Imported from constants to centralize schema definition
+export { ollamaKeys };
 
 export type ModelKeysSchemaType = yup.InferType<typeof setModalAPIKeys>;

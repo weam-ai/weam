@@ -1,0 +1,48 @@
+version: "3.8"
+
+# Separate compose file to run Ollama on demand
+# Reference: simstudioai/sim docker-compose.ollama.yml (adapted)
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      # Set to true to enable GPU if host supports it
+      - OLLAMA_GPU=${OLLAMA_GPU:-false}
+      - OLLAMA_KEEP_ALIVE=3600
+    volumes:
+      # Persist downloaded models between runs
+      - ollama:/root/.ollama
+    profiles:
+      # Allow choosing cpu or gpu profiles; start only when explicitly invoked
+      - cpu
+      - gpu
+      - setup
+
+  # Automatically pull a default model when Ollama comes up
+  # Mirrors sim-main's model-setup behavior, configurable via OLLAMA_DEFAULT_MODEL
+  model-setup:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://localhost:11434
+    command: >
+      sh -lc "
+        echo 'Waiting for Ollama to be ready...';
+        for i in $(seq 1 60); do
+          if ollama list >/dev/null 2>&1; then break; fi;
+          sleep 2;
+        done;
+        echo 'Pulling default model ' ${OLLAMA_DEFAULT_MODEL:-llama3.1:8b} '...';
+        ollama pull ${OLLAMA_DEFAULT_MODEL:-llama3.1:8b};
+      "
+    profiles:
+      - setup
+
+volumes:
+  ollama:
+    name: ollama-models

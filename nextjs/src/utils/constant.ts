@@ -1,4 +1,5 @@
 import { ProAgentCode } from "@/types/common";
+import * as yup from 'yup';
 
 export const API_RESPONSE_LOGIN = 'LOGIN';
 export const DEFAULT_NEXT_API_HEADER = { 'Content-Type': 'application/json' };
@@ -135,6 +136,10 @@ export const MODULE_ACTIONS = {
     HUGGING_FACE_HEALTH: 'huggingFaceKeyCheck',
     ANTHROPIC_HEALTH: 'anthropicKeyCheck',
     CHECK_GEMINI_API_KEY: 'geminiKeyCheck',
+    OLLAMA_HEALTH: 'ollamaKeyCheck',
+    SAVE_OLLAMA_SETTINGS: 'saveOllamaSettings',
+    OLLAMA_PULL_MODEL: 'ollamaPullModel',
+    OLLAMA_LIST_TAGS: 'ollamaListTags',
     BRAIN_LIST_ALL: 'brainListAll',
     GET_MESSAGE_CREDITS: 'getMessageCredits',
     FAVORITE_LIST: 'userFavoriteList',
@@ -167,6 +172,7 @@ export const MODULE_ACTIONS = {
     SOLUTION_INSTALL: 'solutionInstall',
     ENHANCE_PROMPT_BY_LLM: 'enhancePromptByLLM',
     GET_IMAGES: 'getImages',
+    CONVERT_TO_SHARED: 'convertToShared',
 } as const;
 
 export const DATE_TIME_FORMAT = 'DD/MM/YYYY hh:mm A';
@@ -258,6 +264,7 @@ export const AI_MODEL_CODE = {
     LLAMA4: 'LLAMA4',
     GROK: 'GROK',
     QWEN: 'QWEN',
+    OLLAMA: 'OLLAMA',
     OPEN_ROUTER: 'OPEN_ROUTER',
     // error conversation response
     CONVERSATION_ERROR: `We encountered an issue and were unable to receive a response. This could be due to a variety of reasons including network issues, server problems, or unexpected errors.Please try your request again later. If the problem persists, check your network connection or [contact support](mailto:hello@weam.ai) for further assistance.`,
@@ -338,6 +345,7 @@ export const SOCKET_EVENTS = {
     PRIVATE_BRAIN_OFF: 'privatebrainoff',
     FETCH_SUBSCRIPTION: 'fetchsubscription',
     LLM_RESPONSE_SEND: 'llmresponsesend',
+    LLM_RESPONSE_DONE: 'llmresponsedone',
     GENERATE_TITLE_BY_LLM: 'generatetitlebyllm',
     FORCE_STOP: 'forcestop',
 }
@@ -376,7 +384,8 @@ export const MODEL_IMAGE_BY_CODE={
     PERPLEXITY: '/perplexity.png',
     DEEPSEEK: '/Deepseek.png',
     GROK: '/grok.png',
-    QWEN: '/qwen.png'
+    QWEN: '/qwen.png',
+    OLLAMA: '/ollama-model.svg'
 }
 
 export const ALLOWED_TYPES = [
@@ -486,6 +495,11 @@ export const AI_MODAL_NAME = {
     // Grok models
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
 
+    // Ollama (local) models
+    OLLAMA_LLAMA_3_1_8B: 'llama3.1:8b',
+    OLLAMA_MISTRAL_7B: 'mistral:7b',
+    OLLAMA_LLAMA_3_2_1B: 'llama3.2:1b',
+
     // Qwen models
     QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b:free',    
 }
@@ -569,8 +583,15 @@ export const MODAL_NAME_CONVERSION = {
     LLAMA4: 'Llama4',
     GROK: 'Grok',
     QWEN: 'Qwen',
-    OPEN_ROUTER: 'Open Router'
+    OPEN_ROUTER: 'Open Router',
+    OLLAMA: 'Ollama'
 }
+
+// Ollama schema moved from schema/usermodal.ts
+export const ollamaKeys = yup.object({
+    baseUrl: yup.string().url('Please enter a valid URL').required('Base URL is required'),
+    key: yup.string().optional()
+});
 
 export const MODEL_CREDIT_INFO = [
     // GPT-5 models (moved to first for priority in chat dropdown)
@@ -1013,6 +1034,25 @@ export const MODEL_CREDIT_INFO = [
         image: false,
         reasoning: true,
     },
+    // Ollama (local) models
+    {
+        code: 'OLLAMA',
+        model: 'llama3.2:1b',
+        credit: 0,
+        displayName: 'Llama 3.2 1B (Local)'
+    },
+    {
+        code: 'OLLAMA',
+        model: 'llama3.1:8b',
+        credit: 0,
+        displayName: 'Llama 3.1 8B (Local)'
+    },
+    {
+        code: 'OLLAMA',
+        model: 'mistral:7b',
+        credit: 0,
+        displayName: 'Mistral 7B (Local)'
+    },
     {
         code: 'PRO_AGENT',
         model: ProAgentCode.QA_SPECIALISTS,
@@ -1081,6 +1121,7 @@ export const SUB_MODEL_TYPE = [
     'GEMINI',
     'PERPLEXITY',
     'DEEPSEEK',
+    'OLLAMA',
     'LLAMA4'
 ] as const;
 
@@ -1537,14 +1578,30 @@ export const MODEL_NAME_BY_CODE = {
     
     // Stability AI models
     'sdxl-flash-lgh': 'HUGGING_FACE',
+
+    // Ollama (local) models
+    'llama3.1:8b': 'OLLAMA',
+    'mistral:7b': 'OLLAMA',
 }
 
 export const getModelImageByName = (name: string) => {
+    // Check if it's an Ollama model (local model)
+    if (name) {
+        // For models that are run locally through Ollama
+        if (name.includes('(Local)') || 
+            (name.toLowerCase().includes('llama') && !name.toLowerCase().includes('meta')) ||
+            name.toLowerCase().includes('mistral') ||
+            name.toLowerCase().includes('phi') ||
+            name.toLowerCase().includes('gemma')) {
+            return MODEL_IMAGE_BY_CODE['OLLAMA'];
+        }
+    }
+    
     const code = MODEL_NAME_BY_CODE[name];
     if (code) {
         return MODEL_IMAGE_BY_CODE[code];
     }
-    return null;
+    return MODEL_IMAGE_BY_CODE['OPEN_AI']; // Default fallback
 }
 
 export const SUBSCRIPTION_PLAN_CREDITS = {
@@ -1553,7 +1610,7 @@ export const SUBSCRIPTION_PLAN_CREDITS = {
 }
 
 
-export const SEQUENCE_MODEL_LIST = [AI_MODEL_CODE.OPEN_AI, AI_MODEL_CODE.GEMINI, AI_MODEL_CODE.ANTHROPIC, AI_MODEL_CODE.PERPLEXITY, AI_MODEL_CODE.DEEPSEEK, AI_MODEL_CODE.LLAMA4, AI_MODEL_CODE.QWEN, AI_MODEL_CODE.GROK] as const;
+export const SEQUENCE_MODEL_LIST = [AI_MODEL_CODE.OPEN_AI, AI_MODEL_CODE.GEMINI, AI_MODEL_CODE.ANTHROPIC, AI_MODEL_CODE.PERPLEXITY, AI_MODEL_CODE.DEEPSEEK, AI_MODEL_CODE.OLLAMA, AI_MODEL_CODE.LLAMA4, AI_MODEL_CODE.QWEN, AI_MODEL_CODE.GROK, AI_MODEL_CODE.OLLAMA] as const;
 
 export const FILE_UPLOAD_FOLDER = {
     SALES_CALL_AGENT: 'sales-call',
