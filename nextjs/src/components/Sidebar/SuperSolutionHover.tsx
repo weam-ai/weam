@@ -56,7 +56,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
         const mapping: { [key: string]: string } = {
             'AI Docs': 'ai-docs',
             'AI Recruiter': 'ai-recruiter',
-            'AI Landing Page Generator': 'ai-landing-page-generator',
+            'Page Revamp': 'page-revamp',
             'Blog Engine': 'blog-engine',
             'Call Analyzer': 'call-analyzer'
         };

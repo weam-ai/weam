@@ -19,8 +19,8 @@
           "sequence": 2
       },
       {
-        "name": "Page Revamp – AI Landing Page Generator",
-        "description": "Page Revamp is an AI-powered landing page generator that helps you redesign or create high-performing landing pages in minutes. It intelligently analyzes your existing content, extracts key elements from PDFs or documents, and generates responsive, SEO-optimized, and conversion-focused pages—reducing manual work and boosting marketing performance.",
+        "name": "Page Revamp",
+        "description": "AI-powered page revamp tool that generates content for extracted design elements and creates optimized pages",
         "charimg": "/solution-characters/warm-2.svg",
         "category": "Productivity & Document Management",
         "isActive": true,
