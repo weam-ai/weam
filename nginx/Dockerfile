@@ -11,7 +11,7 @@ COPY weam-https.conf /etc/nginx/conf.d/weam-https.conf.template
 
 # Create startup script
 RUN echo '#!/bin/sh' > /startup.sh && \
-    echo 'DOMAIN_NAME=${DOMAIN_NAME:-os.weam.ai}' >> /startup.sh && \
+    echo 'DOMAIN_NAME=${DOMAIN_NAME}' >> /startup.sh && \
     echo 'DOMAIN_NAME=$(echo $DOMAIN_NAME | sed "s|^https\?://||")' >> /startup.sh && \
     echo 'DOMAIN_NAME=$(echo $DOMAIN_NAME | sed "s|:[0-9]*$||")' >> /startup.sh && \
     echo 'echo "Using domain: $DOMAIN_NAME"' >> /startup.sh && \
@@ -36,6 +36,9 @@ EXPOSE 80 443
 
 # Start nginx with dynamic configuration
 CMD ["/startup.sh"]
+
+
+
 
 
 

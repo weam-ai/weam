@@ -1,13 +1,15 @@
 #!/bin/bash
 
-# WEAM Nginx Setup Script
-# This script sets up nginx with SSL certificates for both local and cloud environments
+# WEAM Nginx Setup Script (Cross-Platform)
+# Supports: Ubuntu, macOS, and Windows (Git Bash / WSL / MSYS)
 
 set -e
 
 echo "🚀 Starting WEAM Nginx Setup..."
 
-# Load environment variables
+# -------------------------------
+# Step 1: Load environment variables
+# -------------------------------
 if [ -f .env ]; then
     set -a
     source .env
@@ -18,7 +20,6 @@ else
     exit 1
 fi
 
-# Extract domain from NEXT_PUBLIC_DOMAIN_URL
 if [ -z "$NEXT_PUBLIC_DOMAIN_URL" ]; then
     echo "❌ NEXT_PUBLIC_DOMAIN_URL not found in .env file"
     exit 1
@@ -27,7 +28,9 @@ fi
 DOMAIN=$(echo $NEXT_PUBLIC_DOMAIN_URL | sed 's|^https\?://||' | sed 's|:[0-9]*$||')
 echo "🌐 Using domain: $DOMAIN"
 
-# Environment detection
+# -------------------------------
+# Step 2: Detect environment (local vs cloud)
+# -------------------------------
 echo "🔍 Detecting environment..."
 if curl -s --connect-timeout 1 http://169.254.169.254/ >/dev/null 2>&1; then
     ENVIRONMENT_TYPE="cloud"
@@ -38,39 +41,68 @@ if curl -s --connect-timeout 1 http://169.254.169.254/ >/dev/null 2>&1; then
 else
     ENVIRONMENT_TYPE="local"
     echo "🏠 Environment: Local"
-    
-    # Add hosts entry for local environment
-    HOST_ENTRY="127.0.0.1 $DOMAIN"
+fi
+
+# -------------------------------
+# Step 3: Detect OS
+# -------------------------------
+OS_TYPE="$(uname -s)"
+echo "💻 Detected OS: $OS_TYPE"
+
+# Default values
+HOST_ENTRY="127.0.0.1 $DOMAIN"
+
+# -------------------------------
+# Step 4: Add domain entry to hosts file
+# -------------------------------
+echo "🌐 Adding host entry for $DOMAIN..."
+
+if [[ "$OS_TYPE" == "Linux" ]]; then
     HOSTS_FILE="/etc/hosts"
-    
-    echo "🌐 Adding host entry for $DOMAIN..."
-    
-    # Check if already exists
-    if grep -qE "^[^#]*\b$DOMAIN\b" "$HOSTS_FILE"; then
-        echo "✅ Host entry for '$DOMAIN' already exists in $HOSTS_FILE"
+elif [[ "$OS_TYPE" == "Darwin" ]]; then
+    HOSTS_FILE="/etc/hosts"
+elif [[ "$OS_TYPE" =~ MINGW|MSYS|CYGWIN ]]; then
+    # Windows (Git Bash, MSYS, or WSL)
+    HOSTS_FILE="/c/Windows/System32/drivers/etc/hosts"
+else
+    echo "⚠️ Unsupported OS: $OS_TYPE"
+    exit 1
+fi
+
+# Check if domain already exists
+if grep -qE "^[^#]*\b$DOMAIN\b" "$HOSTS_FILE"; then
+    echo "✅ Host entry for '$DOMAIN' already exists in $HOSTS_FILE"
+else
+    echo "📝 Adding host entry to $HOSTS_FILE..."
+    if [[ "$OS_TYPE" =~ MINGW|MSYS|CYGWIN ]]; then
+        # Windows needs admin rights; use PowerShell if possible
+        powershell.exe -Command "Start-Process cmd -Verb runAs -ArgumentList '/c echo $HOST_ENTRY >> C:\\Windows\\System32\\drivers\\etc\\hosts'" || {
+            echo "⚠️ Failed to auto-edit hosts file. Please manually add this line:"
+            echo "   $HOST_ENTRY"
+        }
     else
-        # Add entry (requires sudo)
+        # Linux or macOS
         if echo "$HOST_ENTRY" | sudo tee -a "$HOSTS_FILE" >/dev/null; then
             echo "✅ Added $HOST_ENTRY to $HOSTS_FILE"
         else
             echo "❌ Failed to add host entry. Run this manually:"
             echo "   sudo sh -c 'echo \"$HOST_ENTRY\" >> $HOSTS_FILE'"
-            echo "   Then run this script again."
             exit 1
         fi
     fi
 fi
 
-# Stop and remove existing nginx container if it exists
+# -------------------------------
+# Step 5: Stop and remove existing nginx container
+# -------------------------------
 echo "🛑 Stopping existing nginx container..."
 docker stop weam-nginx 2>/dev/null || true
 docker rm weam-nginx 2>/dev/null || true
 
-# Build and run nginx container for local environment
+# -------------------------------
+# Step 6: Build and run nginx container (local only)
+# -------------------------------
 if [ "$ENVIRONMENT_TYPE" = "local" ]; then
-    echo "🏠 Local environment: Using custom nginx image with self-signed certificate..."
-    
-    # Build nginx Docker image
     echo "🐳 Building nginx Docker image..."
     docker build -t weam-nginx:latest ./nginx
 
@@ -82,12 +114,10 @@ if [ "$ENVIRONMENT_TYPE" = "local" ]; then
         -p 443:443 \
         -e DOMAIN_NAME="$DOMAIN" \
         weam-nginx:latest
-    
-    echo "✅ Local nginx setup completed!"
+
+    echo "✅ Local nginx setup completed successfully!"
 fi
 
-
-
-
+echo "🎉 Setup Finished!"
 
 
