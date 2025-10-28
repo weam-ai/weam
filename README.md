@@ -140,24 +140,24 @@ Unlock powerful AI-driven tools to streamline your business operations and enhan
 
 ### 🚀 Available AI Apps:
 
-#### AI Docs 
-The AI Document Editor allows you to quickly create and edit documents using ready-made templates or by designing your own. With AI assistance built in, writing and formatting become faster and more intuitive.  
+#### AI Docs  
+The AI Docs allows you to quickly create and edit documents using ready-made templates or by designing your own. With AI assistance built in, writing and formatting become faster and more intuitive.  
 👉 [Check out the repository](https://github.com/weam-ai/ai-doc-editor)
 
 #### AI Interview App 
 The AI Recruiter enables you to build custom interviewers and generate interview links that can be shared with candidates. After completion, you receive detailed analytics on interview results to help with hiring decisions.  
 👉 [Check out the repository](https://github.com/weam-ai/ai-recruiter)
 
-#### Page Revamp  
-With the Landing Page Generator, you can automatically create high-converting landing page content by providing a website URL, Figma design, or a PDF. It extracts and structures content tailored for web use.  
+#### Page Revamp
+With the Page Revamp, you can automatically create high-converting landing page content by providing a website URL, Figma design, or a PDF. It extracts and structures content tailored for web use.  
 👉 [Check out the repository](https://github.com/weam-ai/landing-page-content-generator)
 
-#### AI SEO Generator
-The SEO Content Generator helps you craft SEO-optimized blog posts and articles. It also supports sitemap audits and on-page SEO improvements to enhance your website’s visibility.  
+#### Blog Engine
+The Blog Engine helps you craft SEO-optimized blog posts and articles. It also supports sitemap audits and on-page SEO improvements to enhance your website’s visibility.  
 👉 [Check out the repository](https://github.com/weam-ai/seo-content-gen)
 
-#### Smart Bots 
-The AI Chatbot Builder lets you create RAG (Retrieval-Augmented Generation)-based AI chatbots that can be embedded directly into your website. It also provides conversation history and usage analytics for ongoing improvement.  
+#### Smart Bots
+The Smart Bots lets you create RAG (Retrieval-Augmented Generation)-based chatbots that can be embedded directly into your website. It also provides conversation history and usage analytics for ongoing improvement.  
 👉 [Check out the repository](https://github.com/weam-ai/ai-chatbot)
 
 ---
