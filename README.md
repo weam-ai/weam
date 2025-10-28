@@ -109,7 +109,30 @@ a- **Intelligent Context:** Full conversation history maintains coherent, contex
 - **Brain Organization:** Shared folders for teams with private areas for individual work  
 - **Access Control:** Granular permissions for chats, prompts, and agents  
 - **Usage Analytics:** Admin dashboard showing team member activity  
-- **Team Groups:** Organize users for efficient permission management  
+- **Team Groups:** Organize users for efficient permission management
+
+---
+
+## 🏠 Local AI Models with Ollama
+
+Run AI models locally on your machine for maximum privacy and control. Weam supports [Ollama](https://ollama.com/) integration out of the box.
+
+### Supported Models
+- **llama3** (8B/70B) - Meta's latest models
+- **qwen2** (7B/14B/72B) - Alibaba's multilingual models  
+- **mistral** (7B/8x7B) - Efficient, fast models
+- **codellama** - Code-specialized models
+- **phi3** (3.8B) - Microsoft's compact model
+
+### Benefits
+- **Complete Privacy**: All AI inference happens locally
+- **No API Costs**: Run models without external API fees
+- **Full Control**: Choose your models and configurations
+- **Offline Capable**: Works without internet after setup
+
+📖 **Full Documentation**: [Complete Ollama Setup Guide](https://docs.weam.ai/knowledgebase/ollama)
+
+---
 
 ## 🎨 AI App Solutions  
 
@@ -117,23 +140,23 @@ Unlock powerful AI-driven tools to streamline your business operations and enhan
 
 ### 🚀 Available AI Apps:
 
-#### AI Document Editor  
+#### AI Docs 
 The AI Document Editor allows you to quickly create and edit documents using ready-made templates or by designing your own. With AI assistance built in, writing and formatting become faster and more intuitive.  
 👉 [Check out the repository](https://github.com/weam-ai/ai-doc-editor)
 
-#### AI Recruiter  
+#### AI Interview App 
 The AI Recruiter enables you to build custom interviewers and generate interview links that can be shared with candidates. After completion, you receive detailed analytics on interview results to help with hiring decisions.  
 👉 [Check out the repository](https://github.com/weam-ai/ai-recruiter)
 
-#### Landing Page Generator  
+#### Page Revamp  
 With the Landing Page Generator, you can automatically create high-converting landing page content by providing a website URL, Figma design, or a PDF. It extracts and structures content tailored for web use.  
 👉 [Check out the repository](https://github.com/weam-ai/landing-page-content-generator)
 
-#### SEO Content Generator  
+#### AI SEO Generator
 The SEO Content Generator helps you craft SEO-optimized blog posts and articles. It also supports sitemap audits and on-page SEO improvements to enhance your website’s visibility.  
 👉 [Check out the repository](https://github.com/weam-ai/seo-content-gen)
 
-#### AI Chatbot Builder  
+#### Smart Bots 
 The AI Chatbot Builder lets you create RAG (Retrieval-Augmented Generation)-based AI chatbots that can be embedded directly into your website. It also provides conversation history and usage analytics for ongoing improvement.  
 👉 [Check out the repository](https://github.com/weam-ai/ai-chatbot)
 
