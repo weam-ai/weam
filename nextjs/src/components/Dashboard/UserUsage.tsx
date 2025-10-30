@@ -17,7 +17,7 @@ const columns = [
 		header: 'Model',
 		enableSorting: false,
 		cell: ({ row }) => {
-			return modelNameConvert(row.original.modeldata.code, row.original.model);
+			return modelNameConvert(row?.original?.modeldata?.code, row?.original?.model);
 		}
 	},
 	{
