@@ -61,9 +61,6 @@ const schema = new Schema(
     { timestamps: true },
 );
 
-//if this index exist first remove it schema.index({ slug: 1, 'workspaceId': 1 }, { unique: true });
-schema.dropIndex("slug_1_workspaceId_1");
-
 // Scoped unique indexes:
 // 1) Shared brains: unique per workspace
 schema.index(
@@ -126,5 +123,15 @@ schema.post(['findOneAndUpdate', 'updateOne'], async function (doc) {
 });
 
 const brain = model('brain', schema, 'brain');
+
+// Drop old index after model creation (if it exists)
+// This runs asynchronously and won't block app startup
+brain.collection.dropIndex("slug_1_workspaceId_1").catch(err => {
+    logger.info(`🚀 ~ err:${err}`);
+        // Ignore error if index doesn't exist
+        if (err.code !== 27) { // 27 = IndexNotFound
+            logger.info('Old index slug_1_workspaceId_1 already dropped or does not exist');
+        }
+    });
 
 module.exports = brain;
