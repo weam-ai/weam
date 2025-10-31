@@ -1806,10 +1806,10 @@ async function generateTitleByLLM(payload) {
             [AI_MODAL_PROVIDER.OPEN_AI]: 'gpt-4o-mini',
             [AI_MODAL_PROVIDER.ANTHROPIC]: 'claude-3-5-sonnet-20240620',
             [AI_MODAL_PROVIDER.GEMINI]: 'gemini-2.0-flash-001',
-            [AI_MODAL_PROVIDER.DEEPSEEK]: 'deepseek-chat',
-            [AI_MODAL_PROVIDER.LLAMA4]: 'llama-3.1-8b-instruct',
-            [AI_MODAL_PROVIDER.GROK]: 'grok-2-1212',
-            [AI_MODAL_PROVIDER.QWEN]: 'qwq-32b',
+            [AI_MODAL_PROVIDER.DEEPSEEK]: 'meta-llama/llama-4-maverick',
+            [AI_MODAL_PROVIDER.LLAMA4]: 'meta-llama/llama-4-maverick',
+            [AI_MODAL_PROVIDER.GROK]: 'x-ai/grok-3-mini-beta',
+            [AI_MODAL_PROVIDER.QWEN]: 'qwen/qwen3-30b-a3b:free',
             [AI_MODAL_PROVIDER.PERPLEXITY]: 'sonar',
         };
         
