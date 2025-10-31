@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# 🔧 Domain config (user-adjustable)
+CUSTOM_DOMAIN_URL="https://weam.local"
+
+# .env ko bina source kiye NEXT_PUBLIC_DOMAIN_URL padh lo (agar hai aur localhost nahi)
+TARGET_DOMAIN_URL="$CUSTOM_DOMAIN_URL"
+if [ -f .env ]; then
+  ENV_DOMAIN="$(grep -E '^NEXT_PUBLIC_DOMAIN_URL=' .env | sed 's/^NEXT_PUBLIC_DOMAIN_URL=//')"
+  if [ -n "$ENV_DOMAIN" ] && echo "$ENV_DOMAIN" | grep -vq "localhost"; then
+    TARGET_DOMAIN_URL="$ENV_DOMAIN"
+  fi
+
+  echo "🔄 Updating .env URLs to $TARGET_DOMAIN_URL ..."
+  sed -i.bak "s|http://localhost:4050|$TARGET_DOMAIN_URL|g" .env
+  sed -i.bak "s|http://localhost:9000|$TARGET_DOMAIN_URL|g" .env
+  sed -i.bak "s|http://localhost:3000|$TARGET_DOMAIN_URL|g" .env
+  echo "✅ .env updated for domain ($TARGET_DOMAIN_URL)"
+fi
+
 # 🧰 Universal Docker Build Script (Cross-Platform + Compose v1/v2 Compatible)
 
 echo "🔍 Detecting Operating System..."
@@ -51,6 +69,6 @@ docker build $BUILD_ARGS \
   --target=$TARGET \
   -f ./nextjs/Dockerfile \
   -t weamai-app:latest \
-  ./nextjs --no-cache || { echo "❌ Docker build failed"; exit 1; }
+  ./nextjs || { echo "❌ Docker build failed"; exit 1; }
 
 echo "🎉 Build complete: weamai-app:latest"
