@@ -55,7 +55,7 @@ const createBrain = async (req) => {
             const existingBrain = await Brain.findOne({
                 workspaceId: data.workspaceId,
                 title: DEFAULT_NAME.GENERAL_BRAIN_TITLE,
-                slug: DEFAULT_NAME.GENERAL_BRAIN_SLUG
+                slug: DEFAULT_NAME.GENERAL_BRAIN_SLUG,
             });
             if (existingBrain) {
                brains=existingBrain
@@ -168,7 +168,15 @@ const updateBrain = async (req) => {
         const existing = await Brain.findOne(filter);
         if (!existing) return false;
 
-        const rescount = await Brain.countDocuments({ slug: slugify(req.body.title), 'workspaceId': req.body.workspaceId, _id: { $ne: req.params.id } });
+        const rescount = await Brain.countDocuments({
+            slug: slugify(req.body.title),
+            'workspaceId': req.body.workspaceId,
+            ...(req.body.isShare
+                ? { isShare: true }
+                : { isShare: false, 'user.id': req.userId }
+            ),
+            _id: { $ne: req.params.id }
+        });
         if (rescount > 0) throw new Error(_localize('module.alreadyExists', req, req.body.title + ' Brain'));
 
         const updateObj = { ...req.body };
