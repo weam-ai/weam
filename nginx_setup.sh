@@ -25,7 +25,7 @@ if [ -z "$NEXT_PUBLIC_DOMAIN_URL" ]; then
     exit 1
 fi
 
-DOMAIN=$(echo $NEXT_PUBLIC_DOMAIN_URL | sed 's|^https\?://||' | sed 's|:[0-9]*$||')
+DOMAIN=$(echo "$NEXT_PUBLIC_DOMAIN_URL" | sed -E 's|^[a-zA-Z]+:/{0,2}||' | sed -E 's|[:/].*$||')
 echo "🌐 Using domain: $DOMAIN"
 
 # -------------------------------
