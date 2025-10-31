@@ -37,6 +37,7 @@ export const useDefaultModel = (aiModals) => {
 
 const HomeAiModel = ({ aiModals }) => {
     const [open, setOpen] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(false);
     const dispatch = useDispatch();
     const queryParams = useSearchParams();
     const pathname = usePathname();
@@ -51,6 +52,11 @@ const HomeAiModel = ({ aiModals }) => {
         (store: RootState) => store.assignmodel.selectedModal
     );
     
+    // Set hydrated state after component mounts
+    React.useEffect(() => {
+        setIsHydrated(true);
+    }, []);
+    
     const handleModelChange = (model: AiModalType) => {
         setOpen(false);
         if (agent) return;
@@ -58,6 +64,11 @@ const HomeAiModel = ({ aiModals }) => {
         history.pushState(null, '', `${pathname}?b=${b}&model=${modelName}`);
         dispatch(setSelectedAIModal(model));
     };
+
+    // Don't render anything until hydrated and aiModals is ready
+    if (!isHydrated || aiModals === undefined) {
+        return null;
+    }
 
     return (
       <>
@@ -73,8 +84,7 @@ const HomeAiModel = ({ aiModals }) => {
               />
             </div>
           </div>
-        ) : (
-          user?.roleCode !== ROLE_TYPE.USER ? (
+        ) : aiModals?.length === 0 && user?.roleCode !== ROLE_TYPE.USER ? (
             <div className="top-header flex md:h-[68px] min-h-[68px] md:border-b-0 border-b border-b10 items-center justify-center lg:justify-between py-2 lg:pl-[15px] pl-[50px] pr-[15px]">
               <button
                 // disabled={addChatLoading}
@@ -90,8 +100,8 @@ const HomeAiModel = ({ aiModals }) => {
                 <span className="sm:hidden">Add API key</span>
               </button>
             </div>
-          ) : <></>
-        )}
+          ) : null
+        }
       </>
     );
 };

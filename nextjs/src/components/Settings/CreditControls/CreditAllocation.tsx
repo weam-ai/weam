@@ -134,7 +134,7 @@ const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
       cell: ({ row }: any) => (
         <div className="flex flex-col items-center gap-2">
           <div className="text-center">{row.original.leftCredits}</div>
-          {row.original.leftCredits <= 100 && (
+          {(100 - (row.original.usedCredits * 100 / row.original.totalCredits)) <= 20 && (
             <Badge variant="destructive" className="text-xs bg-red text-white">
               Low
             </Badge>

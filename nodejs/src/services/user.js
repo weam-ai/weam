@@ -109,7 +109,26 @@ const deleteUser = async (req) => {
 
 const getAllUser = async (req) => {
     try {
-        return dbService.getAllDocuments(User, req.body.query || {}, req.body.options || {});
+        const allUsers = await dbService.getAllDocuments(User, req.body.query || {}, req.body.options || {});
+
+        // Convert Mongoose documents to plain objects and add usedCredits
+        const usersWithCredits = await Promise.all(
+            allUsers.data.map(async (user) => {
+                const {msgCreditUsed} = await getUsedCredit({ companyId: user.company.id, userId: user._id }, user);
+                
+                // Convert to plain object and add usedCredits
+                const userObj = user.toObject ? user.toObject() : user;
+                return {
+                    ...userObj,
+                    usedCredits: msgCreditUsed
+                };
+            })
+        );
+        
+        return {
+            ...allUsers,
+            data: usersWithCredits
+        };
     } catch (error) {
         handleError(error, 'Error in user service get all user function');
     }
