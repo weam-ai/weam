@@ -109,6 +109,18 @@ docker stop weam-nginx 2>/dev/null || true
 docker rm weam-nginx 2>/dev/null || true
 
 # -------------------------------
+# Step 5.5: Ensure Docker network exists
+# -------------------------------
+echo "🔧 Ensuring Docker network 'weam_app-network' exists..."
+if ! docker network inspect weam_app-network >/dev/null 2>&1; then
+    echo "🛠️ Creating Docker network 'weam_app-network'..."
+    docker network create weam_app-network
+    echo "✅ Docker network 'weam_app-network' created"
+else
+    echo "✅ Docker network 'weam_app-network' already exists"
+fi
+
+# -------------------------------
 # Step 6: Build and run nginx container (local only)
 # -------------------------------
 if [ "$ENVIRONMENT_TYPE" = "local" ]; then
