@@ -14,7 +14,7 @@ import Image from 'next/image';
 import defaultCustomGptImage from '../../../public/defaultgpt.jpg';
 import { BrainAgentType } from '@/types/brain';
 import { BrainPromptType } from '@/types/brain';
-import { GPTTypes } from '@/utils/constant';
+import { GPTTypes, MESSAGE_CREDIT_LIMIT_REACHED } from '@/utils/constant';
 import {
     Dialog,
     DialogContent,
@@ -443,22 +443,22 @@ const ChatPage = memo(() => {
         const modalCode = selectedAIModal.bot.code;
 
             const modelCredit = (isEmptyObject(serializableProAgentData)) ? getModelCredit(persistTagData?.responseModel || selectedAIModal?.name) : getModelCredit(proAgentData?.code);
-            // if((creditInfoSelector?.msgCreditLimit >= creditInfoSelector?.msgCreditUsed + modelCredit))
-            // {
+            if((creditInfoSelector?.msgCreditLimit >= creditInfoSelector?.msgCreditUsed + modelCredit))
+            {
                 const updatedCreditInfo = {
                     ...creditInfoSelector,
                     msgCreditUsed: creditInfoSelector.msgCreditUsed + modelCredit
                 };
                 dispatch(setCreditInfoAction(updatedCreditInfo));
 
-        // } else if((creditInfoSelector?.msgCreditLimit <= creditInfoSelector?.msgCreditUsed + modelCredit)) {
-        //         Toast(MESSAGE_CREDIT_LIMIT_REACHED, 'error');
-        //         setText('');
-        //         return;
-        //     } else {
-        //         setText('');
-        //         return;
-        // }
+        } else if((creditInfoSelector?.msgCreditLimit < creditInfoSelector?.msgCreditUsed + modelCredit)) {
+                Toast(MESSAGE_CREDIT_LIMIT_REACHED, 'error');
+                setText('');
+                return;
+            } else {
+                setText('');
+                return;
+            }
 
         //Chat Member Create and reset URL to remove isNew
         if (!chatHasConversation(conversations)) {

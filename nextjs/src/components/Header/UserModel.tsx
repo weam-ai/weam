@@ -15,7 +15,7 @@ import routes from '@/utils/routes';
 
 const UserModel = () => {
     const [open, setOpen] = useState(false);
-    const { userModals, fetchSocketModalList } = useAssignModalList();
+    const { userModals, fetchSocketModalList, loading } = useAssignModalList();
     const dispatch = useDispatch();
     const chatTitle = useSelector((store: RootState) => store.conversation.chatTitle);
     const lastConversationModal = useSelector((store: RootState) => store.conversation.lastConversation);
@@ -54,7 +54,10 @@ const UserModel = () => {
         dispatch(setSelectedAIModal(model));
     };
     
-
+    // Don't render anything while loading
+    if (loading) {
+        return null;
+    }
 
     return (
         <>
@@ -65,7 +68,7 @@ const UserModel = () => {
                     </div>
                     <ChatTitleBar chatTitle={chatTitle} />
                 </div>
-            ) : (
+            ) : userModals.length === 0 ? (
                     <div className="top-header flex md:h-[68px] min-h-[68px] md:border-b-0 border-b border-b10 items-center justify-center lg:justify-between py-2 lg:pl-[15px] pl-[50px] pr-[15px]">
                       <button
                         // disabled={addChatLoading}
@@ -82,7 +85,7 @@ const UserModel = () => {
                       </button>
                       <ChatTitleBar chatTitle={chatTitle} />
                     </div>
-                )
+                ) : null
             }
         </>
     );

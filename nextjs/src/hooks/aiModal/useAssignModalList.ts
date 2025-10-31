@@ -101,6 +101,8 @@ const useAssignModalList = () => {
             }
         } catch (error) {
             console.error('error: fetchSocketModalList', error);
+        } finally {
+            setLoading(false);
         }
     }
 
