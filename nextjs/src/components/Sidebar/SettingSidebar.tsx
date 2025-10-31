@@ -113,7 +113,7 @@ const SettingSidebar = async () => {
                     className={'w-[18px] h-auto object-contain fill-b2'}
                 />
             ),
-            hasAccess: userDetail?.roleCode == ROLE_TYPE.COMPANY,
+            hasAccess: hasPermission(userDetail?.roleCode as Role, PERMISSIONS.STORAGE_REQUEST_ACCESS),
             navigate: `${LINK.DOMAIN_URL}/settings/billing`,
             slug: '/settings/billing',
         },
@@ -152,8 +152,8 @@ const SettingSidebar = async () => {
                     width={20}
                     className={'w-[18px] h-auto object-contain fill-b2'}
                 />
-            ),
-            hasAccess: (userDetail?.roleCode == ROLE_TYPE.COMPANY) ? true : false,
+                ),
+            hasAccess: hasPermission(userDetail?.roleCode as Role, PERMISSIONS.CREDIT_CONTROL_ACCESS),
             navigate: `${LINK.DOMAIN_URL}/settings/credit-control`,
             slug: '/settings/credit-control',
         }
