@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
 
-export const SettingActiveIcon = ({ key, setting, children, isCollapsed }:any) => {
+export const SettingActiveIcon = ({ setting, children, isCollapsed }:any) => {
     const pathname = usePathname();
     const { closeSidebar } = useSidebar();
     
@@ -14,7 +14,6 @@ export const SettingActiveIcon = ({ key, setting, children, isCollapsed }:any) =
     
     return (
         <Link
-            key={key}
             href={setting.navigate}
             target={setting.target && `${setting.target}`}
             className={`${

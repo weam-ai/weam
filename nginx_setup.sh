@@ -25,17 +25,8 @@ if [ -z "$NEXT_PUBLIC_DOMAIN_URL" ]; then
     exit 1
 fi
 
-DOMAIN=$(echo $NEXT_PUBLIC_DOMAIN_URL | sed 's|^https\?://||' | sed 's|:[0-9]*$||')
+DOMAIN=$(echo "$NEXT_PUBLIC_DOMAIN_URL" | sed -E 's|^[a-zA-Z]+:/{0,2}||' | sed -E 's|[:/].*$||')
 echo "🌐 Using domain: $DOMAIN"
-
-# -------------------------------
-# Step 2.5: Replace localhost URLs with domain in .env file
-# -------------------------------
-echo "🔄 Updating .env file with domain URLs..."
-sed -i.bak "s|http://localhost:4050|$NEXT_PUBLIC_DOMAIN_URL|g" .env
-sed -i.bak "s|http://localhost:9000|$NEXT_PUBLIC_DOMAIN_URL|g" .env
-sed -i.bak "s|http://localhost:3000|$NEXT_PUBLIC_DOMAIN_URL|g" .env
-echo "✅ Updated .env file with domain URLs"
 
 # -------------------------------
 # Step 2: Detect environment (local vs cloud)
@@ -107,6 +98,18 @@ fi
 echo "🛑 Stopping existing nginx container..."
 docker stop weam-nginx 2>/dev/null || true
 docker rm weam-nginx 2>/dev/null || true
+
+# -------------------------------
+# Step 5.5: Ensure Docker network exists
+# -------------------------------
+# echo "🔧 Ensuring Docker network 'weam_app-network' exists..."
+# if ! docker network inspect weam_app-network >/dev/null 2>&1; then
+#     echo "🛠️ Creating Docker network 'weam_app-network'..."
+#     docker network create weam_app-network
+#     echo "✅ Docker network 'weam_app-network' created"
+# else
+#     echo "✅ Docker network 'weam_app-network' already exists"
+# fi
 
 # -------------------------------
 # Step 6: Build and run nginx container (local only)
