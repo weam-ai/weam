@@ -197,14 +197,29 @@ const getSolutionAccessByUserId = async (req) => {
         ) {
             solutionAccess = await SolutionApp.find({sequence:{$exists:true}}).sort({ sequence: 1 });
         } else {
-            //here populate the appId and only sellect the appid , appname and appicon
-            solutionAccess = await SolutionMember.find({ 'user.id': id })
-                .populate({
-                    path: 'appId',
-                    select: 'appId name icon pathToOpen sequence',
+             // Query all solution member records for this user
+             const solutionMemberRecords = await SolutionMember.find({ 
+                'user.id': id, 
+                companyId: req.user.company.id 
+            })
+            .populate({
+                path: 'appId',
+                select: 'appId name charimg pathToOpen sequence',
+            })
+            .select('appId');
+
+            // Remove duplicates by filtering unique appId values
+            const uniqueAppIds = new Set();
+            solutionAccess = solutionMemberRecords
+                .filter(record => {
+                    // Skip if appId is null or already processed
+                    if (!record.appId || uniqueAppIds.has(record.appId._id.toString())) {
+                        return false;
+                    }
+                    uniqueAppIds.add(record.appId._id.toString());
+                    return true;
                 })
-                .select('appId name icon pathToOpen sequence')
-                .sort({ sequence: 1 });
+                .sort((a, b) => (a.appId?.sequence || 0) - (b.appId?.sequence || 0));
         }
 
         return { data: solutionAccess };
