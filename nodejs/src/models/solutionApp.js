@@ -43,6 +43,9 @@ const schema = new Schema(
         },
         sequence: {
             type: Number,
+        },
+        charimg:{
+            type: String
         }
     },
     {
