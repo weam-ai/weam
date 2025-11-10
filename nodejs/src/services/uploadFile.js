@@ -11,7 +11,7 @@ const UserBot = require('../models/userBot');
 const sharp = require('sharp');
 const { storeVectorData } = require('./customgpt');
 const mongoose = require('mongoose');
-const { getFileNameWithoutExtension, getFileExtension, hasNotRestrictedExtension, handleError, localize, getCompanyId } = require('../utils/helper');
+const { getFileNameWithoutExtension, getFileExtension, hasNotRestrictedExtension, getCompanyId, encodeMetadata } = require('../utils/helper');
 const Busboy = require('busboy');
 const { PassThrough } = require('stream');
 const { EMBEDDINGS } = require('../config/config');
@@ -515,7 +515,7 @@ async function uploadFileViaStreams(req) {
     // Verify S3 bucket accessibility
     try {
         await S3.headBucket({ Bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME }).promise();
-        logger.info(`S3 bucket ${AWS_CONFIG.AWS_S3_BUCKET_NAME} is accessible`);
+        
     } catch (error) {
         logger.error('[uploadFileViaStreams] S3 bucket not accessible:', error);
         throw new Error('Storage service temporarily unavailable');
@@ -590,11 +590,13 @@ async function uploadFileViaStreams(req) {
         const ext = (extFromName || extFromMime || 'bin').toLowerCase();
         const isImage = /\.(jpg|jpeg|webp|png|svg|gif)$/i.test(originalName);
         const key = `${isImage ? 'images' : 'documents'}/${fileId}.${ext}`;
+        
+        const cleanName = originalName ? originalName.replace(/[^\x00-\x7F]/g, '') : 'unknown';
 
         // build the DB payload with the exact _id from the frontend
         const fileData = {
             _id: fileId, // <-- preserve frontend id
-            name: originalName,
+            name: cleanName,
             mime_type: mimetype,
             file_size: '0',               // updated on 'end'
             uri: `/${key}`,
@@ -645,11 +647,9 @@ async function uploadFileViaStreams(req) {
         });
 
         file.on('end', () => {
-            const rec = fileRecords.find(fr => fr.id === fileId);
+            const rec = fileRecords.find(fr => fr._id.toString() === fileId.toString());
             if (rec) {
-                rec.fileSize = uploadedBytes;
-                rec.fileData.file_size = String(uploadedBytes);
-                logger.info(`Completed: ${originalName} (${uploadedBytes} bytes) fileId=${fileId}`);
+                rec.file_size = uploadedBytes.toString();
                 
                 // Check user storage limit
                 if (userStorageInfo && (userStorageInfo.usedSize + uploadedBytes) >= userStorageInfo.fileSize) {
@@ -667,16 +667,19 @@ async function uploadFileViaStreams(req) {
 
         const controller = new AbortController();
 
+        const cleanOriginalName = encodeMetadata(originalName);
+        const cleanFieldname = String(fieldname || '');
+
         const uploader = S3.upload({
             Bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
             Key: key,
             Body: s3Pass,
             ContentType: mimetype,
-            Metadata: { originalName, fieldname: String(fieldname) }
+            Metadata: { originalName: cleanOriginalName, fieldname: cleanFieldname }
             // Removed ServerSideEncryption: 'AES256' as it's causing errors
         }, { queueSize: 6, partSize: 16 * 1024 * 1024 });
         
-        logger.info('[uploadFileViaStreams] Started S3 upload for:', key);
+        
 
         uploader.on('httpUploadProgress', (p) => {
             // your socket progress here
@@ -688,7 +691,7 @@ async function uploadFileViaStreams(req) {
         // start embedding in parallel for non-images only – DO NOT await
         // Use the brainId extracted from form fields
         const brainId = req.headers['x-brain-id'];
-        logger.info(`Using brainId for file ${originalName}:`, brainId);
+        
         
         if (!isImage) {
             // Get user's embedding API key from database (same logic as vectorApiCall section)
@@ -702,33 +705,14 @@ async function uploadFileViaStreams(req) {
                 if (userEmbeddingBot && userEmbeddingBot.config && userEmbeddingBot.config.apikey) {
                     const { decryptedData } = require('../utils/helper');
                     embeddingApiKey = decryptedData(userEmbeddingBot.config.apikey);
-                    logger.info(`Using user's embedding API key for ${originalName}`);
+                    
                 } else {
-                    logger.info(`No user embedding API key found for ${originalName}, using default`);
+                    
                 }
             } catch (error) {
                 logger.error(`Failed to get user embedding API key for ${originalName}:`, error.message);
             }
-            
-            // Pinecone embedding implementation
-            // embedInParallelPinecone(embedPass, {
-            //     mimetype,
-            //     originalName,
-            //     s3Key: key,
-            //     fileId, // pass same id to vector store
-            //     companyId: getCompanyId(req.user),
-            //     brainId: brainId, // Use extracted brainId for namespace
-            //     onProgress: (payload) => {
-            //         const room = customRoom || companyRoom;
-            //         if (room) sockets.to(room).emit(SOCKET_EVENTS.FILE_EMBED_PROGRESS, payload);
-            //     },
-            //     signal: controller.signal,
-            //     embeddingApiKey: embeddingApiKey, // Pass the user's API key
-            // }).catch(err => { 
-            //     logger.error(`Pinecone embedding failed for ${originalName}:`, err);
-            //     controller.abort(); 
-            //     throw err; 
-            // });
+        
             embedInParallel(embedPass, {
                 mimetype,
                 originalName,
@@ -749,30 +733,30 @@ async function uploadFileViaStreams(req) {
         }
 
         tasks.push(uploadPromise);
-        logger.info('[uploadFileViaStreams] Added upload task for:', key);
+        
         fileIndex++;
-        logger.info('[uploadFileViaStreams] Updated fileIndex to:', fileIndex);
+        
     });
 
     await new Promise((resolve, reject) => {
         busboy.on('finish', () => {
-            logger.info('[uploadFileViaStreams] Busboy finish resolved');
+            
             resolve();
         });
         busboy.on('error', (err) => {
-            logger.info('[uploadFileViaStreams] Busboy error rejected:', err.message);
+            
             reject(err);
         });
         
         // Check if request is readable
         if (req.readable) {
-            logger.info('[uploadFileViaStreams] Request is readable, piping to busboy');
+            
             
             // Check if request has content
             let hasContent = false;
             req.on('data', (chunk) => {
                 hasContent = true;
-                logger.info('[uploadFileViaStreams] Received data chunk of size:', chunk.length);
+                
             });
             
             req.pipe(busboy);
@@ -791,9 +775,9 @@ async function uploadFileViaStreams(req) {
     });
 
     try {
-        logger.info('[uploadFileViaStreams] Starting Promise.all for', tasks.length, 'tasks');
+        
         await Promise.all(tasks);
-        logger.info('[uploadFileViaStreams] All S3 uploads completed successfully');
+        
 
         // allow any tail events to settle
         await new Promise(r => setTimeout(r, 500));
@@ -808,7 +792,7 @@ async function uploadFileViaStreams(req) {
                         Bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
                         Key: fr.s3Key
                     }).promise();
-                    logger.info(`Cleaned up S3 file ${fr.s3Key} due to storage limit exceeded`);
+                    
                 } catch (cleanupError) {
                     logger.error(`Failed to cleanup S3 file ${fr.s3Key}:`, cleanupError);
                 }
@@ -817,11 +801,11 @@ async function uploadFileViaStreams(req) {
         }
 
         // Create MongoDB records using the SAME _id as frontend provided
-        // logger.info('[uploadFileViaStreams] Creating MongoDB records for', fileRecords.length, 'files');
+        // 
         const created = [];
         for (const fr of fileRecords) {
             try {
-                logger.info('[uploadFileViaStreams] Creating MongoDB record for:', fr.originalName);
+                
                 const brainId = req.headers['x-brain-id'];
                 const doc = await File.create(fr);
                 ChatDocs.create({
@@ -837,7 +821,7 @@ async function uploadFileViaStreams(req) {
                     }
                 });
                 created.push(doc);
-                logger.info(`Successfully created MongoDB record for file: ${fr.originalName}`);
+                
             } catch (e) {
                 logger.error(`Mongo create failed for _id=${fr.id}, file: ${fr.originalName}`, e);
                 // Try to clean up the S3 file if MongoDB creation fails
@@ -846,7 +830,7 @@ async function uploadFileViaStreams(req) {
                         Bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
                         Key: fr.s3Key
                     }).promise();
-                    logger.info(`Cleaned up S3 file ${fr.s3Key} due to MongoDB creation failure`);
+                    
                 } catch (cleanupError) {
                     logger.error(`Failed to cleanup S3 file ${fr.s3Key}:`, cleanupError);
                 }
@@ -855,7 +839,7 @@ async function uploadFileViaStreams(req) {
 
         // Update user's used storage size
         if (userStorageInfo && created.length > 0) {
-            const totalUploadSize = fileRecords.reduce((sum, fr) => sum + fr.file_size, 0);
+            const totalUploadSize = fileRecords.reduce((sum, fr) => sum + parseInt(fr.file_size, 10), 0);
             try {
                 await User.updateOne(
                     {
@@ -866,16 +850,16 @@ async function uploadFileViaStreams(req) {
                     },
                     { $inc: { usedSize: totalUploadSize } }
                 );
-                logger.info(`Updated user storage: +${Math.round(totalUploadSize / 1024 / 1024)} MB`);
+                
             } catch (updateError) {
                 logger.error('[uploadFileViaStreams] Failed to update user storage:', updateError);
                 // Don't fail the upload for this, but log it
             }
         }
 
-        logger.info(`[uploadFileViaStreams] Upload completed successfully. Created ${created.length} records:`, created.map(d => d._id));
-        logger.info(`[uploadFileViaStreams] Final fileRecords count:`, fileRecords.length);
-        logger.info(`[uploadFileViaStreams] Final tasks count:`, tasks.length);
+        
+        
+        
         return created;
     } catch (e) {
         logger.error('[uploadFileViaStreams] Upload failed:', e);
@@ -893,7 +877,7 @@ async function uploadFileViaStreams(req) {
                     Bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
                     Key: fr.s3Key
                 }).promise();
-                                    logger.info(`Cleaned up S3 file ${fr.s3Key} due to upload failure`);
+                                    
             } catch (cleanupError) {
                 logger.error(`Failed to cleanup S3 file ${fr.s3Key}:`, cleanupError);
             }
@@ -1214,11 +1198,11 @@ async function extractTextFromEML(buffer) {
 async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId, embeddingApiKey }) {
     try {
         const {  upsertDocuments } = require('./qdrant');
-        logger.info(`Starting embedAndUpsert for file: ${originalName} with fileId: ${fileId}`);
+        
         
         const text = await extractTextFromBuffer(buf, mimetype, originalName);
         if (!text || !text.trim()) {
-            logger.info(`No text extracted for file: ${originalName}, skipping embedding`);
+            
             return;
         }
 
@@ -1227,11 +1211,11 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
         // const chunks = splitText(text, size, overlap);
         const chunks = await textSplitter.splitText(text);
         if (!chunks.length) {
-            logger.info(`No chunks created for ${originalName}, chunk ${chunkIndex}`);
+            
             return;
         }
 
-        logger.info(`Created ${chunks.length} chunks for file: ${originalName} with fileId: ${fileId}`);
+        
 
         const expectDim = EMBEDDINGS.VECTOR_SIZE || 1536;
         const batchSize = EMBEDDINGS.BATCH_SIZE || 32; // tune 32–128
@@ -1290,11 +1274,11 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
                 }
             }));
 
-            logger.info(`Storing ${docs.length} vectors for file: ${originalName} with fileId: ${fileId}`);
+            
 
             try {
                 const result = await upsertDocuments(docs);
-                logger.info(`Successfully stored ${docs.length} vectors for file: ${originalName} with fileId: ${fileId}`);
+                
             } catch (e) {
                 logger.error(`[embed] Batch upsert failed for file: ${originalName} with fileId: ${fileId}:`, e.message);
                 // degrade gracefully so we don't lose data
@@ -1314,7 +1298,7 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
             });
         }
     } catch (error) {
-        logger.info('error: ', error);
+        
           logger.error(`[embed] Failed to process ${originalName}, chunk ${chunkIndex}:`, error.message);
     }
 }
@@ -1467,14 +1451,14 @@ const getFileExtensionFromUrl = (imageUrl) => {
  */
 const uploadOpenAIImageToS3Background = async (imageUrl) => {
     try {
-        logger.info(`Starting background upload for image: ${imageUrl}`);
+        
         
         // Process the upload
         const result = await downloadAndUploadImageToS3(imageUrl);
         
         if (result.success) {
-            logger.info(`Successfully uploaded image to S3: ${result.s3Url}`);
-            logger.info(`File ID: ${result.fileId}, Size: ${result.fileSize} bytes`);
+            
+            
         } else {
             logger.error(`Failed to upload image: ${result.error}`);
         }
@@ -1507,13 +1491,13 @@ const uploadOpenAIImageToS3 = async (imageUrl, options = {}) => {
     } = options;
 
     try {
-        logger.info(`🔄 Starting OpenAI image upload to S3: ${imageUrl}`);
+        
         
         // Process the upload
         const result = await downloadAndUploadImageToS3(imageUrl);
         
         if (result.success) {
-            logger.info(`✅ Successfully uploaded OpenAI image to S3: ${result.s3Url}`);
+            
             
             // If userId and brainId are provided, create chat docs entry
             if (userId && brainId) {
@@ -1530,7 +1514,7 @@ const uploadOpenAIImageToS3 = async (imageUrl, options = {}) => {
                     //         createdAt: new Date()
                     //     }
                     // });
-                    logger.info(`📚 Chat docs entry creation temporarily disabled to avoid circular dependency`);
+                    
                 } catch (chatDocsError) {
                     logger.warn(`⚠️ Failed to create chat docs entry: ${chatDocsError.message}`);
                 }
@@ -1698,23 +1682,7 @@ const uploadGeminiImageToS3 = async (base64Data, options = {}) => {
             }
         };
         
-        logger.info(`🔄 [GEMINI_IMAGE] Attempting S3 upload with params:`, {
-            bucket: AWS_CONFIG.AWS_S3_BUCKET_NAME,
-            key: s3Key,
-            contentType: 'image/png',
-            bufferSize: buffer.length
-        });
-        
-        const uploadResult = await S3.upload(uploadParams).promise();
-        
-        logger.info(`✅ [GEMINI_IMAGE] S3 upload successful:`, {
-            location: uploadResult.Location,
-            bucket: uploadResult.Bucket,
-            key: uploadResult.Key,
-            etag: uploadResult.ETag
-        });
-        
-        logger.info(`Successfully uploaded Gemini image to S3: ${uploadResult.Location}`);
+        const uploadResult = await S3.upload(uploadParams).promise();    
         
         const fileData = {
             name: `${customFileName}-${id}.${fileExtension}`,
