@@ -22,6 +22,7 @@ const addSolutionMember = async (req) => {
             user: member,
             invitedBy: req.user._id,
             invitedAt: new Date(),
+            companyId: req.user.company.id,
         }));
 
         const bulkUpdate = payload.map((member) => {
