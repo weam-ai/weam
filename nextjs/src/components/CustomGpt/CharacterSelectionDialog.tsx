@@ -211,7 +211,7 @@ const CharacterSelectionDialog: React.FC<CharacterSelectionDialogProps> = ({
                         <div className='w-full border-b pb-2'>
                         <TabsList className="flex w-full max-w-[200px] border-none p-0 gap-x-2">
                             <TabsTrigger value="characters" className="rounded-md border px-3 py-1.5 text-font-14 data-[state=active]:border-b10 data-[state=active]:bg-gray-100 ">Characters</TabsTrigger>
-                            <TabsTrigger value="upload" className="rounded-md border px-3 py-1.5 text-font-14 data-[state=active]:border-b10 data-[state=active]:bg-gray-100 ">Upload</TabsTrigger>
+                            {/* <TabsTrigger value="upload" className="rounded-md border px-3 py-1.5 text-font-14 data-[state=active]:border-b10 data-[state=active]:bg-gray-100 ">Upload</TabsTrigger> */}
                         </TabsList>
                         </div>
 

@@ -1,6 +1,6 @@
 const Brain = require('../models/brains');
 const dbService = require('../utils/dbService');
-const { formatUser, formatBrain, getCompanyId, getDefaultBrainSlug } = require('../utils/helper');
+const { formatUser, formatBrain, getCompanyId, getDefaultBrainSlug, getRandomCharacter } = require('../utils/helper');
 const ShareBrain = require('../models/shareBrain');
 const { ROLE_TYPE, NOTIFICATION_TYPE, DEFAULT_NAME } = require('../config/constants/common');
 const { sendCommonNotification } = require('./notification');
@@ -118,7 +118,8 @@ const createDefaultBrain = async (req, workspaceId, currentuser) => {
                 fname: currentuser?.fname,
                 lname: currentuser?.lname,
                 profile: currentuser?.profile
-            }
+            },
+            charimg : getRandomCharacter().image
         }
         
         data.companyId = getCompanyId(currentuser);
@@ -133,7 +134,8 @@ const createDefaultBrain = async (req, workspaceId, currentuser) => {
             user: {
                 email: currentuser.email,
                 id: currentuser._id                
-            }
+            },
+            charimg: getRandomCharacter().image
         }
         await ShareBrain.findOneAndUpdate({ 'brain.id': brains._id, 'user.id': currentuser._id }, shareData, { new: true, upsert: true });
 
@@ -397,7 +399,8 @@ async function  defaultCompanyBrain(workspaceId, currentuser) {
             slug: `${slugify(DEFAULT_NAME.BRAIN)}-${currentuser._id}`,
             isDefault: true,
             user: formatUser(currentuser),
-            companyId: currentuser.company.id
+            companyId: currentuser.company.id,
+            charimg : getRandomCharacter().image
         }
 
         const brains = await Brain.create(data);
@@ -407,6 +410,7 @@ async function  defaultCompanyBrain(workspaceId, currentuser) {
             role: currentuser.roleCode,
             invitedBy: currentuser._id,
             user: formatUser(currentuser),
+            charimg : getRandomCharacter().image
         }
 
         await ShareBrain.findOneAndUpdate({ 'brain.id': brains._id, 'user.id': currentuser._id }, shareData, { new: true, upsert: true });
@@ -425,6 +429,7 @@ async function defaultGeneralBrainMember(req,workspaceId, currentuser) {
             workspaceId: workspaceId,
             slug: DEFAULT_NAME.GENERAL_BRAIN_SLUG,
             shareWith:[formatUser(currentuser)],
+
         }
     
 
@@ -434,7 +439,8 @@ async function defaultGeneralBrainMember(req,workspaceId, currentuser) {
                 isShare:true,
                 title:DEFAULT_NAME.GENERAL_BRAIN_TITLE,
                 workspaceId: workspaceId,
-                slug: DEFAULT_NAME.GENERAL_BRAIN_SLUG
+                slug: DEFAULT_NAME.GENERAL_BRAIN_SLUG,
+                charimg: getRandomCharacter().image
             },
             { new: true, upsert: true }
         );
@@ -455,7 +461,8 @@ async function defaultGeneralBrainMember(req,workspaceId, currentuser) {
             },
             role: ROLE_TYPE.MEMBER,
             invitedBy: getCompanyId(currentuser),
-            updatedBy: getCompanyId(currentuser)
+            updatedBy: getCompanyId(currentuser),
+            charimg: getRandomCharacter().image        
         });
         
 

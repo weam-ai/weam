@@ -629,7 +629,7 @@ const SuperSolutionPage = () => {
                                               }
                                           >   
                                               <div className="flex gap-3 mb-3">
-                                              <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full flex-shrink-0">
+                                              <div className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0">
                                                       {(() => {
                                                           return (
                                                               <Image
@@ -679,7 +679,7 @@ const SuperSolutionPage = () => {
                     <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto p-5">
                         <DialogHeader className="border-b pb-3 mb-4">
                             <DialogTitle className="flex items-center gap-3 font-bold">
-                                <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full">
                                 {(() => {
                                     return (
                                         <Image

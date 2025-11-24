@@ -1,7 +1,7 @@
 const WorkSpace = require("../models/workspace");
 const dbService = require("../utils/dbService");
 const WorkSpaceUser = require("../models/workspaceuser");
-const { formatUser, getCompanyId, formatBrain, slugify } = require("../utils/helper");
+const { formatUser, getCompanyId, formatBrain, slugify, getRandomCharacter } = require("../utils/helper");
 const { ROLE_TYPE, NOTIFICATION_TYPE, DEFAULT_NAME } = require("../config/constants/common");
 const { sendCommonNotification } = require("./notification");
 const { addWorkSpaceTeam } = require("./teamMember");
@@ -262,7 +262,8 @@ const addDefaultWorkSpace = async (company, user) => {
             workspaceId: createdWorkspace._id,
             companyId:company._id,
             isShare:true,
-            user:formatUser(user)
+            user:formatUser(user),
+            charimg: getRandomCharacter().image
         });
 
         const generalBrainData = {
@@ -276,7 +277,8 @@ const addDefaultWorkSpace = async (company, user) => {
             brain:generalBrainData,
             role:ROLE_TYPE.OWNER,
             invitedBy:user._id,
-            user:formatUser(user)
+            user:formatUser(user),
+            charimg: getRandomCharacter().image
         })
         
         addWorkSpaceDefaultUser(user);

@@ -1,7 +1,7 @@
 const logger = require("../utils/logger");
 const dbService = require("../utils/dbService");
 const teamUser = require("../models/teamUser");
-const { getCompanyId, formatBrain, formatUser } = require("../utils/helper");
+const { getCompanyId, formatBrain, formatUser, getRandomCharacter } = require("../utils/helper");
 const { ROLE_TYPE, NOTIFICATION_TYPE, DEFAULT_NAME } = require("../config/constants/common");
 const WorkSpaceUser = require("../models/workspaceuser");
 const { sendCommonNotification } = require("./notification");
@@ -337,6 +337,7 @@ const addWorkSpaceTeam = async (teams, existingWorkspace, requestUser) => {
                 slug: DEFAULT_NAME.GENERAL_BRAIN_SLUG,
                 companyId: getCompanyId(requestUser),
                 createdBy: requestUser.id,
+                charimg : getRandomCharacter().image
             };
 
             // Only add teams if there are any teamWorkspaceDetails

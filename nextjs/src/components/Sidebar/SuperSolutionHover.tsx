@@ -166,7 +166,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                             }
                             className="group flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-xl transition-all duration-200 hover:scale-105"
                         >
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-all duration-200">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200">
                             {ROLE_TYPE.USER === user?.roleCode
                                     ? (() => {
                                           return (  
@@ -175,7 +175,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                                                 alt={solution?.appId?.name}
                                                 width={24}
                                                 height={24}
-                                                className="w-6 h-6 object-contain"
+                                                className="w-10 h-10 object-contain"
                                              />
                                           );
                                       })()
@@ -186,7 +186,7 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
                                                 alt={solution?.name}
                                                 width={24}
                                                 height={24}
-                                                className="w-6 h-6 object-contain"
+                                                className="w-10 h-10 object-contain"
                                              />
                                           );
                                       })()
