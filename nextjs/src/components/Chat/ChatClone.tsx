@@ -342,6 +342,11 @@ const ChatPage = memo(() => {
     }, [debouncedSearchValue]);
 
     const handleWebSearchClick = useCallback(() => {
+        const isPerplexityAdded = userModal.find((assign: AiModalType) => assign.bot.code === AI_MODEL_CODE.PERPLEXITY);
+        if (!isPerplexityAdded) {
+            Toast('Please add your perplexity api key to use this model', 'error');
+            return;
+        }
         dispatch(setIsWebSearchActive(!isWebSearchActive));
     }, [isWebSearchActive]);
 

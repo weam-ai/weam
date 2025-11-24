@@ -39,6 +39,9 @@ const ROLES = {
 } as const;
 
 export function hasPermission(role: Role, permission: Permission) {
+    if (!role || !ROLES[role]) {
+        return false;
+    }
     return (ROLES[role] as readonly Permission[]).includes(permission);
 }
 

@@ -121,12 +121,18 @@ const SuperSolutionPage = () => {
     const [showAppDetails, setShowAppDetails] = useState(false);
     const [currentAppMembers, setCurrentAppMembers] = useState([]);
     const [currentAppTeams, setCurrentAppTeams] = useState([]);
+    const [isMounted, setIsMounted] = useState(false);
 
     const currentUser = getCurrentUser();
     const isAdminOrManager = hasPermission(
         currentUser?.roleCode,
         PERMISSIONS.SUPER_SOLUTION_ACCESS
     );
+
+    // Handle client-side mounting to prevent hydration errors
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Hooks
     const { members, getMembersList } = useMembers();
@@ -566,6 +572,11 @@ const SuperSolutionPage = () => {
         }
     }, [selectedApp]);
 
+    // Prevent hydration errors by not rendering until client-side
+    if (!isMounted) {
+        return null;
+    }
+
     if (!isAdminOrManager) {
         return (
             <div className="flex flex-col flex-1 relative h-full overflow-hidden lg:pt-20 pb-10 px-2">
@@ -608,52 +619,54 @@ const SuperSolutionPage = () => {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {availableApps.map((app) => (
-                                        <div
-                                            key={app.id}
-                                            className="border p-4 rounded-lg cursor-pointer hover:shadow-lg transition-shadow duration-200 group hover:bg-b12"
-                                            onClick={() =>
-                                                handleAppClick(app)
-                                            }
-                                        >   
-                                            <div className="flex gap-3 mb-3">
-                                            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full flex-shrink-0">
-                                                    {(() => {
-                                                        return (
-                                                            <Image
-                                                                src={app.charimg || DEFAULT_CHARACTERS_SOLUTION_APP[10]}
-                                                                alt={app.name}
-                                                                width={40}
-                                                                height={40}
-                                                                className="w-10 h-10 object-contain rounded-full"
-                                                            />
-                                                        );
-                                                    })()}
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold">
-                                                        {app.name}
-                                                    </h3>
-                                                    <p className="text-font-14 text-gray-600">
-                                                        {
-                                                            app.description
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-font-14">
-                                                <Badge className='px-4 py-1.5 group-hover:bg-b11'>
-                                                    {app.category}
-                                                </Badge>
-                                                <span className="text-xs text-gray-500">
-                                                    {app.route}
-                                                </span>
-                                            </div>
-                                            <p className="text-font-14 text-gray-500 mt-3 pt-3 border-t">
-                                                Click to manage access
-                                            </p>                                            
-                                        </div>
-                                    ))}
+                                    {availableApps.map((app) => {
+                                        return (
+                                          <div
+                                              key={app._id}
+                                              className="border p-4 rounded-lg cursor-pointer hover:shadow-lg transition-shadow duration-200 group hover:bg-b12"
+                                              onClick={() =>
+                                                  handleAppClick(app)
+                                              }
+                                          >   
+                                              <div className="flex gap-3 mb-3">
+                                              <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full flex-shrink-0">
+                                                      {(() => {
+                                                          return (
+                                                              <Image
+                                                                  src={app.charimg || DEFAULT_CHARACTERS_SOLUTION_APP[10]}
+                                                                  alt={app.name}
+                                                                  width={40}
+                                                                  height={40}
+                                                                  className="w-10 h-10 object-contain rounded-full"
+                                                              />
+                                                          );
+                                                      })()}
+                                                  </div>
+                                                  <div>
+                                                      <h3 className="font-semibold">
+                                                          {app.name}
+                                                      </h3>
+                                                      <p className="text-font-14 text-gray-600">
+                                                          {
+                                                              app.description
+                                                          }
+                                                      </p>
+                                                  </div>
+                                              </div>
+                                              <div className="flex items-center gap-2 text-font-14">
+                                                  <Badge className='px-4 py-1.5 group-hover:bg-b11'>
+                                                      {app.category}
+                                                  </Badge>
+                                                  <span className="text-xs text-gray-500">
+                                                      {app.route}
+                                                  </span>
+                                              </div>
+                                              <p className="text-font-14 text-gray-500 mt-3 pt-3 border-t">
+                                                  Click to manage access
+                                              </p>                                            
+                                          </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                     </div>

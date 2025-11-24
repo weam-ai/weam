@@ -735,6 +735,25 @@ async function encodeImageToBase64(imagePathOrUrl) {
   }
 }
 
+const encodeMetadata = (value) => {
+    if (!value) return '';
+    try {
+        return Buffer.from(String(value), 'utf8').toString('base64');
+    } catch (error) {
+        logger.error('Error encoding metadata:', error);
+        return '';
+    }
+};
+const decodeMetadata = (encodedValue) => {
+    if (!encodedValue) return '';
+    try {
+        return Buffer.from(encodedValue, 'base64').toString('utf8');
+    } catch (error) {
+        logger.error('Error decoding metadata:', error);
+        return '';
+    }
+};
+
 
 module.exports = {
     catchAsync,
@@ -785,5 +804,7 @@ module.exports = {
     parseFormData,
     NOT_RESTRICTED_FILE_EXTENSIONS,
     formatBot,
-    encodeImageToBase64
+    encodeImageToBase64,
+    encodeMetadata,
+    decodeMetadata
 };

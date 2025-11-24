@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+// @ts-ignore - rehype-raw types may not be available
+import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus as dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -84,10 +86,13 @@ const CodeBlock = (props) => {
 };
 
 export const MarkOutPut = (assisnantResponse: string) => {
+    const processedResponse = assisnantResponse.replace(/==(.*?)==/g, '<u>$1</u>');
+    
     return (
         <div className="markdown w-full mx-auto flex-1 prose max-w-full overflow-hidden">
             <Markdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                     // Override how links <a> are rendered
                     code: CodeBlock,
@@ -231,7 +236,7 @@ export const MarkOutPut = (assisnantResponse: string) => {
                     },
                 }}
             >
-                {assisnantResponse}
+                {processedResponse}
             </Markdown>
         </div>
     );

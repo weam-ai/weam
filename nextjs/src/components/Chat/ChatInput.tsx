@@ -458,6 +458,11 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
     const isSubmitDisabled = message.trim() === '' || fileLoader || disabledInput.current || blockProAgentAction();
 
     const handleWebSearchClick = () => {
+        const isPerplexityAdded = aiModals.find((assign) => assign.bot.code === AI_MODEL_CODE.PERPLEXITY);
+        if (!isPerplexityAdded) {
+            Toast('Please add your perplexity api key to use this model', 'error');
+            return;
+        }
         dispatch(setIsWebSearchActive(!isWebSearchActive));
     };
 
