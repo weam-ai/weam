@@ -1,4 +1,4 @@
-const { RANDOM_PASSWORD_CHAR, PASSWORD_REGEX, ATRATE, GLOBAL_ERROR_CODE, ROLE_TYPE, INVITATION_TYPE } = require('../config/constants/common');
+const { RANDOM_PASSWORD_CHAR, PASSWORD_REGEX, ATRATE, GLOBAL_ERROR_CODE, ROLE_TYPE, INVITATION_TYPE, DEFAULT_CHARACTERS_BRAIN } = require('../config/constants/common');
 const bcrypt = require('bcrypt');
 const { createTopic } = require('../kafka/admin');
 const CryptoJS = require('crypto-js');
@@ -754,6 +754,19 @@ const decodeMetadata = (encodedValue) => {
     }
 };
 
+const getRandomCharacter = () => {
+    const allCharacters = [];
+    
+    // Flatten all characters from all categories into a single array
+    Object.values(DEFAULT_CHARACTERS_BRAIN).forEach(category => {
+        allCharacters.push(...category);
+    });
+    
+    // Return a random character
+    const randomIndex = Math.floor(Math.random() * allCharacters.length);
+    return allCharacters[randomIndex];
+};
+
 
 module.exports = {
     catchAsync,
@@ -806,5 +819,6 @@ module.exports = {
     formatBot,
     encodeImageToBase64,
     encodeMetadata,
-    decodeMetadata
+    decodeMetadata,
+    getRandomCharacter
 };

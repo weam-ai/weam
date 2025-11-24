@@ -51,7 +51,7 @@ const AddWorkspaceModal = ({ open, close }) => {
         setMemberOptions(
             users.map((user) => ({
                 email: user.email,
-                id: user.id,
+                id: user?.id || user._id,
                 fullname: showNameOrEmail(user),
                 fname: user?.fname,
                 lname: user?.lname,
