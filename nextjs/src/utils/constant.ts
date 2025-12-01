@@ -453,6 +453,7 @@ export const AI_MODAL_NAME = {
     // GPT_5_MINI: 'gpt-5-mini',
     // GPT_5_NANO: 'gpt-5-nano',
     GPT_5_CHAT: 'gpt-5-chat-latest',    
+    GPT_5_1:'gpt-5.1',   
     
     // Open AI models
     // GPT_4_1: 'gpt-4.1',
@@ -469,6 +470,7 @@ export const AI_MODAL_NAME = {
     GEMINI_2_0_FLASH: 'gemini-2.0-flash',
     // GEMINI_2_5_FLASH_PREVIEW_05_20: 'gemini-2.5-flash-preview-05-20',
     GEMINI_2_5_FLASH: 'gemini-2.5-flash',
+    GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
 
     // Anthropic models
     //CLAUDE_3_7_SONNET_LATEST: 'claude-3-7-sonnet-latest',
@@ -476,9 +478,11 @@ export const AI_MODAL_NAME = {
     //CLAUDE_3_OPUS_LATEST: 'claude-3-opus-latest',
     // CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
     // CLAUDE_OPUS_4_20250514: 'claude-opus-4-20250514',
-    CLAUDE_3_5_HAIKU_LATEST: 'claude-3-5-haiku-latest',
-    CLAUDE_OPUS_4_1_20250805: 'claude-opus-4-1-20250805',
+    // CLAUDE_3_5_HAIKU_LATEST: 'claude-3-5-haiku-latest',
+    // CLAUDE_OPUS_4_1_20250805: 'claude-opus-4-1-20250805',
     CLAUDE_SONNET_4_5_20250929: 'claude-sonnet-4-5-20250929',
+    CLAUDE_OPUS_4_5_20251101: 'claude-opus-4-5-20251101',
+    CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
     // CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
 
     // Perplexity models
@@ -595,6 +599,18 @@ export const ollamaKeys = yup.object({
 
 export const MODEL_CREDIT_INFO = [
     // GPT-5 models (moved to first for priority in chat dropdown)
+    {
+        code: 'OPEN_AI',
+        model: 'gpt-5.1',
+        credit: 10,
+        displayName: 'GPT-5.1',
+        snippet: 'Complex reasoning, broad world knowledge, and code-heavy or multi-step agentic tasks',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: true,
+        reasoning: true,
+    },
     {
         code: 'OPEN_AI',
         model: 'gpt-5',
@@ -840,6 +856,18 @@ export const MODEL_CREDIT_INFO = [
         reasoning: true,
     },
     {
+        code: 'GEMINI',
+        model: 'gemini-3-pro-preview',
+        credit: 10,
+        displayName: 'Gemini 3 Pro Preview',
+        snippet: 'Powerful for complex reasoning and advanced coding.',
+        doc: true,
+        vision: true,
+        image: false,
+        reasoning: true,
+        websearch: true,
+    },
+    {
         code: 'ANTHROPIC',
         model: 'claude-3-opus-latest',
         credit: 50,
@@ -882,6 +910,30 @@ export const MODEL_CREDIT_INFO = [
         displayName: 'Claude 3.7 Sonnet Latest',
         snippet: 'Ideal for complex coding and long-form content.',
         doc: true,
+        websearch: true,
+        vision: true,
+        image: false,
+        reasoning: true,
+    },
+    {
+        code: 'ANTHROPIC',
+        model: 'claude-opus-4-5-20251101',
+        credit: 10,
+        displayName: 'Claude Opus 4.5',
+        snippet: 'Premium model combining maximum intelligence with practical performance.',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: false,
+        reasoning: true,
+    },
+    {
+        code: 'ANTHROPIC',
+        model: 'claude-haiku-4-5-20251001',
+        credit: 5,
+        displayName: 'Claude Haiku 4.5',
+        snippet: 'Fastest model with near-frontier intelligence',
+        doc: false,
         websearch: true,
         vision: true,
         image: false,
@@ -1525,6 +1577,7 @@ export const MODEL_NAME_BY_CODE = {
     'gpt-5-mini': 'OPEN_AI',
     'gpt-5-nano': 'OPEN_AI',
     'gpt-5-chat-latest': 'OPEN_AI',
+    'gpt-5.1': 'OPEN_AI',
     
     // Gemini models
     'gemini-2.5-pro-preview-05-06': 'GEMINI',
@@ -1536,6 +1589,7 @@ export const MODEL_NAME_BY_CODE = {
     'gemini-2.5-flash-preview-05-20': 'GEMINI',
     'gemini-2.5-pro': 'GEMINI',
     'gemini-2.5-flash': 'GEMINI',
+    'gemini-3-pro-preview': 'GEMINI',
     
     // Anthropic models
     'claude-3-opus-latest': 'ANTHROPIC',
@@ -1548,6 +1602,8 @@ export const MODEL_NAME_BY_CODE = {
     'claude-opus-4-20250514': 'ANTHROPIC',
     'claude-sonnet-4-5-20250929': 'ANTHROPIC',
     'claude-opus-4-1-20250805': 'ANTHROPIC',
+    'claude-opus-4-5-20251101': 'ANTHROPIC',
+    'claude-haiku-4-5-20251001': 'ANTHROPIC',
     
     // Perplexity models
     'llama-3.1-sonar-large-128k-online': 'PERPLEXITY',

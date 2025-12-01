@@ -222,6 +222,7 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'gpt-5-mini',
         'gpt-5-nano',
         'gpt-5-chat-latest',
+        "gpt-5.1",
         
         // Anthropic Claude Models
         'claude-3-5-sonnet-latest',
@@ -234,6 +235,8 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'claude-sonnet-4-20250514',
         'claude-opus-4-1-20250805',
         'claude-opus-4-20250514',
+        'claude-opus-4-5-20251101',
+        'claude-haiku-4-5-20251001',
         
         // Google Gemini Models
         'gemini-1.5-pro',
@@ -242,6 +245,7 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'gemini-2.5-flash',
         'gemini-2.5-flash-preview-05-20',
         'gemini-2.5-pro-preview-05-06',
+        'gemini-3-pro-preview',
         
         // Meta Llama Models
         'meta-llama/llama-4-scout',

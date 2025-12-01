@@ -21,18 +21,21 @@ const OPENAI_MODAL = [
     // { name: 'gpt-5-mini', type: 2},
     // { name: 'gpt-5-nano', type: 2},
     { name: 'gpt-5-chat-latest', type: 2},
+    { name: 'gpt-5.1', type: 2},
 ]
 
 const ANTHROPIC_MODAL = [
-    { name: 'claude-3-5-haiku-latest', type: 2 },
+    // { name: 'claude-3-5-haiku-latest', type: 2 },
     //{ name: 'claude-3-opus-latest', type: 2 },
     //{ name: 'claude-3-sonnet-20240229', type: 2 },
     //{ name: 'claude-3-haiku-20240307', type: 2 },
     //{ name: 'claude-3-7-sonnet-latest', type: 2 },
     { name: 'claude-sonnet-4-5-20250929', type: 2 },
-    { name: 'claude-opus-4-1-20250805', type: 2 },
+    // { name: 'claude-opus-4-1-20250805', type: 2 },
     // { name: 'claude-sonnet-4-20250514', type: 2 },
     // { name: 'claude-opus-4-20250514', type: 2 },
+    {name: 'claude-opus-4-5-20251101', type: 2},
+    {name: 'claude-haiku-4-5-20251001', type: 2},
 ]
 const ANTHROPIC_MAX_TOKENS = {
     // Claude 3.5 Haiku
@@ -51,6 +54,8 @@ const ANTHROPIC_MAX_TOKENS = {
     'claude-opus-4-20250514': 32000,    // Claude Opus 4
     'claude-sonnet-4-5-20250929': 64000,  // Claude Sonnet 4.5
     'claude-opus-4-1-20250805': 32000,    // Claude Opus 4.1
+    'claude-opus-4-5-20251101': 64000,    // Claude Opus 4.5
+    'claude-haiku-4-5-20251001': 64000,    // Claude Haiku 4.5
 
     // Default fallback for any new models
     'default': 4096
@@ -62,6 +67,7 @@ const GEMINI_MODAL = [
     // { name: 'gemini-2.5-pro-preview-05-06', type: 2 },
     { name: 'gemini-2.5-flash', type: 2 },
     { name: 'gemini-2.5-pro', type: 2 },
+    { name: 'gemini-3-pro-preview', type: 2 },
 ]
 
 const PERPLEXITY_MODAL = [
@@ -150,6 +156,7 @@ const MODAL_NAME = {
     GEMINI_2_5_PRO_PREVIEW_05_06: 'gemini-2.5-pro-preview-05-06',
     GEMINI_2_5_FLASH: 'gemini-2.5-flash',
     GEMINI_2_5_PRO: 'gemini-2.5-pro',
+    GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
     O3: 'o3',
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
     QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b:free',
@@ -158,10 +165,13 @@ const MODAL_NAME = {
     CLAUDE_OPUS_4_20250514: 'claude-opus-4-20250514',
     CLAUDE_SONNET_4_5_20250929: 'claude-sonnet-4-5-20250929',
     CLAUDE_OPUS_4_1_20250805: 'claude-opus-4-1-20250805',
+    CLAUDE_OPUS_4_5_20251101: 'claude-opus-4-5-20251101',
+    CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
     GPT_5: 'gpt-5',
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',
     GPT_5_CHAT_LATEST: 'gpt-5-chat-latest',
+    GPT_5_1: 'gpt-5.1',
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
 }

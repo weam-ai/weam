@@ -737,11 +737,13 @@ async function llmFactory(modelName, opts = {}) {
                 return simpleModelCache.get(cacheKey);
             }
 
-            const anthropicModel = new ChatAnthropic({
+            let anthropicModel = new ChatAnthropic({
                 ...baseConfig,
                 anthropicApiKey: opts.apiKey || process.env.ANTHROPIC_API_KEY,
                 maxTokens: getAnthropicMaxTokens(modelName), // Model-specific max_tokens
             });
+
+            anthropicModel.topP = undefined
             
             // Only bind tools if query needs them
             if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
@@ -1804,7 +1806,7 @@ async function generateTitleByLLM(payload) {
         const mappedProvider = mapProviderCode(code);
         const defaultModelMap = {
             [AI_MODAL_PROVIDER.OPEN_AI]: 'gpt-4o-mini',
-            [AI_MODAL_PROVIDER.ANTHROPIC]: 'claude-3-5-sonnet-20240620',
+            [AI_MODAL_PROVIDER.ANTHROPIC]: 'claude-haiku-4-5',
             [AI_MODAL_PROVIDER.GEMINI]: 'gemini-2.0-flash-001',
             [AI_MODAL_PROVIDER.DEEPSEEK]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.LLAMA4]: 'meta-llama/llama-4-maverick',
