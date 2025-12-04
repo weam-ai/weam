@@ -7,15 +7,22 @@ import GoogleDriveIcon from '@/icons/GoogleDriveIcon';
 import GoogleCalendarIcon from '@/icons/GoogleCalendarIcon';
 import GitHubConfigModal from './GitHubConfigModal';
 import GitHubIcon from '@/icons/GitHubIcon';
-import ZoomConfigModal from './ZoomConfigModal';
-import ZoomIcon from '@/icons/ZoomIcon';
-import MongoDBIcon from '@/icons/MongoDBIcon';
-import MongoDBConfigModal from './MongoDBConfigModal';
+// import AsanaConfigModal from './AsanaConfigModal';
+// import AirtableConfigModal from './AirtableConfigModal';
+// import NotionConfigModal from './NotionConfigModal';
+// import StripeConfigModal from './StripeConfigModal';
+// import CalendlyConfigModal from './CalendlyConfigModal';
+// import AsanaIcon from '@/icons/AsanaIcon';
+// import NotionIcon from '@/icons/NotionIcon';
+// import StripeIcon from '@/icons/StripeIcon';
+// import CalendlyIcon from '@/icons/CalendlyIcon';
 import { formatToCodeFormat } from '@/utils/helper';
 import MCPDisconnectDialog from '../Shared/MCPDisconnectDialog';
 import { MCP_CODES } from './MCPAppList';
 import SlackIcon from '@/icons/SlackIcon';
 import { updateMcpDataAction } from '@/actions/user';
+import McpCardSkeleton from '../Loader/McpCardSkeleton';
+// import CanvaIcon from '@/icons/CanvaIcon';
 
 type ConnectedAppCardProps = {
     icon: React.ReactNode;
@@ -56,7 +63,6 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
         N8N: false,
         FIGMA: false,
         CALENDLY: false,
-        ZOOM: false,
     });
     const [loading, setLoading] = useState(false);
 
@@ -93,7 +99,12 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
             <div className={`${fromDialog ? 'h-96 overflow-y-auto pb-10' : 'h-full overflow-y-auto pb-10'}`}>
                 <div className={`${fromDialog ? 'lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 grid gap-4 mt-6' : '3xl:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 grid-cols-1 grid gap-4 mt-6'}`}>
                     {
-                        filteredApps.length > 0 ?
+                        loading && [Array.from({length: 12}).map((_, index) => (
+                            <McpCardSkeleton key={index} />
+                        ))]
+                    }
+                    {
+                        filteredApps.length > 0 && !loading ?
                             filteredApps.map((app) => {
                                 return (
                                     <ConnectedAppCard
@@ -208,55 +219,100 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
                     />
                 )
             }
-            {
-                isConnected(MCP_CODES.ZOOM) ? (
+            {/* {
+                isConnected(MCP_CODES.ASANA) ? (
                     <MCPDisconnectDialog
-                        open={showConfigurationModal.ZOOM}
-                        closeModal={() => handleCloseModal(MCP_CODES.ZOOM)}
-                        onDisconnect={() => handleDisconnect(MCP_CODES.ZOOM)}
-                        serviceName="Zoom"
-                        serviceIcon={<ZoomIcon className="size-6" />}
+                        open={showConfigurationModal.ASANA}
+                        closeModal={() => handleCloseModal(MCP_CODES.ASANA)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.ASANA)}
+                        serviceName="Asana"
+                        serviceIcon={<AsanaIcon className="size-6" />}
                         loading={loading}
                     />
-                ) : showConfigurationModal.ZOOM && (
-                    <ZoomConfigModal 
-                        isOpen={showConfigurationModal.ZOOM}
-                        onClose={() => handleCloseModal(MCP_CODES.ZOOM)}
-                        mcpIcon={<ZoomIcon className="size-6" />}
-                        title="Zoom"
-                        description="Connect your Zoom account to enable Zoom integrations."
+                ) : showConfigurationModal.ASANA && (
+                    <AsanaConfigModal 
+                        isOpen={showConfigurationModal.ASANA}
+                        onClose={() => handleCloseModal(MCP_CODES.ASANA)}
+                        mcpIcon={<AsanaIcon className="size-6" />}
+                        title="Asana"
+                        description="Connect your Asana account to enable Asana integrations."
                     />
                 )
-            }
-
-            {
-                localStorage.getItem('mongodb_config') ? (
+            } */}
+            {/* {
+                isConnected(MCP_CODES.AIRTABLE) ? (
                     <MCPDisconnectDialog
-                        open={showConfigurationModal.MONGODB}
-                        closeModal={() => handleCloseModal(MCP_CODES.MONGODB)}
-                        onDisconnect={() => {
-                            localStorage.removeItem('mongodb_config');
-                            handleCloseModal(MCP_CODES.MONGODB);
-                            window.location.reload();
-                        }}
-                        serviceName="MongoDB"
-                        serviceIcon={<MongoDBIcon className="size-6" />}
-                        description="Are you sure you want to disconnect MongoDB? This will remove all database connections and stop all automation."
+                        open={showConfigurationModal.AIRTABLE}
+                        closeModal={() => handleCloseModal(MCP_CODES.AIRTABLE)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.AIRTABLE)}
+                        serviceName="Airtable"
+                        serviceIcon={<AirtableConfigModal className="size-6" />}
                         loading={loading}
-                        buttonVisible={true}
                     />
-                ) : showConfigurationModal.MONGODB && (
-                    <MongoDBConfigModal 
-                        isOpen={showConfigurationModal.MONGODB}
-                        onClose={() => handleCloseModal(MCP_CODES.MONGODB)}
-                        onConnect={() => {
-                            handleCloseModal(MCP_CODES.MONGODB);
-                            window.location.reload();
-                        }}
-                        mcpData={mcpData}
+                ) : showConfigurationModal.AIRTABLE && (
+                    <AirtableConfigModal 
+                        isOpen={showConfigurationModal.AIRTABLE}
+                        onClose={() => handleCloseModal(MCP_CODES.AIRTABLE)}
+                        mcpIcon={<AirtableConfigModal className="size-6" />}
+                        title="Airtable"
+                        description="Connect your Airtable account to enable Airtable integrations."
                     />
                 )
-            }
+            } */}
+            {/* {
+                isConnected(MCP_CODES.NOTION) ? (
+                    <MCPDisconnectDialog
+                        open={showConfigurationModal.NOTION}
+                        closeModal={() => handleCloseModal(MCP_CODES.NOTION)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.NOTION)}
+                        serviceName="Notion"
+                        serviceIcon={<NotionIcon className="size-6" />}
+                        loading={loading}
+                    />
+                ) : showConfigurationModal.NOTION && (
+                    <NotionConfigModal 
+                        isOpen={showConfigurationModal.NOTION}
+                        onClose={() => handleCloseModal(MCP_CODES.NOTION)}
+                        mcpIcon={<NotionIcon className="size-6" />}
+                        title="Notion"
+                        description="Connect your Notion account to enable Notion integrations."
+                    />
+                )
+            } */}
+            {/* {
+                isConnected(MCP_CODES.STRIPE) ? (
+                    <MCPDisconnectDialog
+                        open={showConfigurationModal.STRIPE}
+                        closeModal={() => handleCloseModal(MCP_CODES.STRIPE)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.STRIPE)}
+                        serviceName="Stripe"
+                        serviceIcon={<StripeIcon className="size-6" />}
+                        loading={loading}
+                    />
+                ) : showConfigurationModal.STRIPE && (
+                    <StripeConfigModal 
+                        isOpen={showConfigurationModal.STRIPE}
+                        onClose={() => handleCloseModal(MCP_CODES.STRIPE)}
+                    />
+                )
+            } */}
+            {/* {
+                isConnected(MCP_CODES.CALENDLY) ? (
+                    <MCPDisconnectDialog
+                        open={showConfigurationModal.CALENDLY}
+                        closeModal={() => handleCloseModal(MCP_CODES.CALENDLY)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.CALENDLY)}
+                        serviceName="Calendly"
+                        serviceIcon={<CalendlyIcon className="size-6" />}
+                        loading={loading}
+                    />
+                ) : showConfigurationModal.CALENDLY && (
+                    <CalendlyConfigModal 
+                        isOpen={showConfigurationModal.CALENDLY}
+                        onClose={() => handleCloseModal(MCP_CODES.CALENDLY)}
+                    />
+                )
+            } */}
         </>
     )
 }

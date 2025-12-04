@@ -135,6 +135,11 @@ module.exports = {
     ZOOM_OAUTH: {
         CLIENT_ID: process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID,
         CLIENT_SECRET: process.env.NEXT_PUBLIC_ZOOM_CLIENT_SECRET,
-        REDIRECT_URI: `${process.env.DOMAIN_URL}/api/auth/zoom/callback`
+        REDIRECT_URI: `${process.env.BASE_URL}/api/auth/zoom/callback`
+    },
+    ASANA_OAUTH: {
+        CLIENT_ID: process.env.ASANA_OAUTH_CLIENT_ID,
+        CLIENT_SECRET: process.env.ASANA_OAUTH_CLIENT_SECRET,
+        REDIRECT_URI: `${process.env.BASE_URL}/api/auth/asana/callback`
     }
 };

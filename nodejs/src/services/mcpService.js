@@ -1,6 +1,7 @@
 const { tool } = require('@langchain/core/tools');
 const { z } = require('zod');
-const { MultiServerMCPClient } = require('@langchain/mcp-adapters');
+// Lazy-load to avoid module load-time errors with buggy 0.6.0 version
+let MultiServerMCPClient;
 const { webSearchTool, currentTimeTool, imageGenerationTool } = require('./langgraph');
 
 
@@ -56,7 +57,6 @@ function convertZodToJsonSchema(zodSchema, toolName) {
             };
         }
         
-        // console.log(`✅ [SCHEMA] Converted Zod to JSON Schema for ${toolName}:`, JSON.stringify(jsonSchema, null, 2));
         return jsonSchema;
         
     } catch (error) {
@@ -170,21 +170,7 @@ const TOOL_CATALOG = {
                'delete_one_document', 'delete_many_documents', 'list_databases', 'list_collections',
                'create_index', 'collection_indexes', 'drop_collection', 'db_stats']
     },
-    // Payments & Finance
-    'stripe': {
-        domain: 'finance',
-        keywords: ['stripe', 'payment', 'billing', 'invoice', 'subscription', 'customer', 'charge', 'refund'],
-        tools: ['get_stripe_account_info', 'retrieve_balance', 'create_coupon', 'list_coupons',
-               'create_customer', 'list_customers', 'list_disputes', 'update_dispute',
-               'create_invoice', 'create_invoice_item', 'finalize_invoice', 'list_invoices',
-               'create_payment_link', 'list_payment_intents', 'create_price', 'list_prices',
-               'create_product', 'list_products', 'create_refund', 'cancel_subscription',
-               'list_subscriptions', 'update_subscription', 'search_documentation',
-               'create_payment_intent', 'retrieve_payment_intent', 'confirm_payment_intent',
-               'cancel_payment_intent', 'retrieve_charge', 'list_charges', 'capture_charge',
-               'create_payment_method', 'attach_payment_method', 'detach_payment_method',
-               'list_payment_methods', 'retrieve_payment_method', 'list_events', 'retrieve_event']
-    },
+
     // Video Conferencing
     'zoom': {
         domain: 'communication',
@@ -240,12 +226,10 @@ const TOOL_CATALOG = {
 
 // Enhanced tool selection with domain-specific filtering for MCP queries
 async function selectRelevantTools(query, availableTools, maxTools = 30) {
-    console.log('Starting enhanced tool selection for query:', query);
     const queryLower = query.toLowerCase();
     
     // Step 1: Detect if this is a domain-specific query
     const domainDetection = detectSpecificDomain(query);
-    console.log('Domain detection result:', domainDetection);
     
     // Step 2: Handle domain-specific queries (Zoom, Slack, etc.)
     if (domainDetection.isSpecificDomain) {
@@ -253,7 +237,7 @@ async function selectRelevantTools(query, availableTools, maxTools = 30) {
     }
     
     // Step 3: Handle general queries with mixed tool selection
-    return handleGeneralQuery(query, availableTools, maxTools);
+    return handleGeneralQuery(query, availableTools, maxTools, domainDetection.matchedCatalogs || []);
 }
 
 // Detect if query is asking for a specific MCP domain
@@ -313,42 +297,47 @@ function detectSpecificDomain(query) {
         }
     };
     
-    // Check for strong domain matches
+    // Collect all matching domain indicators instead of early returning
+    const matchedIndicators = [];
     for (const [domainName, config] of Object.entries(domainIndicators)) {
-        // Check for strong keywords (definitive indicators)
         const hasStrongKeyword = config.strongKeywords.some(keyword => 
             queryLower.includes(keyword.toLowerCase())
         );
-        
-        if (hasStrongKeyword) {
-            // Check for context keywords to confirm intent
-            const hasContext = config.contextKeywords.some(keyword =>
-                queryLower.includes(keyword.toLowerCase())
-            ) || config.strongKeywords.length > 1; // Multiple strong keywords = confirmed
-            
-            if (hasContext || hasStrongKeyword) {
-                return {
-                    isSpecificDomain: true,
-                    domainName: domainName,
-                    catalogKey: config.catalog,
-                    confidence: hasStrongKeyword && hasContext ? 'high' : 'medium'
-                };
-            }
-        }
+        if (!hasStrongKeyword) continue;
+
+        const hasContext = config.contextKeywords.some(keyword =>
+            queryLower.includes(keyword.toLowerCase())
+        ) || config.strongKeywords.length > 1; // Multiple strong keywords = confirmed
+
+        matchedIndicators.push({
+            domainName,
+            catalogKey: config.catalog,
+            confidence: hasStrongKeyword && hasContext ? 'high' : 'medium'
+        });
     }
-    
-    return { isSpecificDomain: false };
+
+    // If only one specific domain is detected, treat as domain-specific
+    if (matchedIndicators.length === 1) {
+        const { domainName, catalogKey, confidence } = matchedIndicators[0];
+        return {
+            isSpecificDomain: true,
+            domainName,
+            catalogKey,
+            confidence
+        };
+    }
+
+    // For multi-domain queries or no matches, handle as general query
+    return { isSpecificDomain: false, matchedCatalogs: matchedIndicators.map(m => m.catalogKey) };
 }
 
 // Handle domain-specific queries - only return tools for that domain
 async function handleDomainSpecificQuery(query, availableTools, domainDetection, maxTools = 12) {
     const { domainName, catalogKey, confidence } = domainDetection;
     const queryLower = query.toLowerCase();
-    console.log(`Handling ${domainName} specific query with ${confidence} confidence`);
     
     const catalogData = TOOL_CATALOG[catalogKey];
     if (!catalogData) {
-        console.warn(`No catalog data found for domain: ${catalogKey}`);
         return handleGeneralQuery(query, availableTools, maxTools);
     }
     
@@ -356,8 +345,6 @@ async function handleDomainSpecificQuery(query, availableTools, domainDetection,
     const domainTools = availableTools.filter(tool => 
         tool && tool.name && catalogData.tools.includes(tool.name)
     );
-    
-    console.log(`Found ${domainTools.length} ${domainName} tools:`, domainTools.map(t => t && t.name ? t.name : 'undefined_tool'));
     
     // For high-confidence domain-specific queries, ONLY return domain tools (no core tools)
     if (confidence === 'high' && domainTools.length > 0) {
@@ -393,8 +380,6 @@ async function handleDomainSpecificQuery(query, availableTools, domainDetection,
         const sortedDomainTools = domainTools
             .sort((a, b) => (toolScores.get(b.name || 'undefined_tool') || 0) - (toolScores.get(a.name || 'undefined_tool') || 0))
             .slice(0, Math.min(maxTools, domainTools.length));
-        
-        console.log(`Returning ${sortedDomainTools.length} ${domainName}-specific tools only`);
         return sortedDomainTools;
     }
     
@@ -416,14 +401,11 @@ async function handleDomainSpecificQuery(query, availableTools, domainDetection,
             selectedTools.push(currentTimeTool);
         }
     }
-    
-    console.log(`Returning ${selectedTools.length} tools for ${domainName} query (mixed mode)`);
     return selectedTools;
 }
 
 // Handle general queries with the original mixed tool selection logic
-async function handleGeneralQuery(query, availableTools, maxTools = 12) {
-    console.log('Handling general query with mixed tool selection');
+async function handleGeneralQuery(query, availableTools, maxTools = 12, matchedCatalogs = []) {
     
     // Always include core tools for general queries
     const coreTools = [webSearchTool, imageGenerationTool, currentTimeTool];
@@ -434,56 +416,148 @@ async function handleGeneralQuery(query, availableTools, maxTools = 12) {
         return selectedTools;
     }
     
-    // Use the original scoring logic for general queries
-    const toolScores = new Map();
     const queryLower = query.toLowerCase();
     const queryWords = queryLower.split(/\s+/);
-    
-    // Score tools based on keyword matching
-    for (const [catalogKey, catalogData] of Object.entries(TOOL_CATALOG)) {
+
+    // If we detected multiple specific providers (catalogs), ensure balanced selection across them
+    const catalogsToConsider = (Array.isArray(matchedCatalogs) && matchedCatalogs.length > 0)
+        ? matchedCatalogs
+        : Object.keys(TOOL_CATALOG);
+
+    // Build per-catalog candidate lists with scoring
+    const perCatalogCandidates = new Map();
+    for (const catalogKey of catalogsToConsider) {
+        const catalogData = TOOL_CATALOG[catalogKey];
+        if (!catalogData) continue;
+
+        // Compute a keyword score for this catalog relative to query
         let keywordScore = 0;
-        
-        // Check for exact keyword matches
         for (const keyword of catalogData.keywords) {
-            if (queryLower.includes(keyword.toLowerCase())) {
-                keywordScore += 2; // Higher weight for exact matches
-            }
+            if (queryLower.includes(keyword.toLowerCase())) keywordScore += 2;
         }
-        
-        // Check for partial word matches
         for (const word of queryWords) {
             for (const keyword of catalogData.keywords) {
-                if (keyword.toLowerCase().includes(word) || word.includes(keyword.toLowerCase())) {
-                    keywordScore += 1;
-                }
+                if (keyword.toLowerCase().includes(word) || word.includes(keyword.toLowerCase())) keywordScore += 1;
             }
         }
-        
-        // Find matching tools from available MCP tools
-        const matchingTools = availableTools.filter(tool => 
-            tool && tool.name && catalogData.tools.includes(tool.name)
-        );
-        
+
+        const matchingTools = availableTools.filter(t => t && t.name && catalogData.tools.includes(t.name));
+
+        // Score each tool
+        const toolScores = new Map();
         for (const tool of matchingTools) {
-            const currentScore = toolScores.get(tool.name) || 0;
-            toolScores.set(tool.name, currentScore + keywordScore);
+            const current = toolScores.get(tool.name) || 0;
+            toolScores.set(tool.name, current + keywordScore);
         }
+
+        // Heuristics: must-have tools per catalog for common tasks
+        // Updated to include all available MCP tools from TOOL_CATALOG for each domain
+        const mustHaveByCatalog = {
+            slack: [
+                'list_slack_channels', 'send_slack_message', 'get_channel_id_by_name', 'get_channel_messages',
+                'list_workspace_users', 'get_slack_user_info', 'get_user_profile', 'get_channel_members',
+                'create_slack_channel', 'set_channel_topic', 'set_channel_purpose', 'archive_channel',
+                'invite_users_to_channel', 'kick_user_from_channel', 'open_direct_message', 'send_direct_message',
+                'send_ephemeral_message', 'reply_to_thread', 'get_thread_messages', 'start_thread_with_message',
+                'find_threads_in_channel', 'reply_to_thread_with_broadcast', 'get_thread_info'
+            ],
+            github: [
+                'get_github_repositories', 'create_github_branch', 'get_git_commits', 'get_github_user_info',
+                'get_github_repository_info', 'get_repository_branches', 'get_repository_issues',
+                'create_pull_request', 'get_pull_request_details', 'get_pull_requests', 'get_tags_or_branches'
+            ],
+            mongodb: [
+                'connect_to_mongodb', 'find_documents', 'aggregate_documents', 'count_documents',
+                'insert_one_document', 'insert_many_documents', 'update_one_document', 'update_many_documents',
+                'delete_one_document', 'delete_many_documents', 'list_databases', 'list_collections',
+                'create_index', 'collection_indexes', 'drop_collection', 'db_stats'
+            ],
+            zoom: [
+                'get_zoom_user_info', 'list_zoom_meetings', 'create_zoom_meeting',
+                'get_zoom_meeting_info', 'update_zoom_meeting', 'delete_zoom_meeting',
+                'generate_zoom_meeting_invitation', 'invite_to_zoom_meeting'
+            ],
+            gmail: [
+                'search_gmail_messages', 'get_gmail_message_content', 'get_gmail_messages_content_batch',
+                'send_gmail_message', 'draft_gmail_message', 'get_gmail_thread_content',
+                'get_gmail_threads_content_batch', 'list_gmail_labels', 'manage_gmail_label',
+                'modify_gmail_message_labels', 'batch_modify_gmail_message_labels'
+            ],
+            drive: [
+                'search_drive_files', 'get_drive_file_content', 'list_drive_items',
+                'create_drive_file', 'list_drive_shared_drives', 'delete_drive_file'
+            ],
+            calendar: [
+                'list_calendars', 'get_calendar_events', 'create_calendar_event',
+                'modify_calendar_event', 'delete_calendar_event', 'get_calendar_event', 'search_calendar_events'
+            ],
+            search: ['web_search'],
+            image: ['dall_e_3'],
+            time: ['get_current_time']
+        };
+        const mustHave = (mustHaveByCatalog[catalogKey] || []).filter(name => matchingTools.some(t => t.name === name));
+
+        // Sort candidates by score
+        const sortedToolNames = Array.from(toolScores.entries())
+            .sort(([, a], [, b]) => b - a)
+            .map(([name]) => name);
+
+        perCatalogCandidates.set(catalogKey, { matchingTools, sortedToolNames, mustHave });
     }
-    
-    // Sort tools by score and select top K
-    const sortedTools = Array.from(toolScores.entries())
-        .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
-        .slice(0, remainingSlots)
-        .map(([toolName]) => toolName);
-    
-    // Add selected MCP tools to the result
-    const selectedMcpTools = availableTools.filter(tool => 
-        tool && tool.name && sortedTools.includes(tool.name)
-    );
-    
-    selectedTools.push(...selectedMcpTools);
-    
-    console.log(`Returning ${selectedTools.length} tools for general query`);
+
+    // Allocate quotas per catalog to guarantee cross-provider coverage
+    const numCatalogs = perCatalogCandidates.size;
+    const baseQuota = Math.max(2, Math.floor(remainingSlots / Math.max(1, numCatalogs)));
+    let slotsLeft = remainingSlots;
+    const chosenNames = new Set();
+
+    for (const [catalogKey, { matchingTools, sortedToolNames, mustHave }] of perCatalogCandidates.entries()) {
+        if (slotsLeft <= 0) break;
+        const quota = Math.min(baseQuota, slotsLeft);
+
+        // Prefer must-have tools first
+        const picks = [];
+        for (const name of mustHave) {
+            if (picks.length >= quota) break;
+            if (!chosenNames.has(name)) picks.push(name);
+        }
+
+        // Fill remaining quota with highest scored tools
+        for (const name of sortedToolNames) {
+            if (picks.length >= quota) break;
+            if (!chosenNames.has(name)) picks.push(name);
+        }
+
+        // Resolve tool objects and add to selection
+        const pickObjects = picks
+            .map(name => matchingTools.find(t => t.name === name))
+            .filter(Boolean);
+        pickObjects.forEach(obj => chosenNames.add(obj.name));
+        selectedTools.push(...pickObjects);
+        slotsLeft = maxTools - selectedTools.length;
+    }
+
+    // If we still have slots left, fill from any remaining high-score tools across all catalogs considered
+    if (slotsLeft > 0) {
+        const globalToolScores = new Map();
+        for (const [catalogKey, { matchingTools, sortedToolNames }] of perCatalogCandidates.entries()) {
+            for (const name of sortedToolNames) {
+                const current = globalToolScores.get(name) || 0;
+                globalToolScores.set(name, current + 1);
+            }
+        }
+        const fillers = Array.from(globalToolScores.entries())
+            .filter(([name]) => !chosenNames.has(name))
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, slotsLeft)
+            .map(([name]) => name);
+        const allToolsByName = new Map(availableTools.map(t => [t.name, t]));
+        fillers.forEach(name => {
+            const t = allToolsByName.get(name);
+            if (t) selectedTools.push(t);
+        });
+    }
+
     return selectedTools;
 }
 
@@ -511,13 +585,30 @@ function classifyQuery(query) {
 
 async function initializeMCPClient() {
     try {
-        console.log('🔧 [MCP] Initializing MCP client...');
+        // Lazy-load MultiServerMCPClient to avoid module load-time errors
+        if (!MultiServerMCPClient) {
+            try {
+                const mcpAdapters = require('@langchain/mcp-adapters');
+                MultiServerMCPClient = mcpAdapters.MultiServerMCPClient;
+            } catch (importError) {
+                console.error('❌ [MCP] Failed to load @langchain/mcp-adapters:', importError.message);
+                // Check if this is the known schema validation bug in v0.6.0
+                if (importError.message?.includes('CallToolResultContentSchema') || 
+                    importError.message?.includes('ZodLiteral')) {
+                    console.warn('⚠️ [MCP] Known issue with @langchain/mcp-adapters v0.6.0 schema validation. Consider upgrading the package.');
+                }
+                // Return empty array instead of throwing to allow graceful degradation
+                console.warn('⚠️ [MCP] Continuing without MCP tools due to import error');
+                return [];
+            }
+        }
+        
         const { MCP_HTTP_CONFIG } = require('../utils/http-client');
 
         mcpClient = new MultiServerMCPClient({
             mcpServers: {
                 "weam-mcp": {
-                    url: process.env.MCP_SERVER_URL ? `${process.env.MCP_SERVER_URL}/mcp-event` : "http://localhost:3006/mcp-event",
+                    url: "http://localhost:3006/mcp",
                     transport: "sse",
                     timeout: MCP_HTTP_CONFIG.timeout, // Use centralized timeout (90 seconds)
                     retryAttempts: MCP_HTTP_CONFIG.maxRetries,
@@ -541,8 +632,6 @@ async function initializeMCPClient() {
                 reuseConnections: true
             }
         });
-
-        console.log('🔧 [MCP] MCP client created, attempting to get tools...');
         
         // Retry logic for getting MCP tools
         let mcpToolsFromServer = [];
@@ -557,14 +646,11 @@ async function initializeMCPClient() {
                         setTimeout(() => reject(new Error('MCP getTools timeout')), MCP_HTTP_CONFIG.timeout)
                     )
                 ]);
-                console.log(`🔧 [MCP] Retrieved ${mcpToolsFromServer ? mcpToolsFromServer.length : 0} tools from server`);
                 break; // Success, exit retry loop
             } catch (error) {
                 retryCount++;
-                console.warn(`🚨 [MCP] getTools attempt ${retryCount} failed:`, error.message);
                 
                 if (retryCount >= maxRetries) {
-                    console.error('Failed to get MCP tools after maximum retries');
                     throw error;
                 }
                 
@@ -640,16 +726,13 @@ async function initializeMCPClient() {
                     }
                     
                     zodSchema = z.object(schemaFields);
-                    // console.log(`Successfully built schema for tool: ${mcpTool.name}`);
                 } else {
-                    console.warn(`Tool ${mcpTool.name} has no schema, using fallback schema`);
                     // Fallback schema with at least one property to satisfy OpenAI's requirements
                     zodSchema = z.object({
                         mcp_data: z.any().optional().describe('Optional MCP data parameter')
                     });
                 }
             } catch (error) {
-                console.error(`Error building schema for tool ${mcpTool.name}:`, error);
                 // Use fallback schema on error
                 zodSchema = z.object({
                     mcp_data: z.any().optional().describe('Optional MCP data parameter'),
@@ -733,18 +816,9 @@ async function initializeMCPClient() {
                 }
             );
         });
-
-        console.log(`✅ [MCP] ${mcpTools.length} tools initialized:`, mcpTools.map(t => t && t.name ? t.name : 'undefined_tool'));
     } catch (error) {
-        console.error('🚨 [MCP] Failed to initialize MCP tools:', error.message);
-        console.error('🚨 [MCP] Error details:', {
-            name: error.name,
-            serverName: error.serverName,
-            stack: error.stack
-        });
         mcpTools = []; // Fallback to empty array if MCP fails
         mcpClient = null;
-        console.log('⚠️ [MCP] Continuing without MCP tools - only web search and image generation will be available');
     }
     
     return mcpTools;
@@ -755,8 +829,6 @@ async function initializeMCPClient() {
 
 // Tool filtering mechanism based on query classification
 async function filterToolsByDomain(query, availableTools, domains) {
-
-    // console.log('=======filterToolsByDomain=====available tools======', availableTools);
     
     if (!domains || domains.length === 0) {
         return availableTools;
@@ -770,7 +842,6 @@ async function filterToolsByDomain(query, availableTools, domains) {
             return false;
         }
         
-        // console.log('=======filterToolsByDomain=====tool======', tool.name);
         // Check if tool belongs to any of the detected domains
         for (const domain of domains) {
             // Find catalog entries that match this domain
@@ -789,7 +860,6 @@ async function filterToolsByDomain(query, availableTools, domains) {
     );
     
     const result = [...new Set([...essentialTools, ...filteredTools])];
-    // console.log('=======filterToolsByDomain=====filteredTools======', result.map(t => t && t.name ? t.name : 'undefined_tool'));
     
     return result;
 }

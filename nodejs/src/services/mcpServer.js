@@ -6,17 +6,17 @@ const cors = require('cors');
 const { LINK } = require('../config/config');
 const mcpSessionManager = require('./mcpSessionManager');
 const slackTools = require('../tools/slack');
-// const jiraTools = require('../tools/jira');
+const jiraTools = require('../tools/jira');
 const githubTools = require('../tools/github');
-// const airtableTools = require('../tools/airtable');
-// const asanaTools = require('../tools/asana');
+const airtableTools = require('../tools/airtable');
+const asanaTools = require('../tools/asana');
 const mongodbTools = require('../tools/mongodb');
-// const stripeTools = require('../tools/stripe');
-// const n8nTools = require('../tools/n8n');
+const stripeTools = require('../tools/stripe');
+const n8nTools = require('../tools/n8n');
 const zoomTools = require('../tools/zoom');
-// const dropboxTools = require('../tools/dropbox');
-// const clickupTools = require('../tools/clickup');
-// const shopifyTools = require('../tools/shopify');
+const dropboxTools = require('../tools/dropbox');
+const clickupTools = require('../tools/clickup');
+const shopifyTools = require('../tools/shopify');
 const gmailTools = require('../tools/gmail');
 const driveTools = require('../tools/drive');
 const calendarTools = require('../tools/calendar');
@@ -4495,9 +4495,9 @@ async function startMCPServer() {
     server.registerTool(
         "get_zoom_user_info",
         {
-            description: "Get current Zoom user information.",
+            description: "Get current Zoom user information. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from")
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used.")
             }
         },
         async ({ user_id = null }) => {
@@ -4523,15 +4523,14 @@ async function startMCPServer() {
     server.registerTool(
         "list_zoom_meetings",
         {
-            description: "List all meetings for the authenticated Zoom user.",
+            description: "List all meetings for the authenticated Zoom user. This tool is dependent on the get_zoom_user_info tool. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from"),
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used."),
                 type: z.string().optional().describe("Meeting type (scheduled, live, upcoming) - default: scheduled"),
                 page_size: z.number().optional().describe("Number of meetings to return per page (default: 30)")
             }
         },
         async ({ user_id = null, type = 'scheduled', page_size = 30 }) => {
-            // console.log('user_id - list zoom meetings', user_id)
             try {
                 const result = await zoomTools.listZoomMeetings(user_id, type, page_size);
                 return {
@@ -4556,7 +4555,7 @@ async function startMCPServer() {
         {
             description: "Create a new Zoom meeting with optional invitees. Invitees will receive email invitations automatically. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from"),
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used."),
                 topic: z.string().optional().describe("Meeting topic"),
                 start_time: z.string().optional().describe("Meeting start time (ISO 8601 format) - leave empty for instant meeting"),
                 duration: z.number().optional().describe("Meeting duration in minutes (default: 60)"),
@@ -4588,7 +4587,7 @@ async function startMCPServer() {
         {
             description: "Get detailed information about a specific Zoom meeting. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from"),
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used."),
                 meeting_id: z.string().describe("Meeting ID")
             }
         },
@@ -4617,7 +4616,7 @@ async function startMCPServer() {
         {
             description: "Update an existing Zoom meeting. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from"),
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used."),
                 meeting_id: z.string().describe("Meeting ID to update"),
                 update_data: z.object({
                     topic: z.string().optional(),
@@ -4653,7 +4652,7 @@ async function startMCPServer() {
         {
             description: "Delete a Zoom meeting. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from"),
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used."),
                 meeting_id: z.string().describe("Meeting ID to delete"),
                 occurrence_id: z.string().optional().describe("Occurrence ID for recurring meetings (optional)")
             }
@@ -4683,8 +4682,8 @@ async function startMCPServer() {
         {
             description: "Generate a calendar invitation text for a Zoom meeting with invitee details and setup instructions. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from"),
-                meeting_id: z.string().describe("Meeting ID to generate invitation for"),
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used."),
+                meeting_id: z.string().describe("Meeting ID to generate invitation"),
                 invitees: z.array(z.string()).optional().describe("Array of email addresses to include in the invitation")
             }
         },
@@ -4713,8 +4712,8 @@ async function startMCPServer() {
         {
             description: "Invite people to an existing Zoom meeting by providing their email addresses. Attempts API invitation first, then provides manual sharing details if needed. All the fields are optional.",
             inputSchema: {
-                user_id: z.string().optional().describe("User ID to get Zoom access token from"),
-                meeting_id: z.string().describe("Meeting ID to invite people to"),
+                user_id: z.string().optional().describe("User ID to get Zoom access token from. If not provided, the default user will be used."),
+                meeting_id: z.string().describe("Meeting ID to invite people to meeting"),
                 invitees: z.array(z.string()).describe("Array of email addresses to invite to the meeting")
             }
         },

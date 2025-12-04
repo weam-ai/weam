@@ -182,7 +182,7 @@ async function createZoomMeeting(userId = null, topic, startTime = null, duratio
     
     // Add invitees to meeting data if provided
     if (invitees && invitees.length > 0) {
-        meetingData.invitees = invitees.map(email => ({ email: email.trim() }));
+        meetingData.settings.meeting_invitees = invitees.map(email => ({ "email": email.trim() }));
     }
 
     if (startTime) {
@@ -194,7 +194,7 @@ async function createZoomMeeting(userId = null, topic, startTime = null, duratio
     }
 
     const response = await makeZoomRequest(userId, 'users/me/meetings', null, meetingData, 'POST');
-    
+
     if (!response || response.error || response.code) {
         return `Error creating meeting: ${response?.message || 'Unknown error'}`;
     }
