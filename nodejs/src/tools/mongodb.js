@@ -34,7 +34,8 @@ async function getMongoConnectionString(userId) {
             return null;
         }
         // Decrypt the connection string before returning
-        const decryptedConnectionString = user.mcpdata.MONGODB.connection_string;
+        const decryptedConnectionString = decryptedData(user.mcpdata.MONGODB.connection_string);
+        console.log("Decrypted connection string: ", decryptedConnectionString);
 
         return decryptedConnectionString;
     } catch (error) {

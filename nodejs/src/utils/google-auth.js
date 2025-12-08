@@ -9,36 +9,34 @@ const axios = require('axios');
 const { decryptedData, encryptedData } = require('./helper');
 const User = require('../models/user');
 const logger = require('./logger');
-const { GOOGLE_OAUTH } = require('../config/config');
+const config = require('../config/config');
 
-// Constants for OAuth credentials
-const CLIENT_ID = GOOGLE_OAUTH.CLIENT_ID;
-const CLIENT_SECRET = GOOGLE_OAUTH.CLIENT_SECRET;
+// Google OAuth Token URL
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 // Validate configuration on module load
 function validateGoogleOAuthConfig() {
   const errors = [];
   
-  if (!CLIENT_ID) {
+  if (!config.GOOGLE_OAUTH?.CLIENT_ID) {
     errors.push('GOOGLE_OAUTH_CLIENT_ID is not set');
   }
   
-  if (!CLIENT_SECRET) {
+  if (!config.GOOGLE_OAUTH?.CLIENT_SECRET) {
     errors.push('GOOGLE_OAUTH_CLIENT_SECRET is not set');
   }
   
-  if (!GOOGLE_OAUTH.REDIRECT_URI) {
+  if (!config.GOOGLE_OAUTH?.REDIRECT_URI) {
     errors.push('GOOGLE_OAUTH.REDIRECT_URI is not properly configured');
   }
   
   if (errors.length > 0) {
     logger.error('[GoogleAuth] Configuration validation failed:', errors);
     logger.error('[GoogleAuth] Current environment:', process.env.NODE_ENV);
-    logger.error('[GoogleAuth] Domain URL:', process.env.DOMAIN_URL);
+    logger.error('[GoogleAuth] Base URL:', process.env.BASE_URL);
   } else {
     logger.info('[GoogleAuth] Configuration validation passed');
-    logger.debug('[GoogleAuth] Redirect URI:', GOOGLE_OAUTH.REDIRECT_URI);
+    logger.debug('[GoogleAuth] Redirect URI:', config.GOOGLE_OAUTH.REDIRECT_URI);
   }
   
   return errors;
@@ -70,10 +68,12 @@ const GOOGLE_SCOPES = {
 
 // Scope groups for different services
 const SCOPE_GROUPS = {
-  gmail_read: [GOOGLE_SCOPES.GMAIL_READONLY, GOOGLE_SCOPES.GMAIL_METADATA],
+  // gmail.readonly includes metadata access, so we don't need both
+  gmail_read: [GOOGLE_SCOPES.GMAIL_READONLY],
   gmail_modify: [GOOGLE_SCOPES.GMAIL_MODIFY, GOOGLE_SCOPES.GMAIL_LABELS],
   gmail_compose: [GOOGLE_SCOPES.GMAIL_COMPOSE, GOOGLE_SCOPES.GMAIL_SEND],
-  drive_read: [GOOGLE_SCOPES.DRIVE_READONLY, GOOGLE_SCOPES.DRIVE_METADATA_READONLY],
+  // drive.readonly includes metadata access, so we don't need both
+  drive_read: [GOOGLE_SCOPES.DRIVE_READONLY],
   drive_file: [GOOGLE_SCOPES.DRIVE_FILE],
   calendar_read: [GOOGLE_SCOPES.CALENDAR_READONLY],
   calendar_events: [GOOGLE_SCOPES.CALENDAR_EVENTS],
@@ -105,9 +105,18 @@ class GoogleCredentials {
     this.access_token = mcpData.access_token ? decryptedData(mcpData.access_token) : null;
     this.refresh_token = mcpData.refresh_token ? decryptedData(mcpData.refresh_token) : null;
     this.expiry = mcpData.expiry_date || mcpData.expiry;
-    this.client_id = CLIENT_ID;
-    this.client_secret = CLIENT_SECRET;
-    this.scopes = mcpData.scopes || [];
+    this.client_id = config.GOOGLE_OAUTH.CLIENT_ID;
+    this.client_secret = config.GOOGLE_OAUTH.CLIENT_SECRET;
+    
+    // Handle scopes - can be array or space-separated string (matching Python implementation)
+    if (mcpData.scopes) {
+      this.scopes = Array.isArray(mcpData.scopes) ? mcpData.scopes : [];
+    } else if (mcpData.scope) {
+      // Python stores as 'scope' (singular) as a space-separated string
+      this.scopes = typeof mcpData.scope === 'string' ? mcpData.scope.split(' ').filter(s => s) : [];
+    } else {
+      this.scopes = [];
+    }
   }
 
   /**
@@ -162,9 +171,9 @@ class GoogleCredentials {
 
     try {
       // Validate environment before making request
-      if (!CLIENT_ID || !CLIENT_SECRET) {
+      if (!config.GOOGLE_OAUTH?.CLIENT_ID || !config.GOOGLE_OAUTH?.CLIENT_SECRET) {
         throw new GoogleAuthenticationError(
-          'Google OAuth configuration is incomplete. Check CLIENT_ID and CLIENT_SECRET.',
+          'Google OAuth configuration is incomplete. Check GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables.',
           'CONFIG_ERROR'
         );
       }
@@ -176,13 +185,6 @@ class GoogleCredentials {
         client_secret: this.client_secret,
         refresh_token: this.refresh_token
       };
-      console.log('[GoogleCredentials] Refresh request data:', {
-        ...requestData,
-        client_secret: this.client_secret ? '[REDACTED]' : 'MISSING',
-        refresh_token: this.refresh_token ? '[REDACTED]' : 'MISSING'
-      });
-      console.log('[GoogleCredentials] Using CLIENT_ID from config:', CLIENT_ID);
-      console.log('[GoogleCredentials] CLIENT_SECRET configured:', CLIENT_SECRET ? 'YES' : 'NO');
 
       logger.debug(`[GoogleCredentials] Making token refresh request to: ${GOOGLE_TOKEN_URL}`);
 
@@ -195,7 +197,6 @@ class GoogleCredentials {
         timeout: 30000,
         validateStatus: (status) => status < 500 // Don't throw on 4xx errors
       });
-      console.log('[GoogleCredentials] Refresh response data:', response.data);
 
       logger.debug(`[GoogleCredentials] Token refresh response status: ${response.status}`);
 
@@ -213,23 +214,8 @@ class GoogleCredentials {
         }
         
         if (response.status === 401) {
-          const errorData = response.data || {};
-          
-          // Log detailed error information for unauthorized_client
-          if (errorData.error === 'unauthorized_client') {
-            logger.error('[GoogleCredentials] Unauthorized client error - possible causes:');
-            logger.error('1. CLIENT_ID not registered in Google Cloud Console');
-            logger.error('2. CLIENT_SECRET mismatch');
-            logger.error('3. Redirect URI mismatch in OAuth consent screen');
-            logger.error('4. OAuth app not properly configured');
-            logger.error(`Current CLIENT_ID: ${this.client_id}`);
-            logger.error(`Expected redirect URI: ${GOOGLE_OAUTH.REDIRECT_URI}`);
-          }
-          
           throw new GoogleAuthenticationError(
-            errorData.error === 'unauthorized_client' 
-              ? 'OAuth client is not authorized. Check Google Cloud Console configuration, CLIENT_ID, CLIENT_SECRET, and redirect URIs.'
-              : 'Authentication failed. Check CLIENT_ID and CLIENT_SECRET configuration.',
+            'Authentication failed. Check GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET configuration.',
             'AUTH_CONFIG_ERROR',
             errorData
           );
@@ -394,10 +380,15 @@ class GoogleCredentials {
 /**
  * Get credentials for a user and service - mirrors Python's get_credentials function
  * This is the core function that handles automatic token refresh
+ * 
+ * @param {string} userId - User ID to fetch credentials for
+ * @param {string} serviceType - Service type (gmail, drive, calendar)
+ * @param {Array<string>} requiredScopes - List of scopes the credentials must have
+ * @returns {Promise<GoogleCredentials>} Valid credentials object
  */
-async function getCredentials(userId, serviceType = 'gmail') {
+async function getCredentials(userId, serviceType = 'gmail', requiredScopes = []) {
   try {
-    logger.info(`[getCredentials] Starting credential retrieval for user: ${userId}, service: ${serviceType}`);
+    logger.info(`[getCredentials] Starting credential retrieval for user: ${userId}, service: ${serviceType}, required scopes: ${requiredScopes.length}`);
     
     // Fetch user's MCP data
     const user = await User.findById(userId);
@@ -446,7 +437,24 @@ async function getCredentials(userId, serviceType = 'gmail') {
     const credentials = new GoogleCredentials(userId, serviceType, mcpData);
 
     // Log credential status for debugging
-    logger.debug(`[getCredentials] Credentials status - Valid: ${credentials.valid}, Expired: ${credentials.expired}, Has refresh token: ${!!credentials.refresh_token}`);
+    logger.debug(`[getCredentials] Credentials status - Valid: ${credentials.valid}, Expired: ${credentials.expired}, Has refresh token: ${!!credentials.refresh_token}, Scopes: ${credentials.scopes}`);
+
+    // CRITICAL: Validate required scopes (matching Python implementation)
+    // This prevents authentication failures due to missing scopes
+    if (requiredScopes && requiredScopes.length > 0) {
+      const credentialScopes = credentials.scopes || [];
+      const missingScopes = requiredScopes.filter(scope => !credentialScopes.includes(scope));
+      
+      if (missingScopes.length > 0) {
+        logger.warn(`[getCredentials] Credentials lack required scopes. Need: ${requiredScopes}, Have: ${credentialScopes}, Missing: ${missingScopes}`);
+        throw new GoogleAuthenticationError(
+          `Credentials lack required scopes: ${missingScopes.join(', ')}. User needs to re-authenticate with proper permissions.`,
+          'INSUFFICIENT_SCOPES'
+        );
+      }
+      
+      logger.debug(`[getCredentials] All required scopes present: ${requiredScopes}`);
+    }
 
     // Check if credentials are valid
     if (credentials.valid) {
@@ -457,12 +465,30 @@ async function getCredentials(userId, serviceType = 'gmail') {
     // If expired and we have a refresh token, try to refresh
     if (credentials.expired && credentials.refresh_token) {
       logger.info(`[getCredentials] Credentials expired, attempting refresh for user: ${userId}, service: ${serviceType}`);
-      await credentials.refresh();
-      return credentials;
+      
+      try {
+        await credentials.refresh();
+        logger.info(`[getCredentials] Successfully refreshed credentials for user: ${userId}, service: ${serviceType}`);
+        return credentials;
+      } catch (refreshError) {
+        // Handle refresh errors gracefully (matching Python's RefreshError handling)
+        if (refreshError.errorType === 'REFRESH_TOKEN_INVALID') {
+          logger.warn(`[getCredentials] RefreshError - token expired/revoked for user: ${userId} - ${refreshError.message}`);
+          throw new GoogleAuthenticationError(
+            'Refresh token is invalid or expired. User needs to re-authenticate.',
+            'REFRESH_TOKEN_INVALID',
+            refreshError
+          );
+        }
+        
+        // Re-throw other refresh errors
+        logger.error(`[getCredentials] Error refreshing credentials for user: ${userId}:`, refreshError);
+        throw refreshError;
+      }
     }
 
     // If no refresh token or other issues
-    logger.error(`[getCredentials] Credentials are invalid and cannot be refreshed for user: ${userId}, service: ${serviceType}`);
+    logger.warn(`[getCredentials] Credentials invalid and cannot be refreshed for user: ${userId}. Valid: ${credentials.valid}, Refresh Token: ${!!credentials.refresh_token}`);
     throw new GoogleAuthenticationError(
       'Credentials are invalid and cannot be refreshed. User needs to re-authenticate.',
       'INVALID_CREDENTIALS'
@@ -489,10 +515,10 @@ async function getCredentials(userId, serviceType = 'gmail') {
 
 async function getAuthenticatedGoogleService(userId, serviceName, version = 'v1', requiredScopes = []) {
   try {
-    logger.info(`[getAuthenticatedGoogleService] Creating ${serviceName} service for user: ${userId}, version: ${version}`);
+    logger.info(`[getAuthenticatedGoogleService] Creating ${serviceName} service for user: ${userId}, version: ${version}, required scopes: ${requiredScopes.length}`);
     
     // Log environment info for debugging
-    logger.debug(`[getAuthenticatedGoogleService] Environment: ${process.env.NODE_ENV}, CLIENT_ID exists: ${!!CLIENT_ID}, CLIENT_SECRET exists: ${!!CLIENT_SECRET}`);
+    logger.debug(`[getAuthenticatedGoogleService] Environment: ${process.env.NODE_ENV}, CLIENT_ID exists: ${!!config.GOOGLE_OAUTH?.CLIENT_ID}, CLIENT_SECRET exists: ${!!config.GOOGLE_OAUTH?.CLIENT_SECRET}`);
 
     // Map service names to service types
     const serviceTypeMap = {
@@ -502,14 +528,15 @@ async function getAuthenticatedGoogleService(userId, serviceName, version = 'v1'
     };
 
     const serviceType = serviceTypeMap[serviceName.toLowerCase()] || serviceName;
-    logger.debug(`[getAuthenticatedGoogleService] Service type mapped to: ${serviceType}`);
+    logger.debug(`[getAuthenticatedGoogleService] Service type mapped to: ${serviceType}, passing ${requiredScopes.length} required scopes`);
     
-    // Get credentials with automatic refresh
-    const credentials = await getCredentials(userId, serviceType);
-    logger.debug(`[getAuthenticatedGoogleService] Credentials retrieved successfully`);
+    // CRITICAL FIX: Pass requiredScopes to getCredentials (matching Python implementation)
+    // This ensures credentials have all necessary permissions before creating the service
+    const credentials = await getCredentials(userId, serviceType, requiredScopes);
+    logger.debug(`[getAuthenticatedGoogleService] Credentials retrieved and validated successfully`);
     
     // Create OAuth2 client
-    const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET);
+    const oauth2Client = new google.auth.OAuth2(config.GOOGLE_OAUTH.CLIENT_ID, config.GOOGLE_OAUTH.CLIENT_SECRET);
     const oauth2Creds = credentials.toOAuth2Credentials();
     
     logger.debug(`[getAuthenticatedGoogleService] OAuth2 credentials prepared - access_token exists: ${!!oauth2Creds.access_token}, refresh_token exists: ${!!oauth2Creds.refresh_token}`);
@@ -540,7 +567,7 @@ async function getAuthenticatedGoogleService(userId, serviceName, version = 'v1'
         }
     }
     
-    logger.info(`[getAuthenticatedGoogleService] Successfully created ${serviceName} service for user: ${userId}`);
+    logger.info(`[getAuthenticatedGoogleService] Successfully created ${serviceName} service for user: ${userId} with validated scopes`);
     return service;
 
   } catch (error) {
@@ -577,8 +604,15 @@ async function getAuthenticatedCalendarService(userId, scopeGroup = 'calendar_re
 
 /**
  * Handle Google API errors with automatic retry and reauthentication
+ * 
+ * @param {Function} operation - The async operation to execute
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @param {boolean} isReadOnly - Whether the operation is read-only
+ * @param {string} userId - User ID for credential refresh
+ * @param {string} serviceType - Service type (gmail, drive, calendar) for credential refresh
+ * @param {Array<string>} requiredScopes - Required scopes for the operation
  */
-async function handleGoogleApiErrors(operation, maxRetries = 3, isReadOnly = true, userId = null) {
+async function handleGoogleApiErrors(operation, maxRetries = 3, isReadOnly = true, userId = null, serviceType = 'gmail', requiredScopes = []) {
   let lastError;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -588,25 +622,43 @@ async function handleGoogleApiErrors(operation, maxRetries = 3, isReadOnly = tru
       lastError = error;
       
       // Check if it's an authentication error
-      if (error.code === 401 || error.message?.includes('invalid_grant')) {
+      if (error.code === 401 || error.message?.includes('invalid_grant') || error.message?.includes('invalid_token')) {
         logger.warn(`[handleGoogleApiErrors] Authentication error on attempt ${attempt}, trying to refresh credentials`);
         
-        if (userId) {
+        if (userId && serviceType) {
           try {
-            // Try to refresh credentials
-            const credentials = await getCredentials(userId);
+            // Try to refresh credentials with proper service type and scopes
+            const credentials = await getCredentials(userId, serviceType, requiredScopes);
             await credentials.refresh();
             
             // Retry the operation with refreshed credentials
+            logger.info(`[handleGoogleApiErrors] Credentials refreshed successfully, retrying operation`);
             continue;
           } catch (refreshError) {
             logger.error(`[handleGoogleApiErrors] Failed to refresh credentials:`, refreshError.message);
+            
+            // If refresh token is invalid, user needs to re-authenticate
+            if (refreshError.errorType === 'REFRESH_TOKEN_INVALID' || refreshError.errorType === 'INSUFFICIENT_SCOPES') {
+              throw new GoogleAuthenticationError(
+                'Authentication failed and could not refresh credentials. User needs to re-authenticate with proper permissions.',
+                refreshError.errorType,
+                refreshError
+              );
+            }
+            
             throw new GoogleAuthenticationError(
-              'Authentication failed and could not refresh credentials. User needs to re-authenticate.',
+              'Authentication failed and could not refresh credentials.',
               'REFRESH_FAILED',
               refreshError
             );
           }
+        } else {
+          logger.error(`[handleGoogleApiErrors] Authentication error but missing userId or serviceType for refresh`);
+          throw new GoogleAuthenticationError(
+            'Authentication failed. User needs to re-authenticate.',
+            'AUTH_ERROR',
+            error
+          );
         }
       }
       
@@ -619,7 +671,7 @@ async function handleGoogleApiErrors(operation, maxRetries = 3, isReadOnly = tru
         error.code === 504    // Gateway timeout
       )) {
         const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-        logger.warn(`[handleGoogleApiErrors] Retryable error on attempt ${attempt}, retrying in ${delay}ms`);
+        logger.warn(`[handleGoogleApiErrors] Retryable error (${error.code}) on attempt ${attempt}, retrying in ${delay}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -777,10 +829,10 @@ async function diagnoseGoogleAuthIssues(userId, serviceType = 'gmail') {
   try {
     // Check configuration
     diagnosis.configurationStatus = {
-      clientIdExists: !!CLIENT_ID,
-      clientSecretExists: !!CLIENT_SECRET,
-      redirectUriConfigured: !!GOOGLE_OAUTH.REDIRECT_URI,
-      domainUrl: process.env.DOMAIN_URL,
+      clientIdExists: !!config.GOOGLE_OAUTH?.CLIENT_ID,
+      clientSecretExists: !!config.GOOGLE_OAUTH?.CLIENT_SECRET,
+      redirectUriConfigured: !!config.GOOGLE_OAUTH?.REDIRECT_URI,
+      baseUrl: process.env.BASE_URL,
       configErrors: validateGoogleOAuthConfig()
     };
 

@@ -10,7 +10,7 @@ const logger = require('./logger');
 // Unified timeout and retry configuration for all MCP tools
 const MCP_HTTP_CONFIG = {
     // Base timeout for all requests (increased for reliability)
-    timeout: 90000, // 90 seconds - sufficient for slow API responses
+    timeout: 300000, // 5 minutes to align with tool executor
 
     // Retry configuration
     maxRetries: 3,
