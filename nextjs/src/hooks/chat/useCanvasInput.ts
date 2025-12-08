@@ -264,7 +264,7 @@ const imageModals = [
     'llama-3.1-sonar-large-128k-online',
     'sonar',
     'sonar-pro',
-    'deepseek/deepseek-r1:free',
+    'deepseek/deepseek-r1',
     'deepseek/deepseek-r1-distill-llama-70b',
 ];
 

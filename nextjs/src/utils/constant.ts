@@ -490,7 +490,7 @@ export const AI_MODAL_NAME = {
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
 
     // DeepSeek models
-    DEEPSEEK_R1: 'deepseek/deepseek-r1:free',
+    DEEPSEEK_R1: 'deepseek/deepseek-r1',
 
     // Llama models
     LLAMA_4_MAVERICK: 'meta-llama/llama-4-maverick',
@@ -505,7 +505,7 @@ export const AI_MODAL_NAME = {
     OLLAMA_LLAMA_3_2_1B: 'llama3.2:1b',
 
     // Qwen models
-    QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b:free',    
+    QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b',    
 }
 
 export const USER_STATUS = {
@@ -975,7 +975,7 @@ export const MODEL_CREDIT_INFO = [
     },
     {
         code: 'DEEPSEEK',
-        model: 'deepseek/deepseek-r1:free',
+        model: 'deepseek/deepseek-r1',
         credit: 5,
         displayName: 'DeepSeek R1',
         snippet: 'Perfect for advanced reasoning and multi-step problem-solving.',
@@ -1028,7 +1028,7 @@ export const MODEL_CREDIT_INFO = [
     },
     {
         code: 'QWEN',
-        model: 'qwen/qwen3-30b-a3b:free',
+        model: 'qwen/qwen3-30b-a3b',
         credit: 5,
         displayName: 'Qwen 3',
         snippet: 'Great for content creation and coding.',
@@ -1631,7 +1631,7 @@ export const MODEL_NAME_BY_CODE = {
     
     // Qwen models
     'qwen/qwen3-30b-a3b:free': 'QWEN',
-    
+    'qwen/qwen3-30b-a3b': 'QWEN',
     // Stability AI models
     'sdxl-flash-lgh': 'HUGGING_FACE',
 
