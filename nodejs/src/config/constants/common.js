@@ -365,7 +365,7 @@ const MODEL_CREDIT_INFO = [
     },
     {
         "code": "DEEPSEEK",
-        "model": "deepseek/deepseek-r1:free",
+        "model": "deepseek/deepseek-r1",
         "credit": 1      
     },
     {

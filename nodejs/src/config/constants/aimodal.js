@@ -77,7 +77,7 @@ const PERPLEXITY_MODAL = [
 ]
 
 const DEEPSEEK_MODAL = [
-    { name: 'deepseek/deepseek-r1:free', type: 2 },
+    { name: 'deepseek/deepseek-r1', type: 2 },
     //{ name: 'deepseek/deepseek-r1-distill-llama-70b', type: 2 },
 ]
 
@@ -91,7 +91,7 @@ const GROK_MODAL = [
 ]
 
 const QWEN_MODAL = [
-    { name: 'qwen/qwen3-30b-a3b:free', type: 2 },
+    { name: 'qwen/qwen3-30b-a3b', type: 2 },
 ]
 
 const MESSAGE_TYPE = {
@@ -142,7 +142,7 @@ const MODAL_NAME = {
     CLAUDE_3_OPUS_LATEST: 'claude-3-opus-latest',
     CLAUDE_3_SONNET_20240229: 'claude-3-sonnet-20240229',
     CLAUDE_3_HAIKU_20240307: 'claude-3-haiku-20240307',
-    DEEPSEEK_R1: 'deepseek/deepseek-r1:free',
+    DEEPSEEK_R1: 'deepseek/deepseek-r1',
     GPT_O1: 'o1',
     GPT_O1_MINI: 'o1-mini',
     GPT_O1_PREVIEW: 'o1-preview',
@@ -159,7 +159,7 @@ const MODAL_NAME = {
     GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
     O3: 'o3',
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
-    QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b:free',
+    QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b',
     GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
     CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
     CLAUDE_OPUS_4_20250514: 'claude-opus-4-20250514',
