@@ -391,6 +391,67 @@ function getSolutionPatterns(repoName) {
 
 
 /**
+ * Generates docker-compose.yml for n8n using official Docker image
+ * @param {string} repoPath - Repository path
+ * @param {object} config - Solution configuration
+ * @returns {Promise<void>}
+ */
+async function generateN8nDockerCompose(repoPath, config) {
+    // Read root .env to get domain information
+    const rootEnvPath = '/workspace/.env';
+    let domainName = 'weam.local';
+    let protocol = 'https';
+    
+    if (fs.existsSync(rootEnvPath)) {
+        const envContent = fs.readFileSync(rootEnvPath, 'utf8');
+        const domainMatch = envContent.match(/NEXT_PUBLIC_DOMAIN_URL=(.+)/);
+        if (domainMatch) {
+            const domainUrl = domainMatch[1].trim();
+            domainName = domainUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+            protocol = domainUrl.startsWith('https') ? 'https' : 'http';
+        }
+    }
+    
+    const composeContent = `
+
+    services:
+    n8n:
+        image: docker.n8n.io/n8nio/n8n:latest
+        container_name: ${config.containerName[0]}
+        restart: unless-stopped
+        ports:
+        - "5678:5678"
+        environment:
+        - GENERIC_TIMEZONE=\${GENERIC_TIMEZONE:-UTC}
+        - TZ=\${TZ:-UTC}
+        - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+        - N8N_RUNNERS_ENABLED=true
+        - N8N_PATH=\${N8N_PATH:-/n8n}
+        - WEBHOOK_URL=\${WEBHOOK_URL:-${protocol}://${domainName}/n8n/}
+        - N8N_HOST=\${N8N_HOST:-${domainName}}
+        - N8N_PORT=\${N8N_PORT:-5678}
+        - N8N_PROTOCOL=\${N8N_PROTOCOL:-${protocol}}
+        - N8N_METRICS=true
+        volumes:
+        - n8n_data:/home/node/.n8n
+        networks:
+        - app-network
+
+    volumes:
+    n8n_data:
+
+    networks:
+    app-network:
+        external:
+        name: weam-open-source-mongo_app-network
+    `;
+
+    const composePath = path.join(repoPath, 'docker-compose.yml');
+    fs.writeFileSync(composePath, composeContent);
+    console.log(`[${config.repoName}] ✅ Generated docker-compose.yml for n8n with domain: ${domainName}`);
+}
+
+/**
  * Installs Docker Compose service (multiple containers)
  * @param {object} config - Solution configuration
  * @param {string} repoPath - Repository path
@@ -400,7 +461,14 @@ async function installDockerComposeService(config, repoPath) {
     console.log(`[${config.repoName}] 🐳 Installing Docker Compose service...`);
     
     // Setup environment files - convert env.example to .env based on config
-    if (config.envFile) {
+    // For n8n, create empty .env if it doesn't exist (we'll merge with root .env)
+    if (config.repoName === 'n8n') {
+        const localEnvPath = `${repoPath}/.env`;
+        if (!fs.existsSync(localEnvPath)) {
+            console.log(`[${config.repoName}] 📝 Creating .env file for n8n...`);
+            fs.writeFileSync(localEnvPath, '');
+        }
+    } else if (config.envFile) {
         console.log(`[${config.repoName}] 📝 Converting ${config.envFile} to .env...`);
         // await runCommand(`cp ${repoPath}/${config.envFile} ${repoPath}/.env`);
         await runCommand(`find ${repoPath} -name "${config.envFile}" -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \\;`, config.repoName);
@@ -421,6 +489,14 @@ async function installDockerComposeService(config, repoPath) {
     // Detect repository structure
     const repoStructure = await detectRepoStructure(repoPath);
     
+    // Special handling for n8n - generate docker-compose.yml if it doesn't exist
+    if (config.repoName === 'n8n' && !repoStructure.hasDockerCompose) {
+        console.log(`[${config.repoName}] 📦 Generating docker-compose.yml for n8n using official image...`);
+        await generateN8nDockerCompose(repoPath, config);
+        repoStructure.hasDockerCompose = true;
+        repoStructure.composeFile = 'docker-compose.yml';
+    }
+    
     if (repoStructure.hasDockerCompose) {
         // Use Docker Compose
         console.log(`[${config.repoName}] 📦 Using Docker Compose (${repoStructure.composeFile})...`);
@@ -435,9 +511,10 @@ async function installDockerComposeService(config, repoPath) {
         // Use temporary .env file for docker-compose
         await runCommand(`cp ${tempEnvPath} ${localEnvPath}`, config.repoName);
         
-        // Build and start services
-        console.log(`[${config.repoName}] 🚀 Building and starting services...`);
-        await runCommand(`cd ${repoPath} && docker-compose up --build -d`, config.repoName);
+        // Build and start services (use --no-build for n8n since we're using official image)
+        const buildFlag = config.repoName === 'n8n' ? '--no-build' : '--build';
+        console.log(`[${config.repoName}] 🚀 Starting services...`);
+        await runCommand(`cd ${repoPath} && docker-compose up ${buildFlag} -d`, config.repoName);
         
         // Keep the merged .env file (don't restore original .env.example)
         // This ensures all merged variables are preserved for the running container
@@ -473,9 +550,14 @@ const installWithProgress = async (req, res) => {
         console.log(`[${config.repoName}] 🧹 Cleaning up existing repository...`);
         await runCommand(`rm -rf ${repoPath}`, config.repoName);
         
-        // Step 2: Clone repository
-        console.log(`[${config.repoName}] 📥 Cloning repository...`);
-        await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
+        // Step 2: Clone repository (skip for n8n as we use official Docker image)
+        if (config.repoName === 'n8n') {
+            console.log(`[${config.repoName}] 📦 Using official n8n Docker image, creating directory...`);
+            await runCommand(`mkdir -p ${repoPath}`, config.repoName);
+        } else {
+            console.log(`[${config.repoName}] 📥 Cloning repository...`);
+            await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
+        }
         
         // Step 3: Clean up existing containers
         await cleanupExistingContainers(config);
@@ -549,9 +631,14 @@ const syncWithProgress = async (req, res) => {
         console.log(`[${config.repoName}] 🧹 Cleaning up existing repository...`);
         await runCommand(`rm -rf ${repoPath}`, config.repoName);
         
-        // Step 3: Clone repository
-        console.log(`[${config.repoName}] 📥 Cloning repository...`);
-        await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
+        // Step 3: Clone repository (skip for n8n as we use official Docker image)
+        if (config.repoName === 'n8n') {
+            console.log(`[${config.repoName}] 📦 Using official n8n Docker image, creating directory...`);
+            await runCommand(`mkdir -p ${repoPath}`, config.repoName);
+        } else {
+            console.log(`[${config.repoName}] 📥 Cloning repository...`);
+            await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
+        }
         
         // Step 4: Install using Docker Compose
         await installDockerComposeService(config, repoPath);

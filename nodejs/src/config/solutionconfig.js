@@ -39,6 +39,14 @@ const SOLUTION_CONFIGS = {
         branchName: 'devops',
         envFile: 'example.env'
     },
+    'n8n': {
+        repoUrl: 'https://github.com/n8n-io/n8n.git',
+        repoName: 'n8n',
+        imageName: ['n8n'],
+        containerName: ['n8n-container'],
+        branchName: 'master',
+        envFile: '.env.example'
+    },
 };
 
 module.exports = SOLUTION_CONFIGS;

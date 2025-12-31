@@ -22,7 +22,7 @@ import ChatBotIcon from '@/icons/ChatBotIcon';
 import SeoGenIcon from '@/icons/SeoGenIcon';
 import LandingPageIcon from '@/icons/LandingPageIcon';
 import VideoGenIcon from '@/icons/VideoGenIcon';
-  
+import N8nIcon from '@/icons/N8nIcon';
   // Map backend icon names to actual icon components
   export const iconMapping: Record<string, React.ComponentType<any>> = {
     'chat-icon': MessageCircle,
@@ -32,6 +32,7 @@ import VideoGenIcon from '@/icons/VideoGenIcon';
     'writing-icon': AIDocsIcon,
     'document-icon': FileText,
     'ai-docs-icon': AIDocsIcon,
+    'n8n-icon': N8nIcon,
     'foloup-icon': FoloupIcon,
     'chat-bot-icon': ChatBotIcon,
     'seo-article-icon': SeoGenIcon,

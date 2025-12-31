@@ -44,6 +44,15 @@
         "isActive": true,
         "pathToOpen": "/call-analyzer",
         "sequence": 5
+      },
+      {
+        "name" : "N8n",
+        "description" : "N8n is a workflow automation tool that allows you to create workflows that can be used to automate your business processes.",
+        "charimg" : "/solution-characters/vibrant-1.svg",
+        "category" : "Productivity & Document Management",
+        "isActive" : true,
+        "pathToOpen" : "/n8n",
+        "sequence" : 6
       }
     ]
   }

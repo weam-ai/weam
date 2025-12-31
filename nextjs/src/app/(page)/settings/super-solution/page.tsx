@@ -291,14 +291,25 @@ const SuperSolutionPage = () => {
 
     // Mapping from app names to solution types
     const getSolutionTypeFromAppName = (appName: string): string => {
+        if (!appName) return '';
+        
+        // Normalize the app name (trim whitespace)
+        const normalizedName = appName.trim();
+        
         const mapping: { [key: string]: string } = {
             'AI Docs': 'ai-docs',
             'AI Recruiter': 'ai-recruiter',
             'Page Revamp': 'page-revamp',
             'Blog Engine': 'blog-engine',
-            'Call Analyzer': 'call-analyzer'
+            'Call Analyzer': 'call-analyzer',
+            'N8n': 'n8n',
+            'n8n': 'n8n', // Handle lowercase variant
+            'N8N': 'n8n'  // Handle uppercase variant
         };
-        return mapping[appName] || '';
+        
+        const result = mapping[normalizedName] || '';
+        console.log('🔍 getSolutionTypeFromAppName - input:', appName, 'normalized:', normalizedName, 'result:', result, 'mapping keys:', Object.keys(mapping));
+        return result;
     };
 
     const getInstallButtonText = (appName: string): string => {
@@ -314,8 +325,17 @@ const SuperSolutionPage = () => {
     };
 
     const handleInstall = async (solutionType?: string) => {
+        console.log("🚀 ~ handleInstall ~ solutionType:", solutionType, "selectedApp:", selectedApp);
         // If no solutionType provided, get it from selectedApp
-        const finalSolutionType = solutionType || (selectedApp ? getSolutionTypeFromAppName(selectedApp.name) : 'ai-docs');
+        let finalSolutionType = solutionType;
+        if (!finalSolutionType && selectedApp) {
+            finalSolutionType = getSolutionTypeFromAppName(selectedApp.name);
+            console.log("🔍 ~ getSolutionTypeFromAppName result:", finalSolutionType, "for app name:", selectedApp.name);
+        }
+        if (!finalSolutionType) {
+            finalSolutionType = 'ai-docs'; // fallback
+            console.log("⚠️ ~ Using fallback solutionType:", finalSolutionType);
+        }
         console.log('SuperSolution handleInstall - solutionType:', solutionType, 'selectedApp:', selectedApp?.name, 'finalSolutionType:', finalSolutionType);
         
         // Disable buttons immediately for this specific solution
@@ -339,7 +359,24 @@ const SuperSolutionPage = () => {
                     const response = await fetch(healthUrl);
                     
                     if (response.ok) {
-                        const data = await response.json();
+                        const contentType = response.headers.get('content-type');
+                        let data;
+                        
+                        // Handle SSE format (text/event-stream) or JSON
+                        if (contentType && contentType.includes('text/event-stream')) {
+                            const text = await response.text();
+                            // Extract JSON from SSE format: "data: {...}"
+                            const match = text.match(/data:\s*({.*})/);
+                            if (match) {
+                                data = JSON.parse(match[1]);
+                            } else {
+                                console.log('Could not parse SSE format, skipping...');
+                                return;
+                            }
+                        } else {
+                            data = await response.json();
+                        }
+                        
                         console.log('Health check status:', data.status);
                         
                         if (data.status === 'running') {
