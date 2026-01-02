@@ -219,6 +219,11 @@ const TOOL_CATALOG = {
         domain: 'utility',
         keywords: ['time', 'date', 'current', 'now', 'today', 'datetime', 'timestamp'],
         tools: ['get_current_time']
+    },
+    'n8n': {
+        domain: 'automation',
+        keywords: ['n8n', 'workflow', 'automation', 'workflows', 'automation'],
+        tools: ['list_n8n_workflows', 'get_n8n_workflow', 'create_n8n_workflow', 'execute_n8n_workflow', 'activate_n8n_workflow', 'deactivate_n8n_workflow']
     }
 };
 
@@ -294,6 +299,12 @@ function detectSpecificDomain(query) {
             contextKeywords: ['invoice', 'subscription', 'customer', 'charge'],
             domain: 'finance',
             catalog: 'stripe'
+        },
+        'n8n': {
+            strongKeywords: ['n8n', 'workflow', 'automation', 'workflows', 'automation'],
+            contextKeywords: ['workflow', 'automation', 'workflows', 'automation'],
+            domain: 'automation',
+            catalog: 'n8n'
         }
     };
     
@@ -875,6 +886,7 @@ async function selectRelevantToolsWithDomainFilter(query, availableMcpTools) {
     
     // Then apply semantic/keyword selection on the filtered set
     return await selectRelevantTools(query, domainFilteredTools.filter(t => t && t.name && !['web_search', 'dall_e_3'].includes(t.name)));
+   
 }
 
 

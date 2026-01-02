@@ -7,6 +7,10 @@ import GoogleDriveIcon from '@/icons/GoogleDriveIcon';
 import GoogleCalendarIcon from '@/icons/GoogleCalendarIcon';
 import GitHubConfigModal from './GitHubConfigModal';
 import GitHubIcon from '@/icons/GitHubIcon';
+import MongoDBConfigModal from './MongoDBConfigModal';
+import MongoDBIcon from '@/icons/MongoDBIcon';
+import N8nConfigModal from './N8nConfigModal';
+import NeightNIcon from '@/icons/nEightnIcon';
 // import AsanaConfigModal from './AsanaConfigModal';
 // import AirtableConfigModal from './AirtableConfigModal';
 // import NotionConfigModal from './NotionConfigModal';
@@ -216,6 +220,42 @@ const ConnectedAppSelection = ({ filteredApps, fromDialog = false, mcpData }) =>
                     <GitHubConfigModal 
                         isOpen={showConfigurationModal.GITHUB}
                         onClose={() => handleCloseModal(MCP_CODES.GITHUB)}
+                    />
+                )
+            }
+            {
+                isConnected(MCP_CODES.MONGODB) ? (
+                    <MCPDisconnectDialog
+                        open={showConfigurationModal.MONGODB}
+                        closeModal={() => handleCloseModal(MCP_CODES.MONGODB)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.MONGODB)}
+                        serviceName="MongoDB"
+                        serviceIcon={<MongoDBIcon className="size-6" />}
+                        loading={loading}
+                    />
+                ) : showConfigurationModal.MONGODB && (
+                    <MongoDBConfigModal 
+                        isOpen={showConfigurationModal.MONGODB}
+                        onClose={() => handleCloseModal(MCP_CODES.MONGODB)}
+                        mcpData={mcpData}
+                    />
+                )
+            }
+            {
+                isConnected(MCP_CODES.N8N) ? (
+                    <MCPDisconnectDialog
+                        open={showConfigurationModal.N8N}
+                        closeModal={() => handleCloseModal(MCP_CODES.N8N)}
+                        onDisconnect={() => handleDisconnect(MCP_CODES.N8N)}
+                        serviceName="n8n"
+                        serviceIcon={<NeightNIcon className="size-6" />}
+                        loading={loading}
+                    />
+                ) : showConfigurationModal.N8N && (
+                    <N8nConfigModal 
+                        isOpen={showConfigurationModal.N8N}
+                        onClose={() => handleCloseModal(MCP_CODES.N8N)}
+                        mcpData={mcpData}
                     />
                 )
             }
