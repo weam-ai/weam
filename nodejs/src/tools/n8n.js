@@ -30,7 +30,12 @@ async function makeN8nRequest(endpoint, apiKey, params = null, jsonData = null, 
     try {
         let response;
         const baseUrl = apiBaseUrl || DEFAULT_N8N_API_BASE;
-        const url = `${baseUrl}/${endpoint}`;
+        // Ensure baseUrl doesn't have trailing slash and endpoint doesn't have leading slash
+        const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+        const cleanEndpoint = endpoint.replace(/^\//, '');
+        const url = `${cleanBaseUrl}/${cleanEndpoint}`;
+        
+        console.log(`Making ${method} request to n8n API: ${url}`);
 
         if (method === 'GET') {
             response = await axios.get(url, { headers, params, timeout: 30000 });
@@ -44,10 +49,23 @@ async function makeN8nRequest(endpoint, apiKey, params = null, jsonData = null, 
             response = await axios.patch(url, jsonData, { headers, params, timeout: 30000 });
         }
 
-        console.log(`Successfully received response from n8n API: ${response.data}, url: ${url}`);
+        console.log(`Successfully received response from n8n API: ${endpoint}, url: ${url}`);
         return response.data;
     } catch (error) {
+        const errorDetails = {
+            endpoint,
+            method,
+            url: `${apiBaseUrl || DEFAULT_N8N_API_BASE}/${endpoint}`,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            responseData: error.response?.data,
+            message: error.message
+        };
         console.error(`Error making request to n8n API: ${endpoint} - Error: ${error.message}`);
+        console.error(`Error details:`, JSON.stringify(errorDetails, null, 2));
+        if (error.response?.data) {
+            console.error(`n8n API error response:`, JSON.stringify(error.response.data, null, 2));
+        }
         return null;
     }
 }
@@ -176,15 +194,20 @@ async function getN8nWorkflow(userId = null, workflowId) {
 }
 
 /**
- * Create a new workflow
+ * Create a new workflow following n8n API specification
  * @param {string} userId - User ID to get API key from
- * @param {string} name - Name of the workflow
- * @param {Array} nodes - List of nodes in the workflow
- * @param {Object} connections - Connections between nodes
- * @param {boolean} active - Whether the workflow should be active
+ * @param {string} name - Name of the workflow (required)
+ * @param {Array} nodes - List of nodes in the workflow (required)
+ * @param {Object} connections - Connections between nodes (required)
+ * @param {Object} settings - Workflow settings object (required)
+ * @param {string|null} staticData - Static data as JSON string or null (optional)
+ * @param {Array} shared - Array of shared workflow objects (optional)
  * @returns {string} Formatted created workflow information
+ * 
+ * API Reference: https://docs.n8n.io/api/api-reference/#tag/workflow/POST/workflows
+ * Body schema: connections (required), name (required), nodes (required), settings (required), shared (optional), staticData (optional)
  */
-async function createN8nWorkflow(userId = null, name, nodes, connections = null, active = false) {
+async function createN8nWorkflow(userId = null, name, nodes, connections = null, settings = null, staticData = null, shared = null) {
     if (!userId) {
         return 'Error: User ID is required. Please provide user authentication.';
     }
@@ -193,24 +216,133 @@ async function createN8nWorkflow(userId = null, name, nodes, connections = null,
         return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
     }
 
+    // Validate required fields per n8n API
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return 'Error: Workflow name is required and must be a non-empty string.';
+    }
+
+    if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
+        return 'Error: At least one node is required. Provide an array of workflow nodes.';
+    }
+
+    // Validate node structure (per n8n API requirements)
+    const invalidNodes = nodes.filter((node, index) => {
+        if (!node || typeof node !== 'object') {
+            console.warn(`Invalid node object at index ${index}:`, node);
+            return true;
+        }
+        // Required: type, name, position
+        if (!node.type || !node.name || !node.position || !Array.isArray(node.position) || node.position.length !== 2) {
+            console.warn(`Invalid node structure at index ${index}. Missing type, name, or invalid position:`, node);
+            return true;
+        }
+        // Ensure position elements are numbers
+        if (typeof node.position[0] !== 'number' || typeof node.position[1] !== 'number') {
+            console.warn(`Invalid node position at index ${index}. Position elements must be numbers:`, node.position);
+            return true;
+        }
+        return false;
+    });
+
+    if (invalidNodes.length > 0) {
+        return `Error: Invalid node structure. Each node must have: type, name, and position [x, y] (with numeric values). Found ${invalidNodes.length} invalid node(s).`;
+    }
+
+    // Build workflow data object EXACTLY as per n8n API documentation
+    // Reference: https://docs.n8n.io/api/api-reference/#tag/workflow/POST/workflows
+    // Required: connections, name, nodes, settings
+    // Optional: shared, staticData
+    // DO NOT include: active, tags, description (not in create workflow body)
+    
     const workflowData = {
-        name,
-        nodes,
+        name: name.trim(),
+        nodes: nodes.map(node => {
+            // Node properties per API schema
+            const normalizedNode = {
+                type: String(node.type),
+                name: String(node.name),
+                position: [Number(node.position[0]), Number(node.position[1])],
+                typeVersion: node.typeVersion !== undefined ? Number(node.typeVersion) : 1
+            };
+            // Optional node fields per API
+            if (node.parameters !== undefined && node.parameters !== null) {
+                normalizedNode.parameters = node.parameters;
+            }
+            if (node.id !== undefined && node.id !== null && String(node.id).trim() !== '') {
+                normalizedNode.id = String(node.id);
+            }
+            if (node.credentials !== undefined && node.credentials !== null) {
+                normalizedNode.credentials = node.credentials;
+            }
+            if (node.disabled !== undefined) {
+                normalizedNode.disabled = Boolean(node.disabled);
+            }
+            if (node.notes !== undefined && node.notes !== null) {
+                normalizedNode.notes = String(node.notes);
+            }
+            if (node.notesInFlow !== undefined) {
+                normalizedNode.notesInFlow = Boolean(node.notesInFlow);
+            }
+            if (node.onError !== undefined && node.onError !== null) {
+                normalizedNode.onError = String(node.onError);
+            }
+            if (node.retryOnFail !== undefined) {
+                normalizedNode.retryOnFail = Boolean(node.retryOnFail);
+            }
+            if (node.maxTries !== undefined) {
+                normalizedNode.maxTries = Number(node.maxTries);
+            }
+            if (node.waitBetweenTries !== undefined) {
+                normalizedNode.waitBetweenTries = Number(node.waitBetweenTries);
+            }
+            if (node.webhookId !== undefined && node.webhookId !== null) {
+                normalizedNode.webhookId = String(node.webhookId);
+            }
+            if (node.executeOnce !== undefined) {
+                normalizedNode.executeOnce = Boolean(node.executeOnce);
+            }
+            if (node.alwaysOutputData !== undefined) {
+                normalizedNode.alwaysOutputData = Boolean(node.alwaysOutputData);
+            }
+            return normalizedNode;
+        }),
         connections: connections || {},
-        active
+        settings: settings || {}
     };
+
+    // Optional fields per API - only add if provided
+    if (staticData !== undefined && staticData !== null) {
+        workflowData.staticData = staticData;
+    }
+    
+    if (shared && Array.isArray(shared) && shared.length > 0) {
+        workflowData.shared = shared;
+    }
+
+    // Log the actual payload being sent (for debugging)
+    console.log(`Creating workflow with payload:`, JSON.stringify(workflowData, null, 2));
 
     const data = await makeN8nRequest('workflows', config.apiKey, null, workflowData, 'POST', config.apiBaseUrl);
     
     if (!data) {
-        return `Failed to create workflow: ${name}`;
+        return `Failed to create workflow: ${name}. Please check the workflow structure and ensure all required fields are provided.`;
     }
 
     let result = `**Created Workflow:**\n\n`;
     result += `• **ID:** ${data.id || 'unknown'}\n`;
     result += `• **Name:** ${data.name || 'No name'}\n`;
     result += `• **Active:** ${data.active || false}\n`;
-    result += `• **Created:** ${data.createdAt || 'unknown'}\n`;
+    result += `• **Nodes:** ${data.nodes ? data.nodes.length : nodes.length} node(s)\n`;
+    result += `• **Created:** ${data.createdAt ? new Date(data.createdAt).toLocaleString() : 'unknown'}\n`;
+    
+    if (data.description) {
+        result += `• **Description:** ${data.description}\n`;
+    }
+    
+    if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+        const tagNames = data.tags.map(tag => tag.name || tag.id || tag).join(', ');
+        result += `• **Tags:** ${tagNames}\n`;
+    }
 
     return result;
 }

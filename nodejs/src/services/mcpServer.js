@@ -4083,18 +4083,78 @@ async function startMCPServer() {
     server.registerTool(
         "create_n8n_workflow",
         {
-            description: "Create a new n8n workflow. All the fields are optional.",
+            description: `Create a new n8n workflow following the n8n API specification.
+
+            **Required Fields:**
+            - name: Workflow name (string)
+            - nodes: Array of workflow nodes (each node must have: type, name, position, and optionally parameters, typeVersion, id)
+
+            **Optional Fields:**
+            - connections: Object mapping node connections (format: { "NodeName": { "main": [[{ "node": "TargetNode", "type": "main", "index": 0 }]] } })
+            - active: Whether workflow should be active (boolean, default: false)
+            - settings: Workflow settings object (object)
+            - tags: Array of tag IDs or tag objects (array)
+            - description: Workflow description (string)
+
+            **Node Structure (per n8n API):**
+            \`\`\`json
+            {
+            "id": "unique-node-id",
+            "name": "Node Name",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [0, 0],
+            "parameters": {}
+            }
+            \`\`\`
+
+            See: https://docs.n8n.io/api/api-reference/#tag/workflow/POST/workflows`,
             inputSchema: {
                 user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                name: z.string().describe("Name of the workflow"),
-                nodes: z.array(z.any()).describe("List of nodes in the workflow"),
-                connections: z.record(z.any()).optional().describe("Connections between nodes"),
-                active: z.boolean().optional().describe("Whether the workflow should be active (default: false)")
+                name: z.string().describe("Name of the workflow (required)"),
+                nodes: z.any().describe("Array of workflow nodes (required). Each node should have: type, name, position [x, y], typeVersion, and optionally parameters, id, credentials, disabled, notes, etc."),
+                connections: z.any().describe("Object mapping node connections (required). Format: { 'NodeName': { 'main': [[{ 'node': 'TargetNode', 'type': 'main', 'index': 0 }]] } }"),
+                settings: z.any().describe("Workflow settings object (required). Can include: executionOrder, saveDataErrorExecution, saveDataSuccessExecution, saveManualExecutions, timezone, etc."),
+                staticData: z.union([z.string(), z.null()]).optional().describe("Static data as JSON string or null (optional)"),
+                shared: z.any().optional().describe("Array of shared workflow objects (optional)")
             }
         },
-        async ({ user_id = null, name, nodes, connections = null, active = false }) => {
+        async (params) => {
             try {
-                const result = await n8nTools.createN8nWorkflow(user_id, name, nodes, connections, active);
+                // Extract and normalize parameters
+                const user_id = params.user_id || null;
+                const name = params.name;
+                
+                // Handle nodes - ensure it's an array
+                let nodes = params.nodes;
+                if (!Array.isArray(nodes)) {
+                    if (typeof nodes === 'string') {
+                        try {
+                            nodes = JSON.parse(nodes);
+                        } catch (e) {
+                            return {
+                                content: [{
+                                    type: "text",
+                                    text: `Error: nodes must be an array. Received: ${typeof nodes}. If you provided a JSON string, it could not be parsed.`
+                                }]
+                            };
+                        }
+                    } else {
+                        return {
+                            content: [{
+                                type: "text",
+                                text: `Error: nodes must be an array. Received: ${typeof nodes}`
+                            }]
+                        };
+                    }
+                }
+                
+                const connections = params.connections || null;
+                const settings = params.settings || null;
+                const staticData = params.staticData || null;
+                const shared = params.shared || null;
+
+                const result = await n8nTools.createN8nWorkflow(user_id, name, nodes, connections, settings, staticData, shared);
                 return {
                     content: [{
                         type: "text",
