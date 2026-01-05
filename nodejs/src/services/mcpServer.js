@@ -4355,11 +4355,11 @@ async function startMCPServer() {
         "execute_n8n_workflow",
         {
             description: `Execute an n8n workflow. This tool automatically handles different trigger types:
-- **Webhook workflows**: Calls the webhook URL directly with the provided data
-- **Form workflows**: Automatically generates intelligent form field values based on field names, types, labels, and context. The tool extracts form fields from the workflow and generates appropriate values automatically - you do NOT need to provide input_data unless you have specific values. The tool will intelligently generate values for all form fields.
-- **Other triggers**: Uses the execute API endpoint
+            - **Webhook workflows**: Calls the webhook URL directly with the provided data
+            - **Form workflows**: Automatically generates intelligent form field values based on field names, types, labels, and context. The tool extracts form fields from the workflow and generates appropriate values automatically - you do NOT need to provide input_data unless you have specific values. The tool will intelligently generate values for all form fields.
+            - **Other triggers**: Uses the execute API endpoint
 
-IMPORTANT: For form workflows, the tool automatically generates all form field values. Do NOT ask the user for form field values - the tool handles this automatically based on the form structure.`,
+            IMPORTANT: For form workflows, the tool automatically generates all form field values. Do NOT ask the user for form field values - the tool handles this automatically based on the form structure.`,
             inputSchema: {
                 user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
                 workflow_id: z.string().describe("ID of the workflow to execute"),

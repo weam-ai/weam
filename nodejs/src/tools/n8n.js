@@ -6,7 +6,7 @@
 const axios = require('axios');
 const User = require('../models/user');
 const { decryptedData } = require('../utils/helper');
-const { ENCRYPTION_KEY } = require('../config/config');
+const { ENCRYPTION_KEY, N8N } = require('../config/config');
 
 const DEFAULT_N8N_API_BASE = process.env.N8N_API_BASE || 'https://api.n8n.io/v1';
 
@@ -860,8 +860,7 @@ async function executeN8nWorkflow(userId = null, workflowId, inputData = null) {
     }
 
     // Get base URL from API base URL
-    // If apiBaseUrl is like "https://flow.automatorslab.ai/api/v1", extract "https://flow.automatorslab.ai"
-    let baseUrl = 'https://flow.automatorslab.ai'; // Default fallback
+    let baseUrl = N8N.API_BASE_URL; // Default fallback
     if (config.apiBaseUrl) {
         try {
             const url = new URL(config.apiBaseUrl);
@@ -1174,7 +1173,7 @@ async function executeN8nWorkflow(userId = null, workflowId, inputData = null) {
     if (trigger.type === 'schedule' || trigger.type === 'chat' || trigger.type === 'manual') {
         try {
             // Get base URL from API base URL
-            let baseUrl = 'https://flow.automatorslab.ai'; // Default fallback
+            let baseUrl = N8N.API_BASE_URL; // Default fallback
             if (config.apiBaseUrl) {
                 try {
                     const url = new URL(config.apiBaseUrl);
