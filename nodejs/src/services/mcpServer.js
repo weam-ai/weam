@@ -4175,19 +4175,125 @@ async function startMCPServer() {
     server.registerTool(
         "update_n8n_workflow",
         {
-            description: "Update an existing n8n workflow. All the fields are optional.",
+            description: `Update an existing n8n workflow following the n8n API specification.
+
+            **Required Fields:**
+            - workflow_id: ID of the workflow to update (string)
+
+            **Optional Fields:**
+            - name: Updated workflow name (string). If not provided, the current workflow name will be used automatically.
+            - settings: Updated workflow settings object (object). If not provided, the current workflow settings will be used automatically.
+            - nodes: Updated array of workflow nodes (array)
+            - connections: Updated object mapping node connections (object)
+            - settings: Updated workflow settings object (object)
+            - staticData: Updated static data as JSON string or null (string | null)
+            - shared: Updated array of shared workflow objects (array)
+            - active: Whether the workflow should be active (boolean)
+
+            **Node Structure (per n8n API):**
+            \`\`\`json
+            {
+            "id": "unique-node-id",
+            "name": "Node Name",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [0, 0],
+            "parameters": {},
+            "credentials": {},
+            "disabled": false,
+            "notes": "Node notes",
+            "notesInFlow": false,
+            "onError": "continue",
+            "retryOnFail": false,
+            "maxTries": 3,
+            "waitBetweenTries": 1,
+            "webhookId": "webhook-id",
+            "executeOnce": false,
+            "alwaysOutputData": false
+            }
+            \`\`\`
+
+            **Connections Structure (per n8n API):**
+            \`\`\`json
+            {
+            "NodeName": {
+                "main": [[{ "node": "TargetNode", "type": "main", "index": 0 }]]
+            }
+            }
+            \`\`\`
+
+            **Settings Structure (per n8n API):**
+            \`\`\`json
+            {
+            "availableInMCP": true,
+            "callerPolicy": "any",
+            "executionOrder": "v1",
+            "timezone": "America/New_York",
+            "saveDataErrorExecution": "all",
+            "saveDataSuccessExecution": "all",
+            "saveManualExecutions": true
+            }
+            \`\`\`
+
+            **Important Notes:**
+            - The n8n API requires both 'name' and 'settings' fields in the request body. If you don't provide them, the tool will automatically fetch and use the current workflow values.
+            - When updating nodes, each node must have: type, name, and position [x, y]
+            - Node properties are normalized to match n8n API requirements
+            - Only provided fields will be updated; other fields remain unchanged
+
+            See: https://docs.n8n.io/api/api-reference/#tag/workflow/PUT/workflows/{id}`,
             inputSchema: {
                 user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                workflow_id: z.string().describe("ID of the workflow to update"),
-                name: z.string().optional().describe("New name for the workflow"),
-                nodes: z.array(z.any()).optional().describe("Updated list of nodes"),
-                connections: z.record(z.any()).optional().describe("Updated connections"),
-                active: z.boolean().optional().describe("Whether the workflow should be active")
+                workflow_id: z.string().describe("ID of the workflow to update (required)"),
+                name: z.string().optional().describe("Updated workflow name (optional). Must be a non-empty string if provided."),
+                nodes: z.any().optional().describe("Updated array of workflow nodes (optional). Each node should have: type, name, position [x, y], and optionally parameters, typeVersion, id, credentials, disabled, notes, notesInFlow, onError, retryOnFail, maxTries, waitBetweenTries, webhookId, executeOnce, alwaysOutputData. Accepts any array format."),
+                connections: z.any().optional().describe("Updated object mapping node connections (optional). Format: { 'NodeName': { 'main': [[{ 'node': 'TargetNode', 'type': 'main', 'index': 0 }]] } }"),
+                settings: z.any().optional().describe("Updated workflow settings object (optional). Can include: availableInMCP, callerPolicy, executionOrder, timezone, saveDataErrorExecution, saveDataSuccessExecution, saveManualExecutions, etc."),
+                staticData: z.union([z.string(), z.null()]).optional().describe("Updated static data as JSON string or null (optional)"),
+                shared: z.any().optional().describe("Updated array of shared workflow objects (optional)"),
+                active: z.boolean().optional().describe("Whether the workflow should be active (optional)")
             }
         },
-        async ({ user_id = null, workflow_id, name = null, nodes = null, connections = null, active = null }) => {
+        async (params) => {
             try {
-                const result = await n8nTools.updateN8nWorkflow(user_id, workflow_id, name, nodes, connections, active);
+                // Extract and normalize parameters
+                const user_id = params.user_id || null;
+                const workflow_id = params.workflow_id;
+                
+                // Handle nodes - ensure it's an array if provided
+                let nodes = params.nodes;
+                if (nodes !== null && nodes !== undefined) {
+                    if (!Array.isArray(nodes)) {
+                        if (typeof nodes === 'string') {
+                            try {
+                                nodes = JSON.parse(nodes);
+                            } catch (e) {
+                                return {
+                                    content: [{
+                                        type: "text",
+                                        text: `Error: nodes must be an array. Received: ${typeof nodes}. If you provided a JSON string, it could not be parsed.`
+                                    }]
+                                };
+                            }
+                        } else {
+                            return {
+                                content: [{
+                                    type: "text",
+                                    text: `Error: nodes must be an array. Received: ${typeof nodes}`
+                                }]
+                            };
+                        }
+                    }
+                }
+                
+                const name = params.name || null;
+                const connections = params.connections || null;
+                const settings = params.settings || null;
+                const staticData = params.staticData !== undefined ? params.staticData : null;
+                const shared = params.shared || null;
+                const active = params.active !== undefined ? params.active : null;
+
+                const result = await n8nTools.updateN8nWorkflow(user_id, workflow_id, name, nodes, connections, settings, staticData, shared, active);
                 return {
                     content: [{
                         type: "text",
@@ -4203,153 +4309,7 @@ async function startMCPServer() {
                 };
             }
         }
-    );
-
-    server.registerTool(
-        "delete_n8n_workflow",
-        {
-            description: "Delete an n8n workflow. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                workflow_id: z.string().describe("ID of the workflow to delete")
-            }
-        },
-        async ({ user_id = null, workflow_id }) => {
-            try {
-                const result = await n8nTools.deleteN8nWorkflow(user_id, workflow_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error deleting n8n workflow: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "activate_n8n_workflow",
-        {
-            description: "Activate an n8n workflow. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                workflow_id: z.string().describe("ID of the workflow to activate")
-            }
-        },
-        async ({ user_id = null, workflow_id }) => {
-            try {
-                const result = await n8nTools.activateN8nWorkflow(user_id, workflow_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error activating n8n workflow: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "deactivate_n8n_workflow",
-        {
-            description: "Deactivate an n8n workflow. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                workflow_id: z.string().describe("ID of the workflow to deactivate")
-            }
-        },
-        async ({ user_id = null, workflow_id }) => {
-            try {
-                const result = await n8nTools.deactivateN8nWorkflow(user_id, workflow_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error deactivating n8n workflow: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "list_n8n_executions",
-        {
-            description: "List workflow executions in n8n. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                workflow_id: z.string().optional().describe("Optional workflow ID to filter executions"),
-                limit: z.number().optional().describe("Maximum number of executions to return (default: 100)")
-            }
-        },
-        async ({ user_id = null, workflow_id = null, limit = 100 }) => {
-            try {
-                const result = await n8nTools.listN8nExecutions(user_id, workflow_id, limit);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error listing n8n executions: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "get_n8n_execution",
-        {
-            description: "Get details of a specific n8n execution. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                execution_id: z.string().describe("ID of the execution to retrieve")
-            }
-        },
-        async ({ user_id = null, execution_id }) => {
-            try {
-                const result = await n8nTools.getN8nExecution(user_id, execution_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error getting n8n execution: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
+    ); 
 
     server.registerTool(
         "execute_n8n_workflow",
@@ -4387,91 +4347,6 @@ async function startMCPServer() {
     );
 
     server.registerTool(
-        "list_n8n_credentials",
-        {
-            description: "List all credentials in n8n. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used.")
-            }
-        },
-        async ({ user_id = null }) => {
-            try {
-                const result = await n8nTools.listN8nCredentials(user_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error listing n8n credentials: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "get_n8n_credential",
-        {
-            description: "Get details of a specific n8n credential. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                credential_id: z.string().describe("ID of the credential to retrieve")
-            }
-        },
-        async ({ user_id = null, credential_id }) => {
-            try {
-                const result = await n8nTools.getN8nCredential(user_id, credential_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error getting n8n credential: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "get_n8n_user_info",
-        {
-            description: "Get current n8n user information. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used.")
-            }
-        },
-        async ({ user_id = null }) => {
-            try {
-                const result = await n8nTools.getN8nUserInfo(user_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error getting n8n user info: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
         "list_n8n_webhooks",
         {
             description: "List all webhooks in n8n. All the fields are optional.",
@@ -4493,63 +4368,6 @@ async function startMCPServer() {
                     content: [{
                         type: "text",
                         text: `Error listing n8n webhooks: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "list_n8n_tags",
-        {
-            description: "List all tags in n8n. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used.")
-            }
-        },
-        async ({ user_id = null }) => {
-            try {
-                const result = await n8nTools.listN8nTags(user_id);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error listing n8n tags: ${error.message}`
-                    }]
-                };
-            }
-        }
-    );
-
-    server.registerTool(
-        "create_n8n_tag",
-        {
-            description: "Create a new tag in n8n. All the fields are optional.",
-            inputSchema: {
-                user_id: z.string().optional().describe("User ID to get n8n API key from. If not provided, the default user will be used."),
-                name: z.string().describe("Name of the tag")
-            }
-        },
-        async ({ user_id = null, name }) => {
-            try {
-                const result = await n8nTools.createN8nTag(user_id, name);
-                return {
-                    content: [{
-                        type: "text",
-                        text: result
-                    }]
-                };
-            } catch (error) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: `Error creating n8n tag: ${error.message}`
                     }]
                 };
             }

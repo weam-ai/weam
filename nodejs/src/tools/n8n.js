@@ -348,16 +348,23 @@ async function createN8nWorkflow(userId = null, name, nodes, connections = null,
 }
 
 /**
- * Update an existing workflow
+ * Update an existing workflow following n8n API specification
  * @param {string} userId - User ID to get API key from
  * @param {string} workflowId - ID of the workflow to update
- * @param {string} name - New name for the workflow
- * @param {Array} nodes - Updated list of nodes
- * @param {Object} connections - Updated connections
- * @param {boolean} active - Whether the workflow should be active
+ * @param {string} name - New name for the workflow (optional)
+ * @param {Array} nodes - Updated list of nodes (optional)
+ * @param {Object} connections - Updated connections (optional)
+ * @param {Object} settings - Updated workflow settings (optional)
+ * @param {string|null} staticData - Static data as JSON string or null (optional)
+ * @param {Array} shared - Array of shared workflow objects (optional)
+ * @param {boolean} active - Whether the workflow should be active (optional)
  * @returns {string} Formatted updated workflow information
+ * 
+ * API Reference: https://docs.n8n.io/api/api-reference/#tag/workflow/PUT/workflows/{id}
+ * Note: The n8n API requires both 'name' and 'settings' fields in the request body. If not provided, the function will fetch the existing workflow to get the current values.
+ * Other optional fields: nodes, connections, staticData, shared, active
  */
-async function updateN8nWorkflow(userId = null, workflowId, name = null, nodes = null, connections = null, active = null) {
+async function updateN8nWorkflow(userId = null, workflowId, name = null, nodes = null, connections = null, settings = null, staticData = null, shared = null, active = null) {
     if (!userId) {
         return 'Error: User ID is required. Please provide user authentication.';
     }
@@ -366,23 +373,191 @@ async function updateN8nWorkflow(userId = null, workflowId, name = null, nodes =
         return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
     }
 
+    if (!workflowId || typeof workflowId !== 'string' || workflowId.trim().length === 0) {
+        return 'Error: Workflow ID is required and must be a non-empty string.';
+    }
+
+    // Build update data object per n8n API specification
+    // Note: n8n API requires both 'name' and 'settings' fields even for PUT requests
+    // Reference: https://docs.n8n.io/api/api-reference/#tag/workflow/PUT/workflows/{id}
     const updateData = {};
-    if (name !== null) updateData.name = name;
-    if (nodes !== null) updateData.nodes = nodes;
-    if (connections !== null) updateData.connections = connections;
-    if (active !== null) updateData.active = active;
+
+    // Check if we need to fetch the existing workflow for required fields
+    let existingWorkflow = null;
+    const needsName = (name === null || name === undefined);
+    const needsSettings = (settings === null || settings === undefined);
+    
+    if (needsName || needsSettings) {
+        // Fetch existing workflow to get required fields
+        existingWorkflow = await makeN8nRequest(`workflows/${workflowId}`, config.apiKey, null, null, 'GET', config.apiBaseUrl);
+        if (!existingWorkflow) {
+            return `Error: Could not fetch existing workflow ${workflowId}. Required fields (name, settings) are needed for updates.`;
+        }
+    }
+
+    // Handle name - n8n API requires this field even for updates
+    if (name !== null && name !== undefined) {
+        if (typeof name !== 'string' || name.trim().length === 0) {
+            return 'Error: Workflow name must be a non-empty string if provided.';
+        }
+        updateData.name = name.trim();
+    } else {
+        // Use existing name from fetched workflow
+        if (!existingWorkflow || !existingWorkflow.name) {
+            return `Error: Could not get current workflow name. The 'name' field is required for updates.`;
+        }
+        updateData.name = existingWorkflow.name;
+    }
+
+    // Optional: nodes - validate and normalize if provided
+    if (nodes !== null && nodes !== undefined) {
+        if (!Array.isArray(nodes)) {
+            return 'Error: nodes must be an array if provided.';
+        }
+        if (nodes.length === 0) {
+            return 'Error: nodes array cannot be empty. Provide at least one node.';
+        }
+
+        // Validate node structure (same as create workflow)
+        const invalidNodes = nodes.filter((node, index) => {
+            if (!node || typeof node !== 'object') {
+                console.warn(`Invalid node object at index ${index}:`, node);
+                return true;
+            }
+            if (!node.type || !node.name || !node.position || !Array.isArray(node.position) || node.position.length !== 2) {
+                console.warn(`Invalid node structure at index ${index}. Missing type, name, or invalid position:`, node);
+                return true;
+            }
+            if (typeof node.position[0] !== 'number' || typeof node.position[1] !== 'number') {
+                console.warn(`Invalid node position at index ${index}. Position elements must be numbers:`, node.position);
+                return true;
+            }
+            return false;
+        });
+
+        if (invalidNodes.length > 0) {
+            return `Error: Invalid node structure. Each node must have: type, name, and position [x, y] (with numeric values). Found ${invalidNodes.length} invalid node(s).`;
+        }
+
+        // Normalize nodes (same structure as create workflow)
+        updateData.nodes = nodes.map(node => {
+            const normalizedNode = {
+                type: String(node.type),
+                name: String(node.name),
+                position: [Number(node.position[0]), Number(node.position[1])],
+                typeVersion: node.typeVersion !== undefined ? Number(node.typeVersion) : 1
+            };
+            // Optional node fields per API
+            if (node.parameters !== undefined && node.parameters !== null) {
+                normalizedNode.parameters = node.parameters;
+            }
+            if (node.id !== undefined && node.id !== null && String(node.id).trim() !== '') {
+                normalizedNode.id = String(node.id);
+            }
+            if (node.credentials !== undefined && node.credentials !== null) {
+                normalizedNode.credentials = node.credentials;
+            }
+            if (node.disabled !== undefined && node.disabled !== null) {
+                normalizedNode.disabled = Boolean(node.disabled);
+            }
+            if (node.notes !== undefined && node.notes !== null && String(node.notes).trim() !== '') {
+                normalizedNode.notes = String(node.notes);
+            }
+            if (node.notesInFlow !== undefined && node.notesInFlow !== null) {
+                normalizedNode.notesInFlow = Boolean(node.notesInFlow);
+            }
+            if (node.onError !== undefined && node.onError !== null && String(node.onError).trim() !== '') {
+                normalizedNode.onError = String(node.onError);
+            }
+            if (node.retryOnFail !== undefined && node.retryOnFail !== null) {
+                normalizedNode.retryOnFail = Boolean(node.retryOnFail);
+            }
+            if (node.maxTries !== undefined && node.maxTries !== null) {
+                normalizedNode.maxTries = Number(node.maxTries);
+            }
+            if (node.waitBetweenTries !== undefined && node.waitBetweenTries !== null) {
+                normalizedNode.waitBetweenTries = Number(node.waitBetweenTries);
+            }
+            if (node.webhookId !== undefined && node.webhookId !== null && String(node.webhookId).trim() !== '') {
+                normalizedNode.webhookId = String(node.webhookId);
+            }
+            if (node.executeOnce !== undefined && node.executeOnce !== null) {
+                normalizedNode.executeOnce = Boolean(node.executeOnce);
+            }
+            if (node.alwaysOutputData !== undefined && node.alwaysOutputData !== null) {
+                normalizedNode.alwaysOutputData = Boolean(node.alwaysOutputData);
+            }
+            return normalizedNode;
+        });
+    }
+
+    // Optional: connections
+    if (connections !== null && connections !== undefined) {
+        if (typeof connections !== 'object' || Array.isArray(connections)) {
+            return 'Error: connections must be an object if provided.';
+        }
+        updateData.connections = connections;
+    }
+
+    // Handle settings - n8n API requires this field even for updates
+    if (settings !== null && settings !== undefined) {
+        if (typeof settings !== 'object' || Array.isArray(settings)) {
+            return 'Error: settings must be an object if provided.';
+        }
+        updateData.settings = settings;
+    } else {
+        // Use existing settings from fetched workflow
+        if (!existingWorkflow) {
+            return `Error: Could not get current workflow settings. The 'settings' field is required for updates.`;
+        }
+        updateData.settings = existingWorkflow.settings || {};
+    }
+
+    // Optional: staticData
+    if (staticData !== null && staticData !== undefined) {
+        updateData.staticData = staticData;
+    }
+
+    // Optional: shared
+    if (shared !== null && shared !== undefined) {
+        if (!Array.isArray(shared)) {
+            return 'Error: shared must be an array if provided.';
+        }
+        updateData.shared = shared;
+    }
+
+    // Optional: active
+    if (active !== null && active !== undefined) {
+        updateData.active = Boolean(active);
+    }
+
+    // Note: 'name' and 'settings' are always included (either provided or fetched from existing workflow)
+    // These are required by the n8n API even for PUT requests
+
+    // Log the actual payload being sent (for debugging)
+    console.log(`Updating workflow ${workflowId} with payload:`, JSON.stringify(updateData, null, 2));
 
     const data = await makeN8nRequest(`workflows/${workflowId}`, config.apiKey, null, updateData, 'PUT', config.apiBaseUrl);
     
     if (!data) {
-        return `Failed to update workflow: ${workflowId}`;
+        return `Failed to update workflow: ${workflowId}. Please check the workflow ID and ensure all provided fields are valid.`;
     }
 
     let result = `**Updated Workflow:**\n\n`;
-    result += `• **ID:** ${data.id || 'unknown'}\n`;
+    result += `• **ID:** ${data.id || workflowId}\n`;
     result += `• **Name:** ${data.name || 'No name'}\n`;
     result += `• **Active:** ${data.active || false}\n`;
-    result += `• **Updated:** ${data.updatedAt || 'unknown'}\n`;
+    result += `• **Nodes:** ${data.nodes ? data.nodes.length : 'unchanged'} node(s)\n`;
+    result += `• **Updated:** ${data.updatedAt ? new Date(data.updatedAt).toLocaleString() : 'unknown'}\n`;
+    
+    if (data.description) {
+        result += `• **Description:** ${data.description}\n`;
+    }
+    
+    if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+        const tagNames = data.tags.map(tag => tag.name || tag.id || tag).join(', ');
+        result += `• **Tags:** ${tagNames}\n`;
+    }
 
     return result;
 }
@@ -409,138 +584,6 @@ async function deleteN8nWorkflow(userId = null, workflowId) {
     }
 
     return `Successfully deleted workflow: ${workflowId}`;
-}
-
-/**
- * Activate a workflow
- * @param {string} userId - User ID to get API key from
- * @param {string} workflowId - ID of the workflow to activate
- * @returns {string} Confirmation message
- */
-async function activateN8nWorkflow(userId = null, workflowId) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest(`workflows/${workflowId}/activate`, config.apiKey, null, null, 'POST', config.apiBaseUrl);
-    
-    if (!data) {
-        return `Failed to activate workflow: ${workflowId}`;
-    }
-
-    return `Successfully activated workflow: ${workflowId}`;
-}
-
-/**
- * Deactivate a workflow
- * @param {string} userId - User ID to get API key from
- * @param {string} workflowId - ID of the workflow to deactivate
- * @returns {string} Confirmation message
- */
-async function deactivateN8nWorkflow(userId = null, workflowId) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest(`workflows/${workflowId}/deactivate`, config.apiKey, null, null, 'POST', config.apiBaseUrl);
-    
-    if (!data) {
-        return `Failed to deactivate workflow: ${workflowId}`;
-    }
-
-    return `Successfully deactivated workflow: ${workflowId}`;
-}
-
-// =============================================================================
-// EXECUTION FUNCTIONS
-// =============================================================================
-
-/**
- * List workflow executions
- * @param {string} userId - User ID to get API key from
- * @param {string} workflowId - Optional workflow ID to filter executions
- * @param {number} limit - Maximum number of executions to return
- * @returns {string} Formatted execution list
- */
-async function listN8nExecutions(userId = null, workflowId = null, limit = 100) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const params = { limit };
-    if (workflowId) {
-        params.workflowId = workflowId;
-    }
-
-    const data = await makeN8nRequest('executions', config.apiKey, params, null, 'GET', config.apiBaseUrl);
-    
-    if (!data) {
-        return 'Failed to get executions';
-    }
-
-    const executions = data.data || [];
-    if (executions.length === 0) {
-        return 'No executions found';
-    }
-
-    let result = `Found ${executions.length} executions:\n\n`;
-    for (const execution of executions) {
-        result += `• **Execution ID:** ${execution.id || 'unknown'}\n`;
-        result += `  Workflow ID: ${execution.workflowId || 'unknown'}\n`;
-        result += `  Status: ${execution.status || 'unknown'}\n`;
-        result += `  Started: ${execution.startedAt || 'unknown'}\n`;
-        result += `  Finished: ${execution.finishedAt || 'unknown'}\n`;
-        result += `  Mode: ${execution.mode || 'unknown'}\n\n`;
-    }
-
-    return result;
-}
-
-/**
- * Get details of a specific execution
- * @param {string} userId - User ID to get API key from
- * @param {string} executionId - ID of the execution to retrieve
- * @returns {string} Formatted execution details
- */
-async function getN8nExecution(userId = null, executionId) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest(`executions/${executionId}`, config.apiKey, null, null, 'GET', config.apiBaseUrl);
-    
-    if (!data) {
-        return `Failed to get execution: ${executionId}`;
-    }
-
-    const dataEntries = data.data ? Object.keys(data.data).length : 0;
-
-    let result = `**Execution Details:**\n\n`;
-    result += `• **Execution ID:** ${data.id || 'unknown'}\n`;
-    result += `• **Workflow ID:** ${data.workflowId || 'unknown'}\n`;
-    result += `• **Status:** ${data.status || 'unknown'}\n`;
-    result += `• **Started:** ${data.startedAt || 'unknown'}\n`;
-    result += `• **Finished:** ${data.finishedAt || 'unknown'}\n`;
-    result += `• **Mode:** ${data.mode || 'unknown'}\n`;
-    result += `• **Data:** ${dataEntries} data entries\n`;
-
-    return result;
 }
 
 /**
@@ -1295,223 +1338,6 @@ async function executeN8nWorkflow(userId = null, workflowId, inputData = null) {
 }
 
 // =============================================================================
-// CREDENTIAL FUNCTIONS
-// =============================================================================
-
-/**
- * List all credentials
- * @param {string} userId - User ID to get API key from
- * @returns {string} Formatted credential list
- */
-async function listN8nCredentials(userId = null) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest('credentials', config.apiKey, null, null, 'GET', config.apiBaseUrl);
-    
-    if (!data) {
-        return 'Failed to get credentials';
-    }
-
-    const credentials = data.data || [];
-    if (credentials.length === 0) {
-        return 'No credentials found';
-    }
-
-    let result = `Found ${credentials.length} credentials:\n\n`;
-    for (const credential of credentials) {
-        result += `• **${credential.name || 'No name'}**\n`;
-        result += `  ID: ${credential.id || 'unknown'}\n`;
-        result += `  Type: ${credential.type || 'unknown'}\n`;
-        result += `  Created: ${credential.createdAt || 'unknown'}\n`;
-        result += `  Updated: ${credential.updatedAt || 'unknown'}\n\n`;
-    }
-
-    return result;
-}
-
-/**
- * Get details of a specific credential
- * @param {string} userId - User ID to get API key from
- * @param {string} credentialId - ID of the credential to retrieve
- * @returns {string} Formatted credential details
- */
-async function getN8nCredential(userId = null, credentialId) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest(`credentials/${credentialId}`, config.apiKey, null, null, 'GET', config.apiBaseUrl);
-    
-    if (!data) {
-        return `Failed to get credential: ${credentialId}`;
-    }
-
-    let result = `**Credential Details:**\n\n`;
-    result += `• **ID:** ${data.id || 'unknown'}\n`;
-    result += `• **Name:** ${data.name || 'No name'}\n`;
-    result += `• **Type:** ${data.type || 'unknown'}\n`;
-    result += `• **Created:** ${data.createdAt || 'unknown'}\n`;
-    result += `• **Updated:** ${data.updatedAt || 'unknown'}\n`;
-
-    return result;
-}
-
-// =============================================================================
-// USER FUNCTIONS
-// =============================================================================
-
-/**
- * Get current user information
- * @param {string} userId - User ID to get API key from
- * @returns {string} Formatted user information
- */
-async function getN8nUserInfo(userId = null) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest('users/me', config.apiKey, null, null, 'GET', config.apiBaseUrl);
-    
-    if (!data) {
-        return 'Failed to get user info';
-    }
-
-    let result = `**User Information:**\n\n`;
-    result += `• **ID:** ${data.id || 'unknown'}\n`;
-    result += `• **Email:** ${data.email || 'No email'}\n`;
-    result += `• **First Name:** ${data.firstName || 'No first name'}\n`;
-    result += `• **Last Name:** ${data.lastName || 'No last name'}\n`;
-    result += `• **Created:** ${data.createdAt || 'unknown'}\n`;
-
-    return result;
-}
-
-// =============================================================================
-// WEBHOOK FUNCTIONS
-// =============================================================================
-
-/**
- * List all webhooks
- * @param {string} userId - User ID to get API key from
- * @returns {string} Formatted webhook list
- */
-async function listN8nWebhooks(userId = null) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest('webhooks', config.apiKey, null, null, 'GET', config.apiBaseUrl);
-    
-    if (!data) {
-        return 'Failed to get webhooks';
-    }
-
-    const webhooks = data.data || [];
-    if (webhooks.length === 0) {
-        return 'No webhooks found';
-    }
-
-    let result = `Found ${webhooks.length} webhooks:\n\n`;
-    for (const webhook of webhooks) {
-        result += `• **Webhook ID:** ${webhook.id || 'unknown'}\n`;
-        result += `  Path: ${webhook.path || 'No path'}\n`;
-        result += `  Method: ${webhook.method || 'unknown'}\n`;
-        result += `  Workflow ID: ${webhook.workflowId || 'unknown'}\n`;
-        result += `  Active: ${webhook.active || false}\n\n`;
-    }
-
-    return result;
-}
-
-// =============================================================================
-// TAGS FUNCTIONS
-// =============================================================================
-
-/**
- * List all tags
- * @param {string} userId - User ID to get API key from
- * @returns {string} Formatted tag list
- */
-async function listN8nTags(userId = null) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const data = await makeN8nRequest('tags', config.apiKey, null, null, 'GET', config.apiBaseUrl);
-    
-    if (!data) {
-        return 'Failed to get tags';
-    }
-
-    const tags = data.data || [];
-    if (tags.length === 0) {
-        return 'No tags found';
-    }
-
-    let result = `Found ${tags.length} tags:\n\n`;
-    for (const tag of tags) {
-        result += `• **${tag.name || 'No name'}**\n`;
-        result += `  ID: ${tag.id || 'unknown'}\n`;
-        result += `  Created: ${tag.createdAt || 'unknown'}\n`;
-        result += `  Updated: ${tag.updatedAt || 'unknown'}\n\n`;
-    }
-
-    return result;
-}
-
-/**
- * Create a new tag
- * @param {string} userId - User ID to get API key from
- * @param {string} name - Name of the tag
- * @returns {string} Formatted created tag information
- */
-async function createN8nTag(userId = null, name) {
-    if (!userId) {
-        return 'Error: User ID is required. Please provide user authentication.';
-    }
-    const config = await getN8nConfig(userId);
-    if (!config || !config.apiKey) {
-        return 'Error: n8n API key not found. Please configure your n8n integration in your profile settings.';
-    }
-
-    const tagData = { name };
-    const data = await makeN8nRequest('tags', config.apiKey, null, tagData, 'POST', config.apiBaseUrl);
-    
-    if (!data) {
-        return `Failed to create tag: ${name}`;
-    }
-
-    let result = `**Created Tag:**\n\n`;
-    result += `• **ID:** ${data.id || 'unknown'}\n`;
-    result += `• **Name:** ${data.name || 'No name'}\n`;
-    result += `• **Created:** ${data.createdAt || 'unknown'}\n`;
-
-    return result;
-}
-
-// =============================================================================
 // DISCOVERY & DOCUMENTATION FUNCTIONS
 // =============================================================================
 
@@ -1573,65 +1399,15 @@ async function getN8nToolsDocumentation(toolName = null) {
             parameters: ['user_id (optional)', 'workflow_id (required)', 'input_data (optional)']
         },
         {
-            name: 'list_n8n_credentials',
-            description: 'List all credentials in n8n',
-            parameters: ['user_id (optional)']
-        },
-        {
-            name: 'get_n8n_credential',
-            description: 'Get details of a specific n8n credential',
-            parameters: ['user_id (optional)', 'credential_id (required)']
-        },
-        {
-            name: 'get_n8n_user_info',
-            description: 'Get current n8n user information',
-            parameters: ['user_id (optional)']
-        },
-        {
             name: 'list_n8n_webhooks',
             description: 'List all webhooks in n8n',
             parameters: ['user_id (optional)']
-        },
-        {
-            name: 'list_n8n_tags',
-            description: 'List all tags in n8n',
-            parameters: ['user_id (optional)']
-        },
-        {
-            name: 'create_n8n_tag',
-            description: 'Create a new tag in n8n',
-            parameters: ['user_id (optional)', 'name (required)']
-        },
-        {
-            name: 'search_n8n_nodes',
-            description: 'Search n8n nodes by keyword',
-            parameters: ['keyword (required)']
         },
         {
             name: 'get_n8n_node',
             description: 'Get detailed information about a specific n8n node',
             parameters: ['node_type (required)']
         },
-        {
-            name: 'search_n8n_templates',
-            description: 'Find workflow templates by keyword or metadata',
-            parameters: ['query (required)', 'limit (optional)']
-        },
-        {
-            name: 'get_n8n_template',
-            description: 'Retrieve a specific workflow template',
-            parameters: ['template_id (required)']
-        },
-        {
-            name: 'validate_n8n_node',
-            description: 'Validate parameters/config of a single node',
-            parameters: ['node_type (required)', 'config (required)', 'mode (optional)']
-        },
-        {
-            name: 'validate_n8n_workflow',
-            description: 'Validate an entire workflow configuration',
-            parameters: ['user_id (optional)', 'workflow (required)']
-        }
     ];
 
     if (toolName) {
@@ -1754,7 +1530,7 @@ async function getN8nNode(nodeType) {
         const node = response.data?.data || response.data;
         
         if (!node) {
-            return `Node "${nodeType}" not found. Use search_n8n_nodes to find available nodes.`;
+            return `Node "${nodeType}" not found.`;
         }
 
         let result = `**Node Information:**\n\n`;
@@ -1808,7 +1584,7 @@ async function getN8nNode(nodeType) {
             return result;
         }
 
-        return `Node "${nodeType}" not found. Error: ${error.message}. Use search_n8n_nodes to find available nodes.`;
+        return `Node "${nodeType}" not found. Error: ${error.message}.`;
     }
 }
 
@@ -2098,27 +1874,7 @@ module.exports = {
     createN8nWorkflow,
     updateN8nWorkflow,
     deleteN8nWorkflow,
-    activateN8nWorkflow,
-    deactivateN8nWorkflow,
-    
-    // Execution functions
-    listN8nExecutions,
-    getN8nExecution,
     executeN8nWorkflow,
-    
-    // Credential functions
-    listN8nCredentials,
-    getN8nCredential,
-    
-    // User functions
-    getN8nUserInfo,
-    
-    // Webhook functions
-    listN8nWebhooks,
-    
-    // Tag functions
-    listN8nTags,
-    createN8nTag,
     
     // Discovery & Documentation functions
     getN8nToolsDocumentation,
