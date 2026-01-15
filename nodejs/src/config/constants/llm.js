@@ -245,7 +245,30 @@ const IS_MCP_TOOLS = [
                 'modify_calendar_event',
                 'delete_calendar_event',
                 'get_calendar_event',
-                'search_calendar_events'
+                'search_calendar_events',
+                'list_n8n_workflows',
+                'get_n8n_workflow',
+                'create_n8n_workflow',
+                'update_n8n_workflow',
+                'delete_n8n_workflow',
+                'activate_n8n_workflow',
+                'deactivate_n8n_workflow',
+                'list_n8n_executions',
+                'get_n8n_execution',
+                'execute_n8n_workflow',
+                'list_n8n_credentials',
+                'get_n8n_credential',
+                'get_n8n_user_info',
+                'list_n8n_webhooks',
+                'list_n8n_tags',
+                'create_n8n_tag',
+                'get_n8n_tools_documentation',
+                'search_n8n_nodes',
+                'get_n8n_node',
+                'search_n8n_templates',
+                'get_n8n_template',
+                'validate_n8n_node',
+                'validate_n8n_workflow'
             ]
 
 module.exports = {

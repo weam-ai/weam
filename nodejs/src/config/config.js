@@ -141,5 +141,8 @@ module.exports = {
         CLIENT_ID: process.env.ASANA_OAUTH_CLIENT_ID,
         CLIENT_SECRET: process.env.ASANA_OAUTH_CLIENT_SECRET,
         REDIRECT_URI: `${process.env.BASE_URL}/api/auth/asana/callback`
+    },
+    N8N: {
+        API_BASE_URL: process.env.N8N_MCP_URL
     }
 };

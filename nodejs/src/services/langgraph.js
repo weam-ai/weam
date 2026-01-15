@@ -712,7 +712,8 @@ async function llmFactory(modelName, opts = {}) {
             
             // Only bind tools if query needs them
             if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
-                return openAIModel.bindTools([webSearchTool, imageGenerationTool, currentTimeTool, ...selectedTools]);
+                const toolsToBind = [webSearchTool, imageGenerationTool, currentTimeTool, ...selectedTools];
+                return openAIModel.bindTools(toolsToBind);
             }
             
             // Cache simple model for reuse
@@ -747,7 +748,8 @@ async function llmFactory(modelName, opts = {}) {
             
             // Only bind tools if query needs them
             if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
-                return anthropicModel.bindTools([webSearchTool, currentTimeTool, ...selectedTools]);
+                const toolsToBind = [webSearchTool, currentTimeTool, ...selectedTools];
+                return anthropicModel.bindTools(toolsToBind);
             }
             
             // Cache simple model for reuse
@@ -773,7 +775,8 @@ async function llmFactory(modelName, opts = {}) {
                 
                 // Only bind tools if query needs them
                 if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
-                    return geminiLLM.bindTools([webSearchTool, geminiImageTool, currentTimeTool, ...selectedTools]);
+                    const toolsToBind = [webSearchTool, geminiImageTool, currentTimeTool, ...selectedTools];
+                    return geminiLLM.bindTools(toolsToBind);
                 }
                 
                 // Cache simple model for reuse
