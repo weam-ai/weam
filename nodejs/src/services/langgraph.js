@@ -1,6 +1,6 @@
 const { ChatOpenAI } = require('@langchain/openai');
 const { StateGraph, END } = require('@langchain/langgraph');
-const { ToolMessage, HumanMessage, SystemMessage } = require('@langchain/core/messages');
+const { ToolMessage, HumanMessage, SystemMessage, AIMessage } = require('@langchain/core/messages');
 const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription, IS_MCP_TOOLS } = require('../config/constants/llm');
 const { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } = require('../config/constants/socket');
 const Messages = require('../models/thread');
@@ -289,170 +289,195 @@ function getToolExecutorMap(agentDetails = null, mcpTools = []) {
     
     return baseTools;
 }
+ 
 
-async function callModel(state, model, data, agentDetails = null) {
-    const { messages } = state;
-    const lastMessageIndex = messages[messages.length - 1];
-    let context = [];
-    
-    // Fetch brain data and add SystemMessage with customInstruction if exists
-    let brainData = null;
-    if (data.brainId) {
-        try {
-            // Fetch the brain data using the brain ID from data
-            brainData = await Brain.findById(data.brainId);
-        } catch (error) {
-            console.error('Error fetching brain data:', error);
-        }
+/**
+ * STRICT Gemini-safe message normalizer
+ * RULES:
+ * - NEVER recreate BaseMessage instances
+ * - NEVER pass undefined name to Gemini
+ * - ONLY normalize raw inputs
+ */
+function normalizeToBaseMessage(msg, isGemini = false) {
+    if (
+      msg instanceof SystemMessage ||
+      msg instanceof HumanMessage ||
+      msg instanceof AIMessage ||
+      msg instanceof ToolMessage
+    ) {
+      return msg; // ✅ DO NOT TOUCH
     }
-    
-    
-    // Determine if we're using Gemini or Anthropic provider
-    const isGeminiProvider = data.llmProvider === 'GEMINI' || (data.model && data.model.toLowerCase().includes('gemini'));
-    const isAnthropicProvider = data.llmProvider === 'ANTHROPIC' || (data.model && data.model.toLowerCase().includes('claude'));
-
-    if (Array.isArray(lastMessageIndex)) {
-        // Use our new conversation history function (matches Python flow)
-        const conversationHistory = await getConversationHistory(data.chatId);
-        
-        // Start with conversation history
-        context = [...conversationHistory];
-
-        // For Gemini and Anthropic: collect all system messages and consolidate them
-        let consolidatedSystemContent = '';
-
-        if (isGeminiProvider || isAnthropicProvider) {
-            // Extract all system messages and remove them from context
-            const systemMessages = context.filter(msg => msg.constructor.name === 'SystemMessage' || msg.type === 'system');
-            context = context.filter(msg => msg.constructor.name !== 'SystemMessage' && msg.type !== 'system');
-            
-            // Consolidate system message content
-            if (systemMessages.length > 0) {
-                consolidatedSystemContent = systemMessages.map(msg => msg.content).join('\n\n');
-            }
-        }
-        
-        // Add agent's system message if available (this will override or supplement the DB system message)
-        if (agentDetails) {
-            let agentSystemContent = `${agentDetails.systemPrompt}\n`;
-            
-            // If RAG context is available, add it to the system message (like Python implementation)
-            if (global.currentRagContext) {
-                agentSystemContent += `\n\n----\nContext from uploaded documents:\n${global.currentRagContext}\n----\n\nUse the above document context when relevant to answer the user's question.`;
-            }
-            
-            if (isGeminiProvider || isAnthropicProvider) {
-                // For Gemini and Anthropic: consolidate with existing system content
-                if (consolidatedSystemContent) {
-                    consolidatedSystemContent = agentSystemContent + '\n\n' + consolidatedSystemContent;
-                } else {
-                    consolidatedSystemContent = agentSystemContent;
-                }
-            } else {
-                // For other providers: use the original logic
-                const agentSystemMessage = new SystemMessage({
-                    content: agentSystemContent
-                });
-                
-                // Replace the first system message or add at the beginning
-                if (context.length > 0 && (context[0].constructor.name === 'SystemMessage' || context[0].type === 'system')) {
-                    context[0] = agentSystemMessage;
-                } else {
-                    context.unshift(agentSystemMessage);
-                }
-            }
-        } else if ((isGeminiProvider || isAnthropicProvider) && !consolidatedSystemContent) {
-            // For Gemini and Anthropic without agent: still need to consolidate any existing system messages
-            const systemMessages = context.filter(msg => msg.constructor.name === 'SystemMessage' || msg.type === 'system');
-            if (systemMessages.length > 0) {
-                context = context.filter(msg => msg.constructor.name !== 'SystemMessage' && msg.type !== 'system');
-                consolidatedSystemContent = systemMessages.map(msg => msg.content).join('\n\n');
-            }
-        }
-
-        // For Gemini and Anthropic: insert the consolidated system message at position 0
-        if ((isGeminiProvider || isAnthropicProvider) && consolidatedSystemContent) {
-            const finalSystemMessage = new SystemMessage({
-                content: consolidatedSystemContent
-            });
-            context.unshift(finalSystemMessage);
-        }
-        
-        // Add current messages (the new user query)
-        const currentMessages = messages.map(msg => 
-            Array.isArray(msg) ? new HumanMessage(msg[1]) : msg
-        );
-        context.push(...currentMessages);
-        
-        
-    } else {
-        // Fallback for non-array messages
-        context = messages;
-    }
-    
-    // Add SystemMessage with customInstruction if brain has customInstruction
-    if (brainData && brainData.customInstruction && brainData.customInstruction.trim()) {
-        if (isAnthropicProvider) {
-            // For Anthropic: convert additional system prompt to human message to avoid multiple system prompts
-            // Check if there's already a system message in context
-            const hasSystemMessage = context.some(msg =>
-                (msg.constructor && msg.constructor.name === 'SystemMessage') ||
-                (Array.isArray(msg) && msg[0] === 'system') ||
-                (msg.type === 'system')
-            );
-
-            if (hasSystemMessage) {
-                // Convert customInstruction to human message format
-                const customInstructionAsHuman = `Please note these additional instructions: ${brainData.customInstruction}`;
-                context.push(['user', customInstructionAsHuman]);
-            } else {
-                // No existing system message, can add as system
-                const systemMessage = new SystemMessage(brainData.customInstruction);
-                context.unshift(['system', systemMessage.content]);
-            }
-        } else {
-            // For other providers: use original logic
-            const systemMessage = new SystemMessage(brainData.customInstruction);
-            context.unshift(['system', systemMessage.content]);
-        }
-    }
-    
-    // Log the context being sent to LLM for debugging
-    context.forEach((msg, idx) => {
-        let content = '';
-        try {
-            if (typeof msg.content === 'string') {
-                content = msg.content.substring(0, 100);
-            } else if (Array.isArray(msg.content)) {
-                // For vision messages with image arrays
-                content = `[Array with ${msg.content.length} items]`;
-            } else if (typeof msg.content === 'object') {
-                content = `[Object: ${JSON.stringify(msg.content).substring(0, 50)}...]`;
-            } else {
-                content = String(msg.content || '').substring(0, 100);
-            }
-        } catch (error) {
-            content = '[Content parsing error]';
-        }
+  
+    // Raw / fallback → HumanMessage
+    return new HumanMessage({
+      content: msg?.content ?? "",
+      ...(isGemini && { name: "human" })
     });
-    const response = await model.invoke(context);
-    
-    // Safe logging for response content
-    let responsePreview = '';
-    try {
-        if (typeof response.content === 'string') {
-            responsePreview = response.content.substring(0, 100);
-        } else if (Array.isArray(response.content)) {
-            responsePreview = `[Array with ${response.content.length} items]`;
-        } else {
-            responsePreview = String(response.content || '').substring(0, 100);
-        }
-    } catch (error) {
-        responsePreview = '[Response content parsing error]';
+  }
+  
+  async function callModel(state, model, data, agentDetails = null) {
+    const { messages = [] } = state;
+  
+    const isGemini =
+      data.llmProvider === "GEMINI" ||
+      data.model?.toLowerCase().includes("gemini");
+  
+    const isAnthropic =
+      data.llmProvider === "ANTHROPIC" ||
+      data.model?.toLowerCase().includes("claude");
+  
+    // ---------------------------------------------
+    // 1️⃣ Build context (NO mutation, NO recreation)
+    // ---------------------------------------------
+    let context = (state.messages || [])
+      .filter(Boolean)
+      .map(msg => normalizeToBaseMessage(msg, isGemini));
+  
+    // ---------------------------------------------
+    // 2️⃣ Reload history if last message is batched
+    // ---------------------------------------------
+    if (Array.isArray(messages[messages.length - 1])) {
+      const history = await getConversationHistory(data.chatId);
+  
+      context = history
+        .filter(Boolean)
+        .map(msg =>
+          Array.isArray(msg)
+            ? new HumanMessage({
+                content: msg[1] ?? "",
+                ...(isGemini && { name: "human" })
+              })
+            : normalizeToBaseMessage(msg, isGemini)
+        );
     }
-    
+  
+    // ---------------------------------------------
+    // 3️⃣ Consolidate ALL system messages (Gemini / Claude)
+    // ---------------------------------------------
+    let consolidatedSystem = "";
+  
+    if (isGemini || isAnthropic) {
+      const systemMessages = context.filter(
+        m => m instanceof SystemMessage
+      );
+  
+      context = context.filter(
+        m => !(m instanceof SystemMessage)
+      );
+  
+      if (systemMessages.length) {
+        consolidatedSystem = systemMessages
+          .map(m => m.content)
+          .join("\n\n");
+      }
+    }
+  
+    // ---------------------------------------------
+    // 4️⃣ Agent system prompt + RAG
+    // ---------------------------------------------
+    if (agentDetails?.systemPrompt) {
+      let agentSystem = agentDetails.systemPrompt;
+  
+      if (global.currentRagContext) {
+        agentSystem +=
+          `\n\n----\nContext from uploaded documents:\n` +
+          `${global.currentRagContext}\n----\n` +
+          `Use the above context when relevant.`;
+      }
+  
+      consolidatedSystem = consolidatedSystem
+        ? `${agentSystem}\n\n${consolidatedSystem}`
+        : agentSystem;
+    }
+  
+    // ---------------------------------------------
+    // 5️⃣ Brain custom instruction
+    // ---------------------------------------------
+    if (data.brainId) {
+      try {
+        const brain = await Brain.findById(data.brainId);
+        if (brain?.customInstruction?.trim()) {
+          consolidatedSystem = consolidatedSystem
+            ? `${consolidatedSystem}\n\n${brain.customInstruction}`
+            : brain.customInstruction;
+        }
+      } catch (e) {
+        console.error("Brain fetch failed:", e);
+      }
+    }
+  
+    // ---------------------------------------------
+    // 6️⃣ Inject SINGLE system message (Gemini-safe)
+    // ---------------------------------------------
+    if (consolidatedSystem) {
+      context.unshift(
+        new SystemMessage({
+          content: consolidatedSystem,
+          ...(isGemini && { name: "system" })
+        })
+      );
+    }
+  
+    // ---------------------------------------------
+    // 7️⃣ Append current user messages
+    // ---------------------------------------------
+    messages.forEach(msg => {
+      if (Array.isArray(msg)) {
+        context.push(
+          new HumanMessage({
+            content: msg[1] ?? "",
+            ...(isGemini && { name: "human" })
+          })
+        );
+      } else if (msg) {
+        context.push(normalizeToBaseMessage(msg, isGemini));
+      }
+    });
+  
+    // ---------------------------------------------
+    // 8️⃣ Gemini fix: Filter empty messages & add continuation
+    // ---------------------------------------------
+    if (isGemini) {
+      // Filter out empty/malformed messages
+      context = context.filter((m) => {
+        if (m instanceof ToolMessage) return true;
+        
+        const content = m.content;
+        const isEmpty = !content || 
+                       (typeof content === 'string' && content.trim() === '') ||
+                       (Array.isArray(content) && content.length === 0);
+        const isMalformed = typeof content === 'string' && content.includes('"functionCall"');
+        
+        return !isEmpty && !isMalformed;
+      });
+      
+      // Add continuation prompt if last message is ToolMessage
+      const lastMsg = context[context.length - 1];
+      if (lastMsg instanceof ToolMessage) {
+        context.push(new HumanMessage({
+          content: "Based on the above results, please respond.",
+          name: "human"
+        }));
+      }
+      
+      // Debug logging
+      console.log(`[GEMINI_INVOKE] ${context.length} messages`);
+      context.forEach((m, i) => {
+        console.log(
+          `[${i}] type=${m._getType?.()} name=${m.name} ctor=${m.constructor.name}`
+        );
+      });
+    }
+  
+    // ---------------------------------------------
+    // 9️⃣ Invoke model
+    // ---------------------------------------------
+    const response = await model.invoke(context);
+  
     return { messages: [response] };
-}
+  }
+  
+  
 
 async function callTool(state, agentDetails = null, userData = null) {
     const { messages } = state;
@@ -468,6 +493,7 @@ async function callTool(state, agentDetails = null, userData = null) {
     const toolInvocations = [];
     
     for (const toolCall of lastMessage.tool_calls) {
+        console.log("🚀 ~ callTool ~ toolCall:", toolCall)
         const toolExecutor = toolExecutorMap[toolCall.name];
         if (toolExecutor) {
             try {
@@ -547,6 +573,8 @@ async function callTool(state, agentDetails = null, userData = null) {
                     new ToolMessage({
                         content: formattedOutput,
                         tool_call_id: toolCall.id,
+                        //add here tool name only for gemini
+                        name: toolCall.name,
                     }),
                 );
             } catch (error) {
@@ -561,6 +589,8 @@ async function callTool(state, agentDetails = null, userData = null) {
                     new ToolMessage({
                         content: errorOutput,
                         tool_call_id: toolCall.id,
+                        //add here tool name only for gemini
+                        name: toolCall.name,
                     }),
                 );
             }
@@ -570,6 +600,8 @@ async function callTool(state, agentDetails = null, userData = null) {
                 new ToolMessage({
                     content: `Tool '${toolCall.name}' not found or not available. Available tools: ${Object.keys(toolExecutorMap).join(', ')}`,
                     tool_call_id: toolCall.id,
+                    //add here tool name only for gemini
+                    name: toolCall.name,
                 }),
             );
         }
@@ -769,14 +801,144 @@ async function llmFactory(modelName, opts = {}) {
                 
                 const geminiLLM = new ChatGoogleGenerativeAI({
                     ...baseConfig,
+                    streaming: false, // FORCE DISABLE: v0.2.18 has bugs with streaming + name property
                     apiKey: opts.apiKey,
                     model: modelName, // Explicitly set the model name
                 });
+
+                // V2.x VERSION: Check if wrappers are needed
+                logger.info(`[GEMINI] Created model with version 2.x - checking if wrappers are needed`);
+                logger.info(`[GEMINI] _generate type: ${typeof geminiLLM._generate}, _streamResponseChunks type: ${typeof geminiLLM._streamResponseChunks}`);
                 
+                // CRITICAL: Create message sanitizer for reuse (only if methods exist)
+                const sanitizeMessages = (messages, context = 'UNKNOWN') => {
+                    // Normalize to array
+                    const messagesArray = Array.isArray(messages) ? messages : [messages];
+                    
+                    // Sanitize messages - handle ALL formats: arrays, plain objects, class instances
+                    const sanitizedMessages = messagesArray.map((msg, idx) => {
+                        if (!msg) {
+                            logger.warn(`[GEMINI_FACTORY] Message ${idx} is null, creating HumanMessage`);
+                            return new HumanMessage({ content: '', name: 'user' });
+                        }
+                        
+                        // FORMAT 1: Array format ['role', content] - function-based setup
+                        if (Array.isArray(msg) && msg.length >= 2) {
+                            const [role, content] = msg;
+                            logger.debug(`[GEMINI_FACTORY] Message ${idx} is array format: [${role}, ...]`);
+                            if (role === 'system') {
+                                return new SystemMessage({ content: content || '', name: 'system' });
+                            } else if (role === 'assistant' || role === 'ai') {
+                                return new AIMessage({ content: content || '', name: 'model' });
+                            } else {
+                                return new HumanMessage({ content: content || '', name: 'user' });
+                            }
+                        }
+                        
+                        // FORMAT 2: Plain object { role: 'user', content: '...' } - function-based setup
+                        if (msg && typeof msg === 'object' && !msg.constructor?.name && msg.role) {
+                            logger.debug(`[GEMINI_FACTORY] Message ${idx} is plain object format: {role: ${msg.role}}`);
+                            const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
+                            if (msg.role === 'system') {
+                                return new SystemMessage({ content, name: 'system' });
+                            } else if (msg.role === 'assistant' || msg.role === 'ai') {
+                                return new AIMessage({ content, name: 'model' });
+                            } else {
+                                return new HumanMessage({ content, name: 'user' });
+                            }
+                        }
+                        
+                        // FORMAT 3: Class instance - extract content and recreate
+                        let content = '';
+                        if (typeof msg.content === 'string') {
+                            content = msg.content;
+                        } else if (msg.content !== null && msg.content !== undefined) {
+                            content = String(msg.content);
+                        }
+                        
+                        // Recreate based on constructor name with name IN constructor
+                        const constructorName = msg.constructor?.name || '';
+                        let newMsg;
+                        
+                        if (constructorName === 'SystemMessage') {
+                            newMsg = new SystemMessage({ content, name: 'system' });
+                            // DOUBLE SET: Also set as direct property
+                            if (!newMsg.name || newMsg.name === undefined) {
+                                newMsg.name = 'system';
+                            }
+                        } else if (constructorName === 'AIMessage') {
+                            newMsg = new AIMessage({ content, name: 'model' });
+                            if (!newMsg.name || newMsg.name === undefined) {
+                                newMsg.name = 'model';
+                            }
+                        } else if (constructorName === 'ToolMessage') {
+                            newMsg = new ToolMessage({ content, tool_call_id: msg.tool_call_id || '', name: msg.name});
+                            if (!newMsg.name || newMsg.name === undefined) {
+                                newMsg.name = 'tool';
+                            }
+                        } else {
+                            // Default to HumanMessage
+                            newMsg = new HumanMessage({ content, name: 'user' });
+                            if (!newMsg.name || newMsg.name === undefined) {
+                                newMsg.name = 'user';
+                            }
+                        }
+                        
+                        // CRITICAL: Verify it works
+                        try {
+                            const msgType = newMsg._getType();
+                            const author = newMsg.name ?? msgType;
+                            if (!author || author === undefined || author === null) {
+                                logger.error(`[GEMINI_FACTORY] ❌ Message ${idx} has undefined author! type=${msgType}, name=${newMsg.name}`);
+                                return new HumanMessage({ content, name: 'user' });
+                            }
+                            logger.debug(`[GEMINI_FACTORY] ✅ Message ${idx} verified: type=${msgType}, author=${author}`);
+                        } catch (e) {
+                            logger.error(`[GEMINI_FACTORY] ❌ Error verifying message ${idx}: ${e.message}`);
+                            return new HumanMessage({ content, name: 'user' });
+                        }
+                        
+                        return newMsg;
+                    });
+                    
+                    logger.info(`[GEMINI_FACTORY:${context}] Sanitized ${sanitizedMessages.length} messages`);
+                    
+                    // CRITICAL DEBUG: Log AFTER sanitization to see if name is actually set
+                    sanitizedMessages.forEach((msg, idx) => {
+                        logger.info(`[GEMINI_FACTORY:${context}] AFTER sanitization msg ${idx}: name=${msg.name}, hasName=${msg.hasOwnProperty('name')}, _getType=${msg._getType?.()}, constructor=${msg.constructor.name}`);
+                        logger.info(`[GEMINI_FACTORY:${context}] Full msg ${idx}: ${JSON.stringify({ name: msg.name, content: msg.content?.substring(0, 50), additional_kwargs: msg.additional_kwargs })}`);
+                    });
+                    
+                    return sanitizedMessages;
+                };
+                
+                // DISABLE ALL WRAPPERS - Testing if default behavior works
+                logger.info(`[GEMINI] NO WRAPPERS APPLIED - Testing default Gemini behavior`);
+
                 // Only bind tools if query needs them
                 if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
                     const toolsToBind = [webSearchTool, geminiImageTool, currentTimeTool, ...selectedTools];
-                    return geminiLLM.bindTools(toolsToBind);
+                    const boundModel = geminiLLM.bindTools(toolsToBind);
+                    
+                    // CRITICAL: bindTools returns a NEW model instance - must re-wrap BOTH methods!
+                    // Only wrap if methods exist (v2.x might have different API)
+                    if (typeof boundModel._generate === 'function') {
+                        const boundOriginalGenerate = boundModel._generate.bind(boundModel);
+                        boundModel._generate = async function(messages, options, runManager) {
+                            const sanitized = sanitizeMessages(messages, '_generate[bound]');
+                            return boundOriginalGenerate(sanitized, options, runManager);
+                        };
+                    }
+                    
+                    if (typeof boundModel._streamResponseChunks === 'function') {
+                        const boundOriginalStreamResponseChunks = boundModel._streamResponseChunks.bind(boundModel);
+                        boundModel._streamResponseChunks = async function*(messages, options, runManager) {
+                            const sanitized = sanitizeMessages(messages, '_streamResponseChunks[bound]');
+                            yield* boundOriginalStreamResponseChunks(sanitized, options, runManager);
+                        };
+                    }
+                    
+                    return boundModel;
                 }
                 
                 // Cache simple model for reuse
