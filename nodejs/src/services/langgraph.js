@@ -289,32 +289,7 @@ function getToolExecutorMap(agentDetails = null, mcpTools = []) {
     
     return baseTools;
 }
- 
 
-/**
- * STRICT Gemini-safe message normalizer
- * RULES:
- * - NEVER recreate BaseMessage instances
- * - NEVER pass undefined name to Gemini
- * - ONLY normalize raw inputs
- */
-function normalizeToBaseMessage(msg, isGemini = false) {
-    if (
-      msg instanceof SystemMessage ||
-      msg instanceof HumanMessage ||
-      msg instanceof AIMessage ||
-      msg instanceof ToolMessage
-    ) {
-      return msg; // ✅ DO NOT TOUCH
-    }
-  
-    // Raw / fallback → HumanMessage
-    return new HumanMessage({
-      content: msg?.content ?? "",
-      ...(isGemini && { name: "human" })
-    });
-  }
-  
 async function callModel(state, model, data, agentDetails = null) {
     const { messages } = state;
     const lastMessageIndex = messages[messages.length - 1];
@@ -442,41 +417,6 @@ async function callModel(state, model, data, agentDetails = null) {
         }
     }
     
-    // ---------------------------------------------
-    // GEMINI-SPECIFIC FIX: Filter empty messages & add continuation
-    // ---------------------------------------------
-    if (isGeminiProvider) {
-      // Filter out empty/malformed messages
-      context = context.filter((m) => {
-        if (m instanceof ToolMessage) return true;
-        
-        const content = m.content;
-        const isEmpty = !content || 
-                       (typeof content === 'string' && content.trim() === '') ||
-                       (Array.isArray(content) && content.length === 0);
-        const isMalformed = typeof content === 'string' && content.includes('"functionCall"');
-        
-        return !isEmpty && !isMalformed;
-      });
-      
-      // Add continuation prompt if last message is ToolMessage
-      const lastMsg = context[context.length - 1];
-      if (lastMsg instanceof ToolMessage) {
-        context.push(new HumanMessage({
-          content: "Based on the above results, please respond.",
-          name: "human"
-        }));
-      }
-      
-      // Debug logging
-      console.log(`[GEMINI_INVOKE] ${context.length} messages`);
-      context.forEach((m, i) => {
-        console.log(
-          `[${i}] type=${m._getType?.()} name=${m.name} ctor=${m.constructor.name}`
-        );
-      });
-    }
-    
     // Log the context being sent to LLM for debugging
     context.forEach((msg, idx) => {
         let content = '';
@@ -528,7 +468,6 @@ async function callTool(state, agentDetails = null, userData = null) {
     const toolInvocations = [];
     
     for (const toolCall of lastMessage.tool_calls) {
-        console.log("🚀 ~ callTool ~ toolCall:", toolCall)
         const toolExecutor = toolExecutorMap[toolCall.name];
         if (toolExecutor) {
             try {
@@ -608,8 +547,6 @@ async function callTool(state, agentDetails = null, userData = null) {
                     new ToolMessage({
                         content: formattedOutput,
                         tool_call_id: toolCall.id,
-                        //add here tool name only for gemini
-                        name: toolCall.name,
                     }),
                 );
             } catch (error) {
@@ -624,8 +561,6 @@ async function callTool(state, agentDetails = null, userData = null) {
                     new ToolMessage({
                         content: errorOutput,
                         tool_call_id: toolCall.id,
-                        //add here tool name only for gemini
-                        name: toolCall.name,
                     }),
                 );
             }
@@ -635,8 +570,6 @@ async function callTool(state, agentDetails = null, userData = null) {
                 new ToolMessage({
                     content: `Tool '${toolCall.name}' not found or not available. Available tools: ${Object.keys(toolExecutorMap).join(', ')}`,
                     tool_call_id: toolCall.id,
-                    //add here tool name only for gemini
-                    name: toolCall.name,
                 }),
             );
         }
@@ -836,135 +769,15 @@ async function llmFactory(modelName, opts = {}) {
                 
                 const geminiLLM = new ChatGoogleGenerativeAI({
                     ...baseConfig,
-                    streaming: false, // FORCE DISABLE: v0.2.18 has bugs with streaming + name property
                     apiKey: opts.apiKey,
-                    model: modelName, // Explicitly set the model name
+                    model: modelName,
+                    convertSystemMessageToHuman: true, // Handle SystemMessage in conversation
                 });
                 
-                // CRITICAL: Create message sanitizer for reuse (only if methods exist)
-                const sanitizeMessages = (messages, context = 'UNKNOWN') => {
-                    // Normalize to array
-                    const messagesArray = Array.isArray(messages) ? messages : [messages];
-                    
-                    // Sanitize messages - handle ALL formats: arrays, plain objects, class instances
-                    const sanitizedMessages = messagesArray.map((msg, idx) => {
-                        if (!msg) {
-                            logger.warn(`[GEMINI_FACTORY] Message ${idx} is null, creating HumanMessage`);
-                            return new HumanMessage({ content: '', name: 'user' });
-                        }
-                        
-                        // FORMAT 1: Array format ['role', content] - function-based setup
-                        if (Array.isArray(msg) && msg.length >= 2) {
-                            const [role, content] = msg;
-                            logger.debug(`[GEMINI_FACTORY] Message ${idx} is array format: [${role}, ...]`);
-                            if (role === 'system') {
-                                return new SystemMessage({ content: content || '', name: 'system' });
-                            } else if (role === 'assistant' || role === 'ai') {
-                                return new AIMessage({ content: content || '', name: 'model' });
-                            } else {
-                                return new HumanMessage({ content: content || '', name: 'user' });
-                            }
-                        }
-                        
-                        // FORMAT 2: Plain object { role: 'user', content: '...' } - function-based setup
-                        if (msg && typeof msg === 'object' && !msg.constructor?.name && msg.role) {
-                            logger.debug(`[GEMINI_FACTORY] Message ${idx} is plain object format: {role: ${msg.role}}`);
-                            const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
-                            if (msg.role === 'system') {
-                                return new SystemMessage({ content, name: 'system' });
-                            } else if (msg.role === 'assistant' || msg.role === 'ai') {
-                                return new AIMessage({ content, name: 'model' });
-                            } else {
-                                return new HumanMessage({ content, name: 'user' });
-                            }
-                        }
-                        
-                        // FORMAT 3: Class instance - extract content and recreate
-                        let content = '';
-                        if (typeof msg.content === 'string') {
-                            content = msg.content;
-                        } else if (msg.content !== null && msg.content !== undefined) {
-                            content = String(msg.content);
-                        }
-                        
-                        // Recreate based on constructor name with name IN constructor
-                        const constructorName = msg.constructor?.name || '';
-                        let newMsg;
-                        
-                        if (constructorName === 'SystemMessage') {
-                            newMsg = new SystemMessage({ content, name: 'system' });
-                            // DOUBLE SET: Also set as direct property
-                            if (!newMsg.name || newMsg.name === undefined) {
-                                newMsg.name = 'system';
-                            }
-                        } else if (constructorName === 'AIMessage') {
-                            newMsg = new AIMessage({ content, name: 'model' });
-                            if (!newMsg.name || newMsg.name === undefined) {
-                                newMsg.name = 'model';
-                            }
-                        } else if (constructorName === 'ToolMessage') {
-                            newMsg = new ToolMessage({ content, tool_call_id: msg.tool_call_id || '', name: msg.name});
-                            if (!newMsg.name || newMsg.name === undefined) {
-                                newMsg.name = 'tool';
-                            }
-                        } else {
-                            // Default to HumanMessage
-                            newMsg = new HumanMessage({ content, name: 'user' });
-                            if (!newMsg.name || newMsg.name === undefined) {
-                                newMsg.name = 'user';
-                            }
-                        }
-                        
-                        // CRITICAL: Verify it works
-                        try {
-                            const msgType = newMsg._getType();
-                            const author = newMsg.name ?? msgType;
-                            if (!author || author === undefined || author === null) {
-                                logger.error(`[GEMINI_FACTORY] ❌ Message ${idx} has undefined author! type=${msgType}, name=${newMsg.name}`);
-                                return new HumanMessage({ content, name: 'user' });
-                            }
-                            logger.debug(`[GEMINI_FACTORY] ✅ Message ${idx} verified: type=${msgType}, author=${author}`);
-                        } catch (e) {
-                            logger.error(`[GEMINI_FACTORY] ❌ Error verifying message ${idx}: ${e.message}`);
-                            return new HumanMessage({ content, name: 'user' });
-                        }
-                        
-                        return newMsg;
-                    });
-                    
-                    logger.info(`[GEMINI_FACTORY:${context}] Sanitized ${sanitizedMessages.length} messages`);
-                    
-                    // CRITICAL DEBUG: Log AFTER sanitization to see if name is actually set
-                    sanitizedMessages.forEach((msg, idx) => {
-                        logger.info(`[GEMINI_FACTORY:${context}] AFTER sanitization msg ${idx}: name=${msg.name}, hasName=${msg.hasOwnProperty('name')}, _getType=${msg._getType?.()}, constructor=${msg.constructor.name}`);
-                        logger.info(`[GEMINI_FACTORY:${context}] Full msg ${idx}: ${JSON.stringify({ name: msg.name, content: msg.content?.substring(0, 50), additional_kwargs: msg.additional_kwargs })}`);
-                    });
-                    
-                    return sanitizedMessages;
-                };
-
                 // Only bind tools if query needs them
                 if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
                     const toolsToBind = [webSearchTool, geminiImageTool, currentTimeTool, ...selectedTools];
-                    const boundModel = geminiLLM.bindTools(toolsToBind);
-                    
-                    if (typeof boundModel._generate === 'function') {
-                        const boundOriginalGenerate = boundModel._generate.bind(boundModel);
-                        boundModel._generate = async function(messages, options, runManager) {
-                            const sanitized = sanitizeMessages(messages, '_generate[bound]');
-                            return boundOriginalGenerate(sanitized, options, runManager);
-                        };
-                    }
-                    
-                    if (typeof boundModel._streamResponseChunks === 'function') {
-                        const boundOriginalStreamResponseChunks = boundModel._streamResponseChunks.bind(boundModel);
-                        boundModel._streamResponseChunks = async function*(messages, options, runManager) {
-                            const sanitized = sanitizeMessages(messages, '_streamResponseChunks[bound]');
-                            yield* boundOriginalStreamResponseChunks(sanitized, options, runManager);
-                        };
-                    }
-                    
-                    return boundModel;
+                    return geminiLLM.bindTools(toolsToBind);
                 }
                 
                 // Cache simple model for reuse

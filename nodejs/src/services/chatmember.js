@@ -65,7 +65,7 @@ const memberList = async (req) => {
                 };
             }
 
-            const currBrain=await Brain.findById({ _id:req.body.query["brain.id"]})
+            const currBrain=await Brain.findById(req.body.query["brain.id"])
 
            
             if(!isPrivateBrainVisible && !currBrain.isShare){
@@ -75,10 +75,10 @@ const memberList = async (req) => {
                };
             }
         }else if(req.body.query.chatId){
-          const currChat=  await Chat.findById({_id:req.body.query.chatId})
+          const currChat=  await Chat.findById(req.body.query.chatId)
 
-          
-          const currBrain=await Brain.findById({ _id:currChat?.brain?.id})
+
+          const currBrain=await Brain.findById(currChat?.brain?.id)
 
             if(!isPrivateBrainVisible && !currBrain.isShare){
                return {
@@ -239,7 +239,7 @@ async function socketChatMemberList(filter) {
                 };
             }
 
-            const currBrain=await Brain.findById({ _id:brainId})
+            const currBrain=await Brain.findById(brainId)
 
             
             if(!isPrivateBrainVisible && !currBrain?.isShare){
@@ -249,11 +249,11 @@ async function socketChatMemberList(filter) {
                };
             }
         }else if(chatId){
-          const currChat=  await Chat.findById({_id:chatId})
+          const currChat=  await Chat.findById(chatId)
 
           if(currChat?.brain?.id){
 
-              const currBrain=await Brain.findById({ _id:currChat?.brain?.id})
+              const currBrain=await Brain.findById(currChat?.brain?.id)
     
                 if(!isPrivateBrainVisible && !currBrain?.isShare){
                    return {
