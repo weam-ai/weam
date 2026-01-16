@@ -55,40 +55,47 @@ HOST_ENTRY="127.0.0.1 $DOMAIN"
 # -------------------------------
 # Step 4: Add domain entry to hosts file
 # -------------------------------
-echo "🌐 Adding host entry for $DOMAIN..."
 
-if [[ "$OS_TYPE" == "Linux" ]]; then
-    HOSTS_FILE="/etc/hosts"
-elif [[ "$OS_TYPE" == "Darwin" ]]; then
-    HOSTS_FILE="/etc/hosts"
-elif [[ "$OS_TYPE" =~ MINGW|MSYS|CYGWIN ]]; then
-    # Windows (Git Bash, MSYS, or WSL)
+echo "🌐 Configuring hosts file..."
+# -------- Windows (Git Bash / MSYS / MINGW)
+if [[ "$OS_TYPE" =~ MINGW|MSYS|CYGWIN ]]; then
     HOSTS_FILE="/c/Windows/System32/drivers/etc/hosts"
-else
-    echo "⚠️ Unsupported OS: $OS_TYPE"
-    exit 1
+
+    echo "🪟 Windows detected"
+
+    # Check admin rights
+    if ! touch "$HOSTS_FILE" 2>/dev/null; then
+        echo ""
+        echo "❌ ERROR: Insufficient privileges"
+        echo ""
+        echo "👉 Git Bash MUST be run as Administrator"
+        echo "   1. Close Git Bash"
+        echo "   2. Right-click Git Bash"
+        echo "   3. Select 'Run as Administrator'"
+        echo "   4. Re-run this script"
+        echo ""
+        exit 1
+    fi
+
+    if grep -qE "^[^#]*\b$DOMAIN\b" "$HOSTS_FILE"; then
+        echo "✅ Host entry already exists"
+    else
+        echo "📝 Adding host entry to Windows hosts file..."
+        echo "$HOST_ENTRY" >> "$HOSTS_FILE"
+        echo "✅ Host entry added"
+    fi
 fi
 
-# Check if domain already exists
-if grep -qE "^[^#]*\b$DOMAIN\b" "$HOSTS_FILE"; then
-    echo "✅ Host entry for '$DOMAIN' already exists in $HOSTS_FILE"
-else
-    echo "📝 Adding host entry to $HOSTS_FILE..."
-    if [[ "$OS_TYPE" =~ MINGW|MSYS|CYGWIN ]]; then
-        # Windows needs admin rights; use PowerShell if possible
-        powershell.exe -Command "Start-Process cmd -Verb runAs -ArgumentList '/c echo $HOST_ENTRY >> C:\\Windows\\System32\\drivers\\etc\\hosts'" || {
-            echo "⚠️ Failed to auto-edit hosts file. Please manually add this line:"
-            echo "   $HOST_ENTRY"
-        }
+# -------- macOS / Linux
+if [[ "$OS_TYPE" == "Linux" || "$OS_TYPE" == "Darwin" ]]; then
+    HOSTS_FILE="/etc/hosts"
+
+    if grep -qE "^[^#]*\b$DOMAIN\b" "$HOSTS_FILE"; then
+        echo "✅ Host entry already exists"
     else
-        # Linux or macOS
-        if echo "$HOST_ENTRY" | sudo tee -a "$HOSTS_FILE" >/dev/null; then
-            echo "✅ Added $HOST_ENTRY to $HOSTS_FILE"
-        else
-            echo "❌ Failed to add host entry. Run this manually:"
-            echo "   sudo sh -c 'echo \"$HOST_ENTRY\" >> $HOSTS_FILE'"
-            exit 1
-        fi
+        echo "📝 Adding host entry to $HOSTS_FILE..."
+        echo "$HOST_ENTRY" | sudo tee -a "$HOSTS_FILE" >/dev/null
+        echo "✅ Host entry added"
     fi
 fi
 
@@ -112,7 +119,21 @@ docker rm weam-nginx 2>/dev/null || true
 # fi
 
 # -------------------------------
-# Step 6: Build and run nginx container (local only)
+# Step 6: Detect Docker Compose network name
+# -------------------------------
+PROJECT_NAME=$(basename "$(pwd)")
+NETWORK_NAME="${PROJECT_NAME}_app-network"
+
+echo "🔗 Using Docker network: $NETWORK_NAME"
+
+if ! docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
+    echo "❌ Docker network '$NETWORK_NAME' not found"
+    echo "👉 Run: docker compose up -d first"
+    exit 1
+fi
+
+# -------------------------------
+# Step 7: Build and run nginx container (local only)
 # -------------------------------
 if [ "$ENVIRONMENT_TYPE" = "local" ]; then
     echo "🐳 Building nginx Docker image..."
@@ -121,7 +142,7 @@ if [ "$ENVIRONMENT_TYPE" = "local" ]; then
     echo "🚀 Starting nginx container..."
     docker run -d \
         --name weam-nginx \
-        --network weam_app-network \
+        --network "$NETWORK_NAME" \
         -p 80:80 \
         -p 443:443 \
         -e DOMAIN_NAME="$DOMAIN" \
