@@ -1,0 +1,56 @@
+use_default_settings: true
+
+general:
+  instance_name: "WEAM SearXNG"
+  enable_metrics: false
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  base_url: "http://localhost:8080"
+  limiter: false
+  public_instance: false
+  secret_key: "your-secret-key-change-this-in-production"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+ui:
+  default_theme: simple
+  theme_args:
+    simple_style: auto
+
+engines:
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: dd
+    disabled: false
+
+  - name: google
+    engine: google
+    shortcut: gg
+    disabled: false
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+
+  - name: bing
+    engine: bing
+    shortcut: bi
+    disabled: false
+
+outgoing:
+  request_timeout: 10.0
+  max_request_timeout: 30.0
+  pool_connections: 100
+  pool_maxsize: 20
+
+redis:
+  url: false

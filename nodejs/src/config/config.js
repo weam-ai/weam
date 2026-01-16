@@ -41,7 +41,7 @@ module.exports = {
         WEAM_GROK_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
         WEAM_QWEN_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
         OPEN_ROUTER_API_URL: process.env.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1',
-        SEARXNG_API_URL: 'https://dev-searxng.weam.ai',
+        SEARXNG_API_URL: process.env.SEARXNG_TOOL_URL,
         MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
         MCP_SERVER_URL: process.env.MCP_SERVER_URL,
         OLLAMA_API_URL: process.env.OLAMA_COMMON_URL,
