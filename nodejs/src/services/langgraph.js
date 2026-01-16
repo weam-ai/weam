@@ -1716,7 +1716,19 @@ async function toolExecutor(data, socket) {
         // RAW Perplexity routing for all Perplexity models
         const isPerplexity = mappedProvider === AI_MODAL_PROVIDER.PERPLEXITY;
         if (isPerplexity) {
-            const rawMessages = [['user', data.query || '']];
+            const conversationHistory = await getConversationHistory(data.chatId);
+            const rawMessages = conversationHistory.reduce((accu, current) => {
+                const name = current?.constructor?.name;
+                if (name === 'SystemMessage') {
+                    const content = current.content || '';
+                    if (!content || !content.trim()) return accu;
+                    return [...accu, ['system', content]];
+                }
+                if (name === 'HumanMessage') return [...accu, ['user', current.content || '']];
+                if (name === 'AIMessage') return [...accu, ['assistant', current.content || '']];
+                return [...accu, ['user', String(current?.content || '')]];
+            }, []);
+            rawMessages.push(['user', data.query || '']);
             await perplexityRawStream({
                 apiKey: decryptedData(data.apiKey),
                 model: data.model,

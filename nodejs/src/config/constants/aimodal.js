@@ -22,6 +22,7 @@ const OPENAI_MODAL = [
     // { name: 'gpt-5-nano', type: 2},
     { name: 'gpt-5-chat-latest', type: 2},
     { name: 'gpt-5.1', type: 2},
+    { name: 'gpt-5.2', type: 2},
 ]
 
 const ANTHROPIC_MODAL = [
@@ -172,6 +173,7 @@ const MODAL_NAME = {
     GPT_5_NANO: 'gpt-5-nano',
     GPT_5_CHAT_LATEST: 'gpt-5-chat-latest',
     GPT_5_1: 'gpt-5.1',
+    GPT_5_2: 'gpt-5.2',
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
 }
