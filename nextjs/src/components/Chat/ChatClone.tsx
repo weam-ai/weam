@@ -779,18 +779,6 @@ const ChatPage = memo(() => {
         }
     }, [conversationPagination.next]);
 
-    // Function to scroll to the bottom of the messages container
-    const scrollToBottom = () => {
-        if (contentRef.current && shouldScrollToBottom) {
-            contentRef.current.scrollTop = contentRef.current.scrollHeight;
-        }
-    };
-
-    // On messages update, scroll to the bottom
-    useEffect(() => {
-        scrollToBottom();
-    }, [answerMessage]);
-
     function removeSelectedContext() {
         setSelectedContext(defaultContext);
     };
@@ -1071,13 +1059,6 @@ const ChatPage = memo(() => {
             const lastConversation = { ...updatedConversations[updatedConversations.length - 1] };
             lastConversation.response = chunk.proccedMsg;
             updatedConversations[updatedConversations.length - 1] = lastConversation;
-
-            // Auto-scroll to bottom when streaming stops if shouldScrollToBottom is true
-            if (shouldScrollToBottom && contentRef.current) {
-                requestAnimationFrame(() => {
-                    contentRef.current.scrollTop = contentRef.current.scrollHeight;
-                });
-            }
 
             return updatedConversations;
         });

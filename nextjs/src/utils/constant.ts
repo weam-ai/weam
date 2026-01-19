@@ -454,7 +454,7 @@ export const AI_MODAL_NAME = {
     // GPT_5_NANO: 'gpt-5-nano',
     GPT_5_CHAT: 'gpt-5-chat-latest',    
     GPT_5_1:'gpt-5.1',   
-    
+    GPT_5_2:'gpt-5.2',
     // Open AI models
     // GPT_4_1: 'gpt-4.1',
     // GPT_4_O_LATEST: 'chatgpt-4o-latest',
@@ -773,6 +773,18 @@ export const MODEL_CREDIT_INFO = [
         model: 'o4-mini',
         credit: 5,
         displayName: 'o4 Mini',
+        snippet: 'Powerful for deep understanding and complex problem-solving.',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: true,
+        reasoning: true,
+    },
+    {
+        code: 'OPEN_AI',
+        model: 'gpt-5.2',
+        credit: 5,
+        displayName: 'GPT 5.2',
         snippet: 'Powerful for deep understanding and complex problem-solving.',
         doc: true,
         websearch: true,
@@ -1578,6 +1590,7 @@ export const MODEL_NAME_BY_CODE = {
     'gpt-5-nano': 'OPEN_AI',
     'gpt-5-chat-latest': 'OPEN_AI',
     'gpt-5.1': 'OPEN_AI',
+    'gpt-5.2': 'OPEN_AI',
     
     // Gemini models
     'gemini-2.5-pro-preview-05-06': 'GEMINI',
