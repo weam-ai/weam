@@ -1,6 +1,6 @@
 const { ChatOpenAI } = require('@langchain/openai');
 const { StateGraph, END } = require('@langchain/langgraph');
-const { ToolMessage, HumanMessage, SystemMessage } = require('@langchain/core/messages');
+const { ToolMessage, HumanMessage, SystemMessage, AIMessage } = require('@langchain/core/messages');
 const { langGraphEventName, llmStreamingEvents, toolCallOptions, toolDescription, IS_MCP_TOOLS } = require('../config/constants/llm');
 const { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } = require('../config/constants/socket');
 const Messages = require('../models/thread');
@@ -453,7 +453,7 @@ async function callModel(state, model, data, agentDetails = null) {
     
     return { messages: [response] };
 }
-
+  
 async function callTool(state, agentDetails = null, userData = null) {
     const { messages } = state;
     const lastMessage = messages[messages.length - 1];
@@ -712,7 +712,8 @@ async function llmFactory(modelName, opts = {}) {
             
             // Only bind tools if query needs them
             if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
-                return openAIModel.bindTools([webSearchTool, imageGenerationTool, currentTimeTool, ...selectedTools]);
+                const toolsToBind = [webSearchTool, imageGenerationTool, currentTimeTool, ...selectedTools];
+                return openAIModel.bindTools(toolsToBind);
             }
             
             // Cache simple model for reuse
@@ -747,7 +748,8 @@ async function llmFactory(modelName, opts = {}) {
             
             // Only bind tools if query needs them
             if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
-                return anthropicModel.bindTools([webSearchTool, currentTimeTool, ...selectedTools]);
+                const toolsToBind = [webSearchTool, currentTimeTool, ...selectedTools];
+                return anthropicModel.bindTools(toolsToBind);
             }
             
             // Cache simple model for reuse
@@ -768,12 +770,14 @@ async function llmFactory(modelName, opts = {}) {
                 const geminiLLM = new ChatGoogleGenerativeAI({
                     ...baseConfig,
                     apiKey: opts.apiKey,
-                    model: modelName, // Explicitly set the model name
+                    model: modelName,
+                    convertSystemMessageToHuman: true, // Handle SystemMessage in conversation
                 });
                 
                 // Only bind tools if query needs them
                 if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
-                    return geminiLLM.bindTools([webSearchTool, geminiImageTool, currentTimeTool, ...selectedTools]);
+                    const toolsToBind = [webSearchTool, geminiImageTool, currentTimeTool, ...selectedTools];
+                    return geminiLLM.bindTools(toolsToBind);
                 }
                 
                 // Cache simple model for reuse

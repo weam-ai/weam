@@ -41,7 +41,7 @@ module.exports = {
         WEAM_GROK_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
         WEAM_QWEN_KEY: process.env.WEAM_OPEN_ROUTER_KEY,
         OPEN_ROUTER_API_URL: process.env.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1',
-        SEARXNG_API_URL: 'https://dev-searxng.weam.ai',
+        SEARXNG_API_URL: process.env.SEARXNG_TOOL_URL,
         MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
         MCP_SERVER_URL: process.env.MCP_SERVER_URL,
         OLLAMA_API_URL: process.env.OLAMA_COMMON_URL,
@@ -141,5 +141,8 @@ module.exports = {
         CLIENT_ID: process.env.ASANA_OAUTH_CLIENT_ID,
         CLIENT_SECRET: process.env.ASANA_OAUTH_CLIENT_SECRET,
         REDIRECT_URI: `${process.env.BASE_URL}/api/auth/asana/callback`
+    },
+    N8N: {
+        API_BASE_URL: process.env.N8N_MCP_URL
     }
 };

@@ -4,20 +4,20 @@ const { uploadGeminiImageToS3 } = require('./uploadFile');
 
 /**
  * Enhanced Gemini image generation and editing tool that extends LangChain Tool class
- * Uses Google's Gemini 2.5 Flash Image (nano-banana) model for advanced image operations
+ * Uses Google's Gemini 2.5 Flash Image model for advanced image operations
  */
 class CustomGeminiImageTool extends Tool {
     constructor(config = {}) {
         const {
             apiKey,
-            model = 'gemini-2.5-flash-image-preview'
+            model = 'gemini-2.5-flash-image'
         } = config;
 
         super();
         this.apiKey = apiKey;
         this.model = model;
         this.name = 'gemini_image_generator';
-        this.description = `Image generation tool powered by Google's Gemini 2.5 Flash Image model aka Nano Banana. This tool creates high-quality, photorealistic images from text descriptions using Gemini's NanoBanana model. The tool automatically uploads generated images to S3 storage and returns S3 URLs for immediate display.
+        this.description = `Image generation tool powered by Google's Gemini 2.5 Flash Image model. This tool creates high-quality, photorealistic images from text descriptions using Gemini's advanced multimodal capabilities. The tool automatically uploads generated images to S3 storage and returns S3 URLs for immediate display.
         Usage Patterns:
         - Image Generation: "Create a photorealistic portrait of...", "Generate an image showing..."
         - Style Operations: "Create in watercolor style...", "Make it look futuristic..."
@@ -122,8 +122,15 @@ class CustomGeminiImageTool extends Tool {
                     // Only replace if it's a MinIO URL
                     let modifiedUrl = uploadResult.s3Url;
                     if (modifiedUrl.includes('http://minio:9000')) {
-                        // Replace minio:9000 with the value from INTERNAL_ENDPOINT including http part
-                        modifiedUrl = modifiedUrl.replace(/http:\/\/minio:9000/g, internalEndpoint);
+                        if (internalEndpoint) {
+                            // Replace minio:9000 with the value from INTERNAL_ENDPOINT including http part
+                            modifiedUrl = modifiedUrl.replace(/http:\/\/minio:9000/g, internalEndpoint);
+                        } else {
+                            // Fallback: if INTERNAL_ENDPOINT is not set, try to construct it from FRONT_URL
+                            const baseUrl = process.env.FRONT_URL;
+                            const url = new URL(baseUrl);
+                            modifiedUrl = modifiedUrl.replace(/http:\/\/minio:9000/g, `${url.protocol}//${url.host}/minio`);
+                        }
                     }
                     
                     // Return the image URL in markdown format
@@ -218,7 +225,7 @@ class CustomGeminiImageTool extends Tool {
 function createGeminiImageTool(apiKey = null) {
     return new CustomGeminiImageTool({
         apiKey: apiKey,
-        model: 'gemini-2.5-flash-image-preview'
+        model: 'gemini-2.5-flash-image'
     });
 }
 

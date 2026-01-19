@@ -185,6 +185,28 @@ services:
     networks:
       - app-network
 
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./searxng-config/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      # - SEARXNG_BASE_URL=http://localhost:8080
+      - SEARXNG_BIND_ADDRESS=0.0.0.0:8080
+      - SEARXNG_PUBLIC_INSTANCE=false
+      - SEARXNG_LIMITER=false
+      
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/search?q=test&format=json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   
   
   
@@ -199,6 +221,7 @@ volumes:
   mongo-data:
   redis_data:
   minio_data:
+  searxng_data:
   app:
   db:
   data:

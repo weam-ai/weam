@@ -109,9 +109,26 @@ function convertZodFieldToJsonSchema(zodField, fieldName, toolName) {
             case 'ZodOptional':
                 // Handle optional fields by extracting the inner type
                 return convertZodFieldToJsonSchema(def.innerType, fieldName, toolName);
+                case 'ZodUnion':
+                    // Handle union types (e.g., z.union([z.string(), z.number()]))
+                    if (def.options && Array.isArray(def.options)) {
+                        property.oneOf = def.options.map(option => 
+                            convertZodFieldToJsonSchema(option, fieldName, toolName)
+                        );
+                    }
+                    break;
             case 'ZodAny':
             case 'ZodUnknown':
-                property.type = 'string'; // Default to string for any/unknown types
+                // For any/unknown types, use oneOf to allow all types
+                // This allows arrays, objects, strings, numbers, booleans, null
+                property.oneOf = [
+                    { type: 'string' },
+                    { type: 'number' },
+                    { type: 'boolean' },
+                    { type: 'array', items: {} },
+                    { type: 'object', additionalProperties: true },
+                    { type: 'null' }
+                ];
                 break;
             default:
                 property.type = 'string';
@@ -219,6 +236,11 @@ const TOOL_CATALOG = {
         domain: 'utility',
         keywords: ['time', 'date', 'current', 'now', 'today', 'datetime', 'timestamp'],
         tools: ['get_current_time']
+    },
+    'n8n': {
+        domain: 'automation',
+        keywords: ['n8n', 'workflow', 'automation', 'workflows', 'automation'],
+        tools: ['list_n8n_workflows', 'get_n8n_workflow', 'create_n8n_workflow', 'execute_n8n_workflow', 'activate_n8n_workflow', 'deactivate_n8n_workflow']
     }
 };
 
@@ -294,6 +316,12 @@ function detectSpecificDomain(query) {
             contextKeywords: ['invoice', 'subscription', 'customer', 'charge'],
             domain: 'finance',
             catalog: 'stripe'
+        },
+        'n8n': {
+            strongKeywords: ['n8n', 'workflow', 'automation', 'workflows', 'automation'],
+            contextKeywords: ['workflow', 'automation', 'workflows', 'automation'],
+            domain: 'automation',
+            catalog: 'n8n'
         }
     };
     
@@ -697,15 +725,21 @@ async function initializeMCPClient() {
                                 } else if (prop.items && prop.items.type === 'boolean') {
                                     zodType = z.array(z.boolean());
                                 } else {
-                                    zodType = z.array(z.string()); // Default to string array
+                                    // For arrays with any items or unknown types, use z.any() to be permissive
+                                    zodType = z.any();
                                 }
                                 break;
                             case 'object':
                                 zodType = z.record(z.any());
                                 break;
                             default:
-                                console.warn(`Unknown property type '${prop?.type}' for ${mcpTool.name}.${key}, defaulting to string`);
-                                zodType = z.string();
+                                // For unknown types or 'any', use z.any() to be permissive
+                                if (prop?.type === 'any' || !prop?.type) {
+                                    zodType = z.any();
+                                } else {
+                                    console.warn(`Unknown property type '${prop?.type}' for ${mcpTool.name}.${key}, defaulting to any`);
+                                    zodType = z.any();
+                                }
                         }
                         
                         if (prop?.description) {
@@ -875,6 +909,7 @@ async function selectRelevantToolsWithDomainFilter(query, availableMcpTools) {
     
     // Then apply semantic/keyword selection on the filtered set
     return await selectRelevantTools(query, domainFilteredTools.filter(t => t && t.name && !['web_search', 'dall_e_3'].includes(t.name)));
+   
 }
 
 
