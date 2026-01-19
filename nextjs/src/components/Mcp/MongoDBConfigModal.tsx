@@ -77,6 +77,8 @@ const MongoDBConfigModal: React.FC<MongoDBConfigModalProps> = ({ isOpen, onClose
             if (onConnect) {
                 onConnect();
             }
+            // Close the modal after successful connection
+            onClose();
         } catch (error) {
             console.error('MongoDB connection error:', error);
             Toast('Failed to connect to MongoDB', 'error');

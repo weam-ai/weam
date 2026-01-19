@@ -16,6 +16,7 @@ import { updateMcpDataAction } from '@/actions/user';
 import { encryptedData } from '@/utils/helper';
 import { MCP_CODES } from '@/components/Mcp/MCPAppList';
 import MCPDisconnectDialog from '../Shared/MCPDisconnectDialog';
+import ValidationError from '@/widgets/ValidationError';
 
 interface N8nConfigModalProps {
     isOpen: boolean;
@@ -26,7 +27,7 @@ interface N8nConfigModalProps {
 
 const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConnect, mcpData }) => {
     const [apiKey, setApiKey] = useState('');
-    const [apiBaseUrl, setApiBaseUrl] = useState('https://api.n8n.io/v1');
+    const [apiBaseUrl, setApiBaseUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionData, setConnectionData] = useState<any>(null);
@@ -55,7 +56,7 @@ const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConn
 
         // Validate API base URL format if provided
         if (apiBaseUrl.trim() && !isValidUrl(apiBaseUrl.trim())) {
-            Toast('Please enter a valid API base URL (e.g., https://api.n8n.io/v1 or https://your-instance.com/api/v1)', 'error');
+            Toast('Please enter a valid API base URL (e.g., https://api.n8n.io/api/v1 or https://your-instance.com/api/v1)', 'error');
             return;
         }
 
@@ -69,6 +70,7 @@ const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConn
                 connectedAt: new Date().toISOString(),
                 status: 'connected'
             };
+            console.log("🚀 ~ handleConnect ~ payload:", payload)
 
             // Add API base URL if provided (for self-hosted instances)
             if (apiBaseUrl.trim() && apiBaseUrl.trim() !== 'https://api.n8n.io/v1') {
@@ -86,6 +88,8 @@ const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConn
             if (onConnect) {
                 onConnect();
             }
+            // Close the modal after successful connection
+            onClose();
         } catch (error) {
             console.error('n8n connection error:', error);
             Toast('Failed to connect to n8n', 'error');
@@ -157,7 +161,7 @@ const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConn
                                 
                                 <div className="space-y-3 mb-4">
                                     <div>
-                                        <Label title="API Key *" />
+                                        <Label title="API Key" />
                                         <input
                                             type="password"
                                             className="default-form-input"
@@ -171,7 +175,8 @@ const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConn
                                     </div>
 
                                     <div>
-                                        <Label title="API Base URL (Optional)" />
+                                        
+                                        <Label title="API Base URL" />
                                         <input
                                             type="text"
                                             className="default-form-input"
@@ -179,8 +184,9 @@ const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConn
                                             value={apiBaseUrl}
                                             onChange={(e) => setApiBaseUrl(e.target.value)}
                                         />
+                                        <ValidationError errors={[{message: 'Please enter a valid API base URL (e.g., https://api.n8n.io/v1 or https://your-instance.com/api/v1)'}]} field={'apiBaseUrl'} />
                                         <p className="text-xs text-b6 mt-1">
-                                            Leave default for n8n cloud. For self-hosted instances, enter your instance URL (e.g., https://your-instance.com/api/v1)
+                                            For self-hosted instances, enter your instance URL (e.g., https://your-instance.com/api/v1)
                                         </p>
                                     </div>
                                 </div>
@@ -188,7 +194,7 @@ const N8nConfigModal: React.FC<N8nConfigModalProps> = ({ isOpen, onClose, onConn
                                 <button
                                     className="btn btn-black w-full"
                                     onClick={handleConnect}
-                                    disabled={loading || !apiKey.trim()}
+                                    disabled={loading || !apiKey.trim() || !apiBaseUrl.trim()}
                                 >
                                     {loading ? 'Connecting...' : 'Connect to n8n'}
                                 </button>
