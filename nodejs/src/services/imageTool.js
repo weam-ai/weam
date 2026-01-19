@@ -123,7 +123,7 @@ class CustomDallETool extends Tool {
                             // Fallback: if INTERNAL_ENDPOINT is not set, try to construct it from FRONT_URL
                             const baseUrl = process.env.FRONT_URL
                             const url = new URL(baseUrl);
-                            modifiedUrl = modifiedUrl.replace(/http:\/\/minio:9000/g, `${url.protocol}//${url.host}/minio`);
+                            modifiedUrl = modifiedUrl.replace(/http:\/\/(localhost|minio):9000/g, `${url.protocol}//${url.host}/minio`);
                         }
                     }
                     const s3Result = `![${query}](${modifiedUrl})`;
