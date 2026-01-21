@@ -23,14 +23,6 @@ const SOLUTION_CONFIGS = {
         branchName: 'devops',
         envFile: 'example.env'
     },
-    'blog-engine': {
-        repoUrl: 'https://github.com/weam-ai/Blog-Engine.git',
-        repoName: 'blog-engine',
-        imageName: ['blog-engine-frontend','blog-engine-node-backend','blog-engine-backend-python'],
-        containerName: ['seo-frontend','seo-node-backend','seo-backend-python'],
-        branchName: 'devops',
-        envFile: '.env.example'
-    },
     'call-analyzer': {
         repoUrl: 'https://github.com/weam-ai/call-analyzer.git',
         repoName: 'call-analyzer',
