@@ -473,7 +473,7 @@ const Member = ({ selectedTab, membersOptions, setTotalMembers, totalMembers, is
 							disabled={visibilityAction}
 							onClick={() => {
 								openModal();
-								setDeluser(row?.original?.id);
+								setDeluser(row?.original?._id);
 							}}
 						>
 							<TooltipProvider
@@ -767,7 +767,7 @@ const Invitation = ({ selectedTab, isOpen, handleOpen, setTotalInvitation, total
 				<button
 					onClick={() => {
 						openModal();
-						setDeluser(row?.original?.id);
+						setDeluser(row?.original?._id);
 					}}
 				>
 					<TooltipProvider delayDuration={0} skipDelayDuration={0}>
