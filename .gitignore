@@ -55,6 +55,10 @@ uploads/*
 dump.rdb
 newrelic_agent.log
 
+# Playwright
+nextjs/test-results/
+nextjs/playwright-report/
+
 docs/
 ai-recruiter/
 seo-content-gen/

@@ -1,0 +1,54 @@
+/**
+ * Test data fixtures and constants for Playwright tests
+ */
+
+export const TEST_USERS = {
+  valid: {
+    email: 'sihamyty@yopmail.com',
+    password: 'admin123',
+  },
+  invalid: {
+    email: 'invalid@example.com',
+    password: 'wrongpassword',
+  },
+};
+
+export const TEST_EMAILS = {
+  invite1: 'newuser1@yopmail.com',
+  invite2: 'newuser2@example.com',
+  invite3: 'testuser@example.com',
+  invalid: 'invalid-email',
+};
+
+export const GEMINI_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash',
+];
+
+export const ROLES = {
+  user: 'User',
+  manager: 'Manager',
+  admin: 'Admin',
+};
+
+// Base URL used by tests – must match playwright.config.ts
+export const BASE_URL = 'https://weam.local';
+
+export const ROUTES = {
+  login: '/login',
+  main: '/',
+  chat: '/chat',
+  settingsMembers: '/settings/members',
+};
+
+export const TEST_MESSAGES = {
+  simple: 'Hello, this is a test message',
+  question: 'What is AI?',
+  followUp: 'Tell me more',
+  fileQuestion1: 'What is the main topic of this document?',
+  fileQuestion2: 'Can you summarize the key points?',
+};
+
+
