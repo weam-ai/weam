@@ -939,13 +939,13 @@ async function embedInParallel(stream, { mimetype, originalName, s3Key, onProgre
                 if (signal?.aborted) return;
                 buffered = Buffer.concat([buffered, piece]);
                 if (buffered.length >= windowBytes) {
-                    await embedAndUpsert(buffered, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId });
+                    await embedAndUpsert(buffered, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId, embeddingApiKey });
                     chunkIndex += 1;
                     buffered = Buffer.alloc(0);
                 }
             }
             if (buffered.length) {
-                await embedAndUpsert(buffered, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId });
+                await embedAndUpsert(buffered, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId, embeddingApiKey });
             }
         }
     } catch (error) {
@@ -1219,7 +1219,7 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
 
         const expectDim = EMBEDDINGS.VECTOR_SIZE || 1536;
         const batchSize = EMBEDDINGS.BATCH_SIZE || 32; // tune 32–128
-        const client = typeof getEmbeddingsClient === 'function' ? getEmbeddingsClient() : null;
+        const client = typeof getEmbeddingsClient === 'function' ? getEmbeddingsClient( embeddingApiKey ) : null;
 
         let processed = 0;
         for (let i = 0; i < chunks.length; i += batchSize) {
