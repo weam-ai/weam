@@ -58,6 +58,7 @@ newrelic_agent.log
 # Playwright
 nextjs/test-results/
 nextjs/playwright-report/
+nextjs/tests/helpers/config.ts
 
 docs/
 ai-recruiter/

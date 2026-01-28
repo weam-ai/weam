@@ -2,10 +2,15 @@
  * Test data fixtures and constants for Playwright tests
  */
 
+import { TEST_PASSWORD, TEST_EMAIL, TEST_FILE_PATH } from "./config";
+
+// Base URL used by tests – must match playwright.config.ts
+export const BASE_URL = 'https://weam.local';
+
 export const TEST_USERS = {
   valid: {
-    email: 'sihamyty@yopmail.com',
-    password: 'admin123',
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
   },
   invalid: {
     email: 'invalid@example.com',
@@ -33,8 +38,7 @@ export const ROLES = {
   admin: 'Admin',
 };
 
-// Base URL used by tests – must match playwright.config.ts
-export const BASE_URL = 'https://weam.local';
+export const FILE_PATH = TEST_FILE_PATH;
 
 export const ROUTES = {
   login: '/login',

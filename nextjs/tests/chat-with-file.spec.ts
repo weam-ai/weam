@@ -1,14 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { ChatPage } from './helpers/page-objects';
 import { login } from './helpers/auth-helpers';
-import { TEST_MESSAGES } from './helpers/test-data';
+import { FILE_PATH, TEST_MESSAGES } from './helpers/test-data';
 
 test.describe('Chat with File', () => {
   let chatPage: ChatPage;
-  // Use the specific PDF file from Downloads folder
-//   const pdfFilePath = '/Downloads/Invoice-2LYCMDII-0002.pdf';
-//   const pdfFilePath = '/Downloads/automators-lab.png';
-  const pdfFilePath = '/Downloads/56e94b5a-87aa-4b4d-bf79-fe31031c3b62.docx';
+  
+  const filePath = FILE_PATH;
 
   test.beforeEach(async ({ page }) => {
     // Login before each test
@@ -34,7 +32,7 @@ test.describe('Chat with File', () => {
     await expect(chatInput).toBeEnabled({ timeout: 5000 });
     
     // Upload PDF file
-    await chatPage.attachFile(pdfFilePath);
+    await chatPage.attachFile(filePath);
     
     // Wait for file upload to complete
     await chatPage.waitForFileUpload();
