@@ -1,10 +1,113 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { ChatPage } from './helpers/page-objects';
 import { login } from './helpers/auth-helpers';
-import { FILE_PATH, TEST_MESSAGES } from './helpers/test-data';
+import { FILE_PATH, TEST_MESSAGES, DOC } from './helpers/test-data';
+import { selectBrainByName, clickDialogTabByLabel, clickAddPromptAgentDoc, searchInDialog } from './helpers/brain-helper';
+
+/**
+ * Chat with Doc helpers (scoped to this test file)
+ */
+class ChatWithDoc {
+  readonly page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
+
+  /**
+   * Select a doc by name from the doc list in the dialog
+   */
+  async selectDoc(docName: string) {
+    const dialog = this.page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 10000 });
+
+    // Find all doc items in the dialog
+    // Docs are in divs with className containing "cursor-pointer" and "border-b"
+    const docItems = dialog.locator('div.cursor-pointer.border-b');
+    const count = await docItems.count();
+    
+    let targetDoc = null;
+    
+    // Iterate through all doc items to find the one with exact name match
+    for (let i = 0; i < count; i++) {
+      const item = docItems.nth(i);
+      // The doc name is in a <p> tag with specific classes
+      const nameElement = item.locator('p.text-font-12.font-medium.text-b2').first();
+      const text = await nameElement.textContent().catch(() => null);
+      if (text && text.trim() === docName) {
+        targetDoc = item;
+        break;
+      }
+    }
+    
+    if (!targetDoc) {
+      throw new Error(`Doc with exact name "${docName}" not found`);
+    }
+    
+    await expect(targetDoc).toBeVisible({ timeout: 10000 });
+    await targetDoc.click();
+    
+    // Wait for dialog to close after selection
+    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await this.page.waitForTimeout(1000);
+  }
+
+  /**
+   * Click send chat button and wait for response to complete
+   * @param prompt Optional prompt text to fill before sending
+   */
+  async sendChatAndWaitForResponse(prompt?: string) {
+    // Wait for chat input to be ready
+    const chatInput = this.page.locator('textarea#textarea');
+    await expect(chatInput).toBeVisible({ timeout: 10000 });
+    await this.page.waitForSelector('textarea#textarea:not([disabled])', { timeout: 10000 });
+    
+    // Fill prompt if provided
+    if (prompt) {
+      await chatInput.fill(prompt);
+      await this.page.waitForTimeout(500);
+    }
+    
+    // Find and click the send button
+    const sendButton = this.page.locator('button.chat-submit:not([disabled])').or(
+      this.page.locator('button[type="submit"]:not([disabled])')
+    );
+    
+    if (await sendButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await sendButton.click();
+    } else {
+      // Fallback to Enter key
+      await chatInput.press('Enter');
+    }
+    
+    // Wait for user message to appear
+    await this.page.waitForSelector('.chat-item', { timeout: 10000 });
+    
+    // Wait for response to start (loading indicator or response content)
+    await this.page.waitForSelector('.chat-content, [class*="loading"], [class*="stream"]', { 
+      timeout: 30000 
+    }).catch(() => {
+      // If no response indicator found, wait a bit
+      return this.page.waitForTimeout(5000);
+    });
+    
+    // Wait for response to complete - input should be enabled again
+    await this.page.waitForFunction(
+      () => {
+        const textarea = document.querySelector('textarea#textarea') as HTMLTextAreaElement | null;
+        return textarea !== null && !textarea.disabled;
+      },
+      { timeout: 60000 }
+    );
+    
+    // Additional wait to ensure response is fully rendered
+    await this.page.waitForTimeout(2000);
+  }
+}
 
 test.describe('Chat with File', () => {
   let chatPage: ChatPage;
+  let chatWithDoc: ChatWithDoc;
   
   const filePath = FILE_PATH;
 
@@ -14,6 +117,9 @@ test.describe('Chat with File', () => {
     
     chatPage = new ChatPage(page);
     await chatPage.goto();
+    
+    // Initialize chat with doc helper
+    chatWithDoc = new ChatWithDoc(page);
     
     // Wait for page to be fully loaded and chat input to be visible
     await page.waitForLoadState('networkidle');
@@ -123,6 +229,45 @@ test.describe('Chat with File', () => {
     // Keep browser open to see responses
     console.log('Both responses received. Keeping browser open for 5 seconds...');
     await page.waitForTimeout(5000);
+  });
+
+  test('TC-CHAT-FILE-002: Select File and Chat with File Content', async ({ page }) => {
+    // Use default selected model (no need to select Gemini)
+    
+    // Select the brain directly via helper
+    await selectBrainByName(page, DOC.brain);
+    
+    // Click on "Add prompt, agent and doc" button
+    await clickAddPromptAgentDoc(page);
+    
+    // Click on the Docs tab in the popup using helper
+    await clickDialogTabByLabel(page, 'Docs');
+    
+    // Select the specific doc
+    await chatWithDoc.selectDoc(DOC.doc);
+    
+    // Click on send chat and wait for response
+    await chatWithDoc.sendChatAndWaitForResponse(DOC.prompt);
+  });
+
+  test('TC-CHAT-FILE-004: Search File and Chat with File Content', async ({ page }) => {
+    // Select the brain directly via helper
+    await selectBrainByName(page, DOC.brain);
+    
+    // Click on "Add prompt, agent and doc" button
+    await clickAddPromptAgentDoc(page);
+    
+    // Click on the Docs tab in the popup using helper
+    await clickDialogTabByLabel(page, 'Docs');
+    
+    // Search for the specific doc
+    await searchInDialog(page, DOC.doc, 'Docs');
+    
+    // Select the doc from search results
+    await chatWithDoc.selectDoc(DOC.doc);
+    
+    // Click on send chat and wait for response
+    await chatWithDoc.sendChatAndWaitForResponse(DOC.prompt);
   });
 });
 

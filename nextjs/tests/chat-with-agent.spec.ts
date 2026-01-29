@@ -1,7 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { login } from './helpers/auth-helpers';
 import { ROUTES, AGENT } from './helpers/test-data';
-import { selectBrainByName, clickDialogTabByLabel, clickAddPromptAgentDoc } from './helpers/brain-helper';
+import { selectBrainByName, clickDialogTabByLabel, clickAddPromptAgentDoc, searchInDialog } from './helpers/brain-helper';
 
 /**
  * Chat with Agent helpers (scoped to this test file)
@@ -137,6 +137,26 @@ test.describe('Chat with Agent', () => {
     await clickDialogTabByLabel(page, 'Agents');
     
     // Select "Blog Topic Generator" agent
+    await chatWithAgent.selectAgent(AGENT.agent);
+    
+    // Write a prompt and wait for response
+    await chatWithAgent.sendPromptAndWaitForResponse(AGENT.prompt);
+  });
+
+  test('TC-CHAT-AGENT-002: Search Agent and Chat with Agent Content', async () => {
+    // Select the brain directly via helper
+    await selectBrainByName(page, AGENT.brain);
+    
+    // Click on "Add prompt, agent and doc" button
+    await clickAddPromptAgentDoc(page);
+    
+    // Click on the agent tab in the popup using helper
+    await clickDialogTabByLabel(page, 'Agents');
+    
+    // Search for the specific agent
+    await searchInDialog(page, AGENT.agent, 'Agents');
+    
+    // Select the agent from search results
     await chatWithAgent.selectAgent(AGENT.agent);
     
     // Write a prompt and wait for response

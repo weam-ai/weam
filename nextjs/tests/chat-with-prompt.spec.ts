@@ -1,7 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { login } from './helpers/auth-helpers';
 import { ROUTES, PROMPT } from './helpers/test-data';
-import { selectBrainByName, clickDialogTabByLabel, clickAddPromptAgentDoc } from './helpers/brain-helper';
+import { selectBrainByName, clickDialogTabByLabel, clickAddPromptAgentDoc, searchInDialog } from './helpers/brain-helper';
 
 /**
  * Chat with Prompt helpers (scoped to this test file)
@@ -133,6 +133,26 @@ test.describe('Chat with Prompt', () => {
     // Click on send chat and wait for response
     await chatWithPrompt.sendChatAndWaitForResponse();
     await page.waitForTimeout(2000);
+  });
+
+  test('TC-CHAT-PROMPT-002: Search Prompt and Chat with Prompt Content', async () => {
+    // Select the brain directly via helper
+    await selectBrainByName(page, PROMPT.brain);
+    
+    // Click on "Add prompt, agent and doc" button
+    await clickAddPromptAgentDoc(page);
+    
+    // Click on the prompt tab in the popup using helper
+    await clickDialogTabByLabel(page, 'Prompts');
+    
+    // Search for the specific prompt
+    await searchInDialog(page, PROMPT.prompt, 'Prompts');
+    
+    // Select the prompt from search results
+    await chatWithPrompt.selectPrompt(PROMPT.prompt);
+    
+    // Click on send chat and wait for response
+    await chatWithPrompt.sendChatAndWaitForResponse();
   });
 });
 

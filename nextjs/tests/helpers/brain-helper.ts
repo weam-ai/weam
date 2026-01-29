@@ -85,5 +85,38 @@ export async function clickAddPromptAgentDoc(page: Page) {
   await page.waitForTimeout(500);
 }
 
+/**
+ * Search for a file/doc in the dialog search input.
+ * @param page Playwright page object
+ * @param searchText Text to search for
+ * @param tabType Type of tab: "Docs" | "Prompts" | "Agents" (default: "Docs")
+ */
+export async function searchInDialog(page: Page, searchText: string, tabType: string = 'Docs') {
+  const dialog = page.locator('[role="dialog"]');
+  await expect(dialog).toBeVisible({ timeout: 10000 });
+
+  // Find the search input based on tab type
+  let searchInput;
+  if (tabType === 'Docs') {
+    searchInput = dialog.locator('input#searchDocs').or(
+      dialog.getByPlaceholder('Search Docs')
+    );
+  } else if (tabType === 'Prompts') {
+    searchInput = dialog.locator('input#searchPrompts').or(
+      dialog.getByPlaceholder('Search Prompts')
+    );
+  } else if (tabType === 'Agents') {
+    searchInput = dialog.locator('input#searchBots').or(
+      dialog.getByPlaceholder('Search Agents')
+    );
+  } else {
+    throw new Error(`Unknown tab type: ${tabType}`);
+  }
+
+  await expect(searchInput).toBeVisible({ timeout: 10000 });
+  await searchInput.fill(searchText);
+  await page.waitForTimeout(1000); // Wait for search results to load
+}
+
 
 

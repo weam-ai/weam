@@ -66,4 +66,10 @@ export const PROMPT = {
   prompt: 'Landing Page Headlines',
 };
 
+export const DOC = {
+  brain: 'AI News',
+  prompt: 'Summarize this document',
+  doc: 'Digital Conference 2024.docx',
+};
+
 
