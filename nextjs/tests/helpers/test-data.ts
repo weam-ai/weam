@@ -55,4 +55,15 @@ export const TEST_MESSAGES = {
   fileQuestion2: 'Can you summarize the key points?',
 };
 
+export const AGENT = {
+  brain: 'AI News',
+  agent: 'Blog Topic Generator',
+  prompt: 'Write a blog on agentic ai',
+};
+
+export const PROMPT = {
+  brain: 'AI News',
+  prompt: 'Landing Page Headlines',
+};
+
 

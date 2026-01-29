@@ -182,7 +182,7 @@ test.describe.serial('Brain Management', () => {
     updatedBrainName = `Updated Brain ${timestamp}`;
   });
 
-  test('TC-BRAIN-001: Create a new Private Brain', async () => {
+  test('TC-BRAIN-CREATE: Create a new Private Brain', async () => {
     await brainSidebar.createBrain(brainName);
     // await brainSidebar.expectBrainVisible(brainName);
   });
