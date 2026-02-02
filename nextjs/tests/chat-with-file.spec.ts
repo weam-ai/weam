@@ -1,6 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
 import { ChatPage } from './helpers/page-objects';
-import { login } from './helpers/auth-helpers';
 import { FILE_PATH, TEST_MESSAGES, DOC } from './helpers/test-data';
 import { selectBrainByName, clickDialogTabByLabel, clickAddPromptAgentDoc, searchInDialog } from './helpers/brain-helper';
 
@@ -112,8 +111,7 @@ test.describe('Chat with File', () => {
   const filePath = FILE_PATH;
 
   test.beforeEach(async ({ page }) => {
-    // Login before each test
-    await login(page);
+    // Use saved authentication state from global setup (no login needed)
     
     chatPage = new ChatPage(page);
     await chatPage.goto();

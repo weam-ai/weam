@@ -1,5 +1,4 @@
 import { test, expect, Page } from '@playwright/test';
-import { login } from './helpers/auth-helpers';
 import { ROUTES, AGENT } from './helpers/test-data';
 import { selectBrainByName, clickDialogTabByLabel, clickAddPromptAgentDoc, searchInDialog } from './helpers/brain-helper';
 
@@ -115,9 +114,7 @@ test.describe('Chat with Agent', () => {
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
 
-    // Login with configured test user
-    await login(page);
-
+    // Use saved authentication state from global setup (no login needed)
     // Go to main page where brains sidebar is visible
     await page.goto(ROUTES.main);
     await page.waitForLoadState('networkidle');

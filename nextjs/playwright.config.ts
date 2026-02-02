@@ -13,6 +13,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
+  /* Global setup to authenticate once and save session */
+  globalSetup: require.resolve('./tests/helpers/global-setup.ts'),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -37,12 +39,15 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     /* Video on failure */
     video: 'retain-on-failure',
+    /* Use saved authentication state from global setup for all tests */
+    storageState: 'test-results/.auth/storage-state.json',
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
+      name: 'chromium-login',
+      testMatch: /login\.spec\.ts/,
       use: { 
         ...devices['Desktop Chrome'],
         /* Run in headed mode to see browser */
@@ -51,6 +56,23 @@ export default defineConfig({
         launchOptions: {
           slowMo: 100, // Slow down operations by 100ms for better visibility
         },
+        /* Do NOT use saved state for login tests - they need to test login */
+        storageState: undefined,
+      },
+    },
+    {
+      name: 'chromium',
+      testMatch: /.*\.spec\.ts/,
+      testIgnore: /login\.spec\.ts/,
+      use: { 
+        ...devices['Desktop Chrome'],
+        /* Run in headed mode to see browser */
+        headless: false,
+        /* Slower actions for better visibility */
+        launchOptions: {
+          slowMo: 100, // Slow down operations by 100ms for better visibility
+        },
+        /* Use saved authentication state from global setup (inherited from use above) */
       },
     },
 

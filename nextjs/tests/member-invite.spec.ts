@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { MembersSettingsPage, InviteMemberModal } from './helpers/page-objects';
-import { login } from './helpers/auth-helpers';
 import { TEST_EMAILS, ROLES } from './helpers/test-data';
 
 test.describe('Member Invitation', () => {
@@ -8,8 +7,7 @@ test.describe('Member Invitation', () => {
   let inviteMemberModal: InviteMemberModal;
 
   test.beforeEach(async ({ page }) => {
-    // Login before each test (requires admin/manager permissions)
-    await login(page);
+    // Use saved authentication state from global setup (no login needed)
     
     membersSettingsPage = new MembersSettingsPage(page);
     inviteMemberModal = new InviteMemberModal(page);

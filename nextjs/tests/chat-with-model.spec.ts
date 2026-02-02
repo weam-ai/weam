@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { ChatPage } from './helpers/page-objects';
-import { login } from './helpers/auth-helpers';
 import { TEST_MESSAGES, MODEL } from './helpers/test-data';
 
 test.describe('Chat with Selected Model', () => {
   let chatPage: ChatPage;
 
   test.beforeEach(async ({ page }) => {
-    // Login before each test
-    await login(page);
+    // Use saved authentication state from global setup
+    // No need to login - session is already established
     
     chatPage = new ChatPage(page);
     await chatPage.goto();

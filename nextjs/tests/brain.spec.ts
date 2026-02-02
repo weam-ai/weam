@@ -1,5 +1,4 @@
 import { test, expect, Page } from '@playwright/test';
-import { login } from './helpers/auth-helpers';
 import { ROUTES } from './helpers/test-data';
 
 /**
@@ -166,9 +165,7 @@ test.describe.serial('Brain Management', () => {
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
 
-    // Login with configured test user
-    await login(page);
-
+    // Use saved authentication state from global setup (no login needed)
     // Go to main page where brains sidebar is visible
     await page.goto(ROUTES.main);
     await page.waitForLoadState('networkidle');
