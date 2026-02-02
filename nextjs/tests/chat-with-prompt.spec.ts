@@ -115,7 +115,7 @@ test.describe('Chat with Prompt', () => {
     chatWithPrompt = new ChatWithPrompt(page);
   });
 
-  test('TC-CHAT-PROMPT-001: Select brain, prompt and chat', async () => {
+  test('SELECT-PROMPT-CHAT: Select brain, prompt and chat', async () => {
     // Select the brain directly via helper
     await selectBrainByName(page, PROMPT.brain);
     
@@ -135,7 +135,7 @@ test.describe('Chat with Prompt', () => {
     await page.waitForTimeout(2000);
   });
 
-  test('TC-CHAT-PROMPT-002: Search Prompt and Chat with Prompt Content', async () => {
+  test('SEARCH-PROMPT-CHAT: Search Prompt and Chat with Prompt Content', async () => {
     // Select the brain directly via helper
     await selectBrainByName(page, PROMPT.brain);
     

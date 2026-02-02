@@ -22,7 +22,7 @@ test.describe('Chat with Selected Model', () => {
     });
   });
 
-  test('TC-CHAT-GEMINI-002: Verify Model Selection', async ({ page }) => {
+  test('VERIFY-MODEL-SELECTION: Verify Model Selection', async ({ page }) => {
     // Wait for model selector to be available
     await page.waitForSelector('button[role="combobox"]', { timeout: 10000 });
     
@@ -56,7 +56,7 @@ test.describe('Chat with Selected Model', () => {
     // This is optional and depends on UI implementation
   });
 
-  test('TC-CHAT-GEMINI-003: Send Multiple Messages with Model', async ({ page }) => {
+  test('SEND-MULTIPLE-MESSAGES: Send Multiple Messages with Model', async ({ page }) => {
     // Wait for model selector
     await page.waitForSelector('button[role="combobox"]', { timeout: 10000 });
     

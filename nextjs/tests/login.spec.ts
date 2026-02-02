@@ -10,7 +10,7 @@ test.describe('Login Form Functionality', () => {
     await loginPage.goto();
   });
 
-  test('TC-LOGIN-001: Successful Login', async ({ page }) => {
+  test('SUCCESSFUL-LOGIN: Successful Login', async ({ page }) => {
     // Fill email and password fields
     await loginPage.fillEmail(TEST_USERS.valid.email);
     await loginPage.fillPassword(TEST_USERS.valid.password);
@@ -34,7 +34,7 @@ test.describe('Login Form Functionality', () => {
     await expect(authenticatedIndicator.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('TC-LOGIN-002: Login with Invalid Credentials', async ({ page }) => {
+  test('LOGIN-WITH-INVALID-CREDENTIALS: Login with Invalid Credentials', async ({ page }) => {
     // Fill with invalid credentials
     await loginPage.fillEmail(TEST_USERS.invalid.email);
     await loginPage.fillPassword(TEST_USERS.invalid.password);
@@ -55,7 +55,7 @@ test.describe('Login Form Functionality', () => {
     await expect(page).toHaveURL(ROUTES.login);
   });
 
-  test('TC-LOGIN-003: Login Form Validation', async ({ page }) => {
+  test('LOGIN-FORM-VALIDATION: Login Form Validation', async ({ page }) => {
     // Try to submit without filling fields
     await loginPage.submit();
     
@@ -81,7 +81,7 @@ test.describe('Login Form Functionality', () => {
     await expect(passwordError.first()).toBeVisible({ timeout: 5000 });
   });
 
-  test('TC-LOGIN-004: Email Field Auto-lowercase', async ({ page }) => {
+  test('EMAIL-FIELD-AUTO-LOWERCASE: Email Field Auto-lowercase', async ({ page }) => {
     const uppercaseEmail = 'TEST@EXAMPLE.COM';
     const lowercaseEmail = 'test@example.com';
     
@@ -98,7 +98,7 @@ test.describe('Login Form Functionality', () => {
     expect(emailValue.toLowerCase()).toBe(lowercaseEmail);
   });
 
-  test('TC-LOGIN-005: Forgot Password Link', async ({ page }) => {
+  test('FORGOT-PASSWORD-LINK: Forgot Password Link', async ({ page }) => {
     // Click forgot password link
     await loginPage.forgotPasswordLink.click();
     
@@ -106,7 +106,7 @@ test.describe('Login Form Functionality', () => {
     await expect(page).toHaveURL(/forgot-password/i);
   });
 
-  test('TC-LOGIN-006: Sign Up Link', async ({ page }) => {
+  test('SIGN-UP-LINK: Sign Up Link', async ({ page }) => {
     // Click sign up link
     await loginPage.signUpLink.click();
     

@@ -18,7 +18,7 @@ test.describe('Member Invitation', () => {
     await membersSettingsPage.goto();
   });
 
-  test('TC-INVITE-001: Invite Single Member', async ({ page }) => {
+  test('INVITE-SINGLE-MEMBER: Invite Single Member', async ({ page }) => {
     // Click Invite button
     await membersSettingsPage.inviteButton.click();
     
@@ -90,7 +90,7 @@ test.describe('Member Invitation', () => {
     await page.close();    
   });
 
-  test('TC-INVITE-002: Invite Multiple Members', async ({ page }) => {
+  test('INVITE-MULTIPLE-MEMBERS: Invite Multiple Members', async ({ page }) => {
     // Click Invite button
     await membersSettingsPage.inviteButton.click();
     await page.waitForTimeout(1000);
@@ -162,7 +162,7 @@ test.describe('Member Invitation', () => {
     await page.waitForTimeout(1000);
   });
 
-  test('TC-INVITE-003: Invite Member with Invalid Email', async ({ page }) => {
+  test('INVITE-MEMBER-WITH-INVALID-EMAIL: Invite Member with Invalid Email', async ({ page }) => {
     // Click Invite button
     await membersSettingsPage.inviteButton.click();
     await page.waitForTimeout(1000);
@@ -183,7 +183,7 @@ test.describe('Member Invitation', () => {
     // The chip should not be visible for invalid email
   });
 
-  test('TC-INVITE-004: Invite Member without Role Selection', async ({ page }) => {
+  test('INVITE-MEMBER-WITHOUT-ROLE-SELECTION: Invite Member without Role Selection', async ({ page }) => {
     // Click Invite button
     await membersSettingsPage.inviteButton.click();
     await page.waitForTimeout(1000);
@@ -218,7 +218,7 @@ test.describe('Member Invitation', () => {
     }
   });
 
-  test('TC-INVITE-005: Cancel Invitation', async ({ page }) => {
+  test('CANCEL-INVITATION: Cancel Invitation', async ({ page }) => {
     // Click Invite button
     await membersSettingsPage.inviteButton.click();
     await page.waitForTimeout(1000);

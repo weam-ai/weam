@@ -126,7 +126,7 @@ test.describe('Chat with Agent', () => {
     chatWithAgent = new ChatWithAgent(page);
   });
 
-  test('TC-CHAT-AGENT-001: Select brain, agent and chat', async () => {
+  test('SELECT-AGENT-CHAT: Select brain, agent and chat', async () => {
     // Select the brain directly via helper
     await selectBrainByName(page, AGENT.brain);
     
@@ -143,7 +143,7 @@ test.describe('Chat with Agent', () => {
     await chatWithAgent.sendPromptAndWaitForResponse(AGENT.prompt);
   });
 
-  test('TC-CHAT-AGENT-002: Search Agent and Chat with Agent Content', async () => {
+  test('SEARCH-AGENT-CHAT: Search Agent and Chat with Agent Content', async () => {
     // Select the brain directly via helper
     await selectBrainByName(page, AGENT.brain);
     

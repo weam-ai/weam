@@ -223,7 +223,7 @@ test.describe('Assign Prompt and Agent to Brain', () => {
     assignHelper = new AssignPromptAgent(page);
   });
 
-  test('TC-ASSIGN-001: Assign Agent to Brain', async () => {
+  test('ASSIGN-AGENT-TO-BRAIN: Assign Agent to Brain', async () => {
     // Click on "Agents and Prompt Library" button from sidebar footer
     await assignHelper.clickAgentsAndPromptLibrary();
     
@@ -237,7 +237,7 @@ test.describe('Assign Prompt and Agent to Brain', () => {
     await assignHelper.assignToBrain(AGENT.brain);
   });
 
-  test('TC-ASSIGN-002: Assign Prompt to Brain', async () => {
+  test('ASSIGN-PROMPT-TO-BRAIN: Assign Prompt to Brain', async () => {
     // Click on "Agents and Prompt Library" button from sidebar footer
     await assignHelper.clickAgentsAndPromptLibrary();
     

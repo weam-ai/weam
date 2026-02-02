@@ -130,7 +130,7 @@ test.describe('Chat with File', () => {
     });
   });
 
-  test('TC-CHAT-FILE-001: Upload File and Chat with File Content', async ({ page }) => {
+  test('UPLOAD-FILE-CHAT: Upload File and Chat with File Content', async ({ page }) => {
     // Use default selected model (no need to select Gemini)
     // Wait for chat input to be available
     const chatInput = page.getByPlaceholder(/chat with weam/i);
@@ -231,7 +231,7 @@ test.describe('Chat with File', () => {
     await page.waitForTimeout(5000);
   });
 
-  test('TC-CHAT-FILE-002: Select File and Chat with File Content', async ({ page }) => {
+  test('SELECT-FILE-CHAT: Select File and Chat with File Content', async ({ page }) => {
     // Use default selected model (no need to select Gemini)
     
     // Select the brain directly via helper
@@ -250,7 +250,7 @@ test.describe('Chat with File', () => {
     await chatWithDoc.sendChatAndWaitForResponse(DOC.prompt);
   });
 
-  test('TC-CHAT-FILE-004: Search File and Chat with File Content', async ({ page }) => {
+  test('SEARCH-FILE-CHAT: Search File and Chat with File Content', async ({ page }) => {
     // Select the brain directly via helper
     await selectBrainByName(page, DOC.brain);
     

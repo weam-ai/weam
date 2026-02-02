@@ -187,12 +187,12 @@ test.describe.serial('Brain Management', () => {
     // await brainSidebar.expectBrainVisible(brainName);
   });
 
-  test('TC-BRAIN-002: Rename an existing Brain', async () => {
+  test('RENAME-BRAIN: Rename an existing Brain', async () => {
     await brainSidebar.renameBrain(brainName, updatedBrainName);
     // await brainSidebar.expectBrainVisible('AI News');
   });
 
-  test('TC-BRAIN-003: Archive a Brain', async () => {
+  test('ARCHIVE-BRAIN: Archive a Brain', async () => {
     await brainSidebar.archiveBrain(updatedBrainName);
     // await brainSidebar.expectBrainNotVisible('Test Brain 1769590615631');
   });
