@@ -18,12 +18,32 @@ export const TEST_USERS = {
   },
 };
 
-export const TEST_EMAILS = {
-  invite1: 'newuser1@yopmail.com',
-  invite2: 'newuser2@example.com',
-  invite3: 'testuser@example.com',
-  invalid: 'invalid-email',
+/**
+ * Generate unique email addresses for testing
+ * Uses timestamp and random number to ensure uniqueness
+ */
+const generateUniqueEmail = (prefix: string = 'test'): string => {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 10000);
+  return `${prefix}-${timestamp}@yopmail.com`;
 };
+
+/**
+ * Get unique test emails - generates new emails each time it's called
+ * Use this function when you need fresh emails within a test
+ */
+export const getTestEmails = () => ({
+  invite1: generateUniqueEmail('newuser'),
+  invite2: generateUniqueEmail('demouser'),
+  invite3: generateUniqueEmail('testuser'),
+  invalid: 'invalid-email',
+});
+
+/**
+ * Test emails - generates unique emails on each test run
+ * Emails remain consistent within a single test execution
+ */
+export const TEST_EMAILS = getTestEmails();
 
 export const GEMINI_MODELS = [
   'gemini-2.0-flash',
