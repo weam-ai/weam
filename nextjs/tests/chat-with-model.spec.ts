@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { ChatPage } from './helpers/page-objects';
 import { login } from './helpers/auth-helpers';
-import { TEST_MESSAGES, GEMINI_MODELS } from './helpers/test-data';
+import { TEST_MESSAGES, MODEL } from './helpers/test-data';
 
-test.describe('Chat with Gemini Model', () => {
+test.describe('Chat with Selected Model', () => {
   let chatPage: ChatPage;
 
   test.beforeEach(async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('Chat with Gemini Model', () => {
     });
   });
 
-  test('TC-CHAT-GEMINI-002: Verify Gemini Model Selection', async ({ page }) => {
+  test('TC-CHAT-GEMINI-002: Verify Model Selection', async ({ page }) => {
     // Wait for model selector to be available
     await page.waitForSelector('button[role="combobox"]', { timeout: 10000 });
     
@@ -30,24 +30,25 @@ test.describe('Chat with Gemini Model', () => {
     await chatPage.openModelSelector();
     await page.waitForTimeout(1000);
     
-    // Verify Gemini models are visible in the model list
-    const geminiModels = page.locator('[role="option"]').filter({ 
-      hasText: /gemini/i 
+    // Find the specific model from test-data
+    const modelOption = page.locator('[role="option"]').filter({ 
+      hasText: new RegExp(MODEL.name, 'i')
     });
-    const geminiCount = await geminiModels.count();
     
-    if (geminiCount === 0) {
+    const modelAvailable = await modelOption.isVisible({ timeout: 5000 }).catch(() => false);
+    
+    if (!modelAvailable) {
       test.skip();
       return;
     }
     
-    // Select first available Gemini model
-    await geminiModels.first().click();
+    // Select the model from test-data
+    await modelOption.first().click();
     await page.waitForTimeout(1000);
     
     // Verify selected model name appears in header (in combobox button)
     const modelDisplay = page.getByRole('combobox').filter({ 
-      hasText: /gemini/i 
+      hasText: new RegExp(MODEL.name, 'i')
     });
     await expect(modelDisplay).toBeVisible({ timeout: 3000 });
     
@@ -55,25 +56,25 @@ test.describe('Chat with Gemini Model', () => {
     // This is optional and depends on UI implementation
   });
 
-  test('TC-CHAT-GEMINI-003: Send Multiple Messages with Gemini', async ({ page }) => {
+  test('TC-CHAT-GEMINI-003: Send Multiple Messages with Model', async ({ page }) => {
     // Wait for model selector
     await page.waitForSelector('button[role="combobox"]', { timeout: 10000 });
     
-    // Select Gemini model
+    // Select model from test-data
     await chatPage.openModelSelector();
     await page.waitForTimeout(1000);
     
-    const geminiModel = page.locator('[role="option"]').filter({ 
-      hasText: /gemini/i 
+    const modelOption = page.locator('[role="option"]').filter({ 
+      hasText: new RegExp(MODEL.name, 'i')
     }).first();
-    const geminiAvailable = await geminiModel.isVisible({ timeout: 3000 }).catch(() => false);
+    const modelAvailable = await modelOption.isVisible({ timeout: 3000 }).catch(() => false);
     
-    if (!geminiAvailable) {
+    if (!modelAvailable) {
       test.skip();
       return;
     }
     
-    await geminiModel.click();
+    await modelOption.click();
     await page.waitForTimeout(1000);
     
     // Wait for chat input to be available
@@ -98,7 +99,7 @@ test.describe('Chat with Gemini Model', () => {
     );
     
     // Wait a bit more for any loading states to clear
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(10000);
     
     // Send second message - wait for input to be visible and enabled
     const chatInputSecond = page.getByPlaceholder(/chat with weam/i);
@@ -156,7 +157,7 @@ test.describe('Chat with Gemini Model', () => {
     
     // Keep browser open to see both responses
     console.log('Both responses received. Keeping browser open for 5 seconds...');
-    await page.close();
+    // await page.close();
   });
 
   

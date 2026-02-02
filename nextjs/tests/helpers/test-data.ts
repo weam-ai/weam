@@ -50,7 +50,7 @@ export const ROUTES = {
 
 export const TEST_MESSAGES = {
   simple: 'Hello, this is a test message',
-  question: 'What is AI?',
+  question: 'What is AI? Write 100 word',
   followUp: 'Tell me more',
   fileQuestion1: 'What is the main topic of this document?',
   fileQuestion2: 'Can you summarize the key points?',
@@ -71,6 +71,11 @@ export const DOC = {
   brain: 'AI News',
   prompt: 'Summarize this document',
   doc: 'Digital Conference 2024.docx',
+};
+
+// Model to use for testing (can be changed in test-data.ts)
+export const MODEL = {
+  name: 'Gemini 2.0 Flash',
 };
 
 
