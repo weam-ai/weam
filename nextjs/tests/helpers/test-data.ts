@@ -45,6 +45,7 @@ export const ROUTES = {
   main: '/',
   chat: '/chat',
   settingsMembers: '/settings/members',
+  customTemplates: '/custom-templates',
 };
 
 export const TEST_MESSAGES = {
