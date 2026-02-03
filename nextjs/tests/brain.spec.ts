@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { ROUTES } from './helpers/test-data';
+import { ROUTES, BASE_URL } from './helpers/test-data';
 
 /**
  * Brain sidebar and brain management helpers (scoped to this test file)
@@ -192,6 +192,67 @@ test.describe.serial('Brain Management', () => {
   test('ARCHIVE-BRAIN: Archive a Brain', async () => {
     await brainSidebar.archiveBrain(updatedBrainName);
     // await brainSidebar.expectBrainNotVisible('Test Brain 1769590615631');
+  });
+
+  test('REMOVE-ARCHIVED-BRAIN: Remove Archived Brain', async ({ page }) => {
+    // Step 1: Navigate to settings/data-controls?tab=brain
+    const settingsUrl = `${BASE_URL}/settings/data-controls?tab=brain`;
+    await page.goto(settingsUrl);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Step 2: Click on "Delete Brain" button
+    // Find the first table row, get the last td, then click the second button in that td (Delete)
+    const tableRow = page.locator('table tbody tr').first();
+    await expect(tableRow).toBeVisible({ timeout: 10000 });
+
+    const lastTd = tableRow.locator('td').last();
+    await expect(lastTd).toBeVisible({ timeout: 5000 });
+
+    const deleteBrainButton = lastTd.locator('button').nth(1); // Second button (0-indexed)
+    await expect(deleteBrainButton).toBeVisible({ timeout: 10000 });
+    await deleteBrainButton.scrollIntoViewIfNeeded();
+    await deleteBrainButton.click();
+    await page.waitForTimeout(2000);
+
+    // Step 3: Wait for popup/dialog to appear
+    const confirmDialog = page.locator('[role="dialog"]')
+      .or(page.locator('div').filter({ hasText: /are you sure/i }));
+
+    // Step 4: Click on "Delete" button in the popup
+    const deleteButton = confirmDialog.locator('button.btn.btn-red').filter({
+      hasText: /Delete/i,
+    });
+
+    await deleteButton.click();
+
+    // Wait for dialog to close
+    await page.waitForTimeout(2000);
+  });
+
+  test('RESTORE-ARCHIVED-BRAIN: Restore Archived Brain', async ({ page }) => {
+    // Step 1: Navigate to settings/data-controls?tab=brain
+    const settingsUrl = `${BASE_URL}/settings/data-controls?tab=brain`;
+    await page.goto(settingsUrl);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Step 2: Click on "Restore Brain" button
+    // Find the first table row, get the last td, then click the first button in that td (Restore)
+    const tableRow = page.locator('table tbody tr').first();
+    await expect(tableRow).toBeVisible({ timeout: 10000 });
+
+    const lastTd = tableRow.locator('td').last();
+    await expect(lastTd).toBeVisible({ timeout: 5000 });
+
+    const restoreBrainButton = lastTd.locator('button').first(); // First button (Restore)
+    await expect(restoreBrainButton).toBeVisible({ timeout: 10000 });
+    await restoreBrainButton.scrollIntoViewIfNeeded();
+    await restoreBrainButton.click();
+    await page.waitForTimeout(2000); 
+
+    // Wait for dialog to close
+    await page.waitForTimeout(2000);
   });
 });
 
