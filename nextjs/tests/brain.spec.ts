@@ -5,10 +5,14 @@ import { ROUTES, BASE_URL } from './helpers/test-data';
  * Brain sidebar and brain management helpers (scoped to this test file)
  */
 class BrainSidebar {
-  readonly page: Page;
+  private readonly page: Page;
 
   constructor(page: Page) {
     this.page = page;
+  }
+
+  getPage() {
+    return this.page;
   }
 
   /**
@@ -194,7 +198,10 @@ test.describe.serial('Brain Management', () => {
     // await brainSidebar.expectBrainNotVisible('Test Brain 1769590615631');
   });
 
-  test('REMOVE-ARCHIVED-BRAIN: Remove Archived Brain', async ({ page }) => {
+  test('REMOVE-ARCHIVED-BRAIN: Remove Archived Brain', async () => {
+    // Reuse the same page instance created in beforeAll (avoid opening a second browser)
+    const page = brainSidebar.getPage();
+
     // Step 1: Navigate to settings/data-controls?tab=brain
     const settingsUrl = `${BASE_URL}/settings/data-controls?tab=brain`;
     await page.goto(settingsUrl);
@@ -230,7 +237,10 @@ test.describe.serial('Brain Management', () => {
     await page.waitForTimeout(2000);
   });
 
-  test('RESTORE-ARCHIVED-BRAIN: Restore Archived Brain', async ({ page }) => {
+  test('RESTORE-ARCHIVED-BRAIN: Restore Archived Brain', async () => {
+    // Reuse the same page instance created in beforeAll (avoid opening a second browser)
+    const page = brainSidebar.getPage();
+
     // Step 1: Navigate to settings/data-controls?tab=brain
     const settingsUrl = `${BASE_URL}/settings/data-controls?tab=brain`;
     await page.goto(settingsUrl);
