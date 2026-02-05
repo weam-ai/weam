@@ -66,15 +66,40 @@ const RenderDocument = ({ file, customGptId, customGptTitle, gptCoverImage }) =>
     )
 }
 
-const ChatUploadedFiles = React.memo(({ media, customGptId, customGptTitle, gptCoverImage }) => {
-    if (!media || isEmptyObject(media)) return null;
+const RenderWorkflowTag = ({ workflow }) => {
+    if (!workflow || !workflow.name) return null;
+    
+    return (
+        <div className="flex items-center gap-2 relative border border-b12 group-hover:border-b10 p-2 rounded-10">
+            <div className="flex items-center gap-2">
+                <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-b12 text-[11px] text-b5 font-medium">
+                    WF
+                </div>
+                <p className="text-font-14 font-medium truncate max-w-[180px]">
+                    {workflow.name}
+                </p>
+                <span className="block text-[11px] text-b2 bg-b12 px-2 py-[2px] rounded-lg">
+                    Workflow
+                </span>
+            </div>
+        </div>
+    );
+};
 
-    const hasDocument = Array.isArray(media) && media.some((file: UploadedFileType) => file.isDocument);
+const ChatUploadedFiles = React.memo(({ media, customGptId, customGptTitle, gptCoverImage, workflow }) => {
+    const hasMedia = media && !isEmptyObject(media) && media.length > 0;
+    const hasDocument = hasMedia && Array.isArray(media) && media.some((file: UploadedFileType) => file.isDocument);
+    const hasWorkflow = workflow && workflow.name;
+    
+    if (!hasMedia && !customGptId && !hasWorkflow) return null;
     
     return (
         <>
-            {(customGptId && !hasDocument) || (media && media.length > 0) ? (
-                <div className="flex flex-wrap w-3/4">
+            {(customGptId && !hasDocument) || hasMedia || hasWorkflow ? (
+                <div className="flex flex-wrap w-3/4 gap-2">
+                    {hasWorkflow && (
+                        <RenderWorkflowTag workflow={workflow} />
+                    )}
                     {customGptId && !hasDocument ? (
                         customGptId?.title || customGptTitle ? (
                             <div className="flex items-center gap-2 relative border border-b12 group-hover:border-b10 p-2 rounded-10">
@@ -97,7 +122,7 @@ const ChatUploadedFiles = React.memo(({ media, customGptId, customGptTitle, gptC
                             </div>
                         ) : null
                     ) : (
-                        media.map((file: UploadedFileType) => {
+                        hasMedia && media.map((file: UploadedFileType) => {
                             const isImage = file?.mime_type?.split('/')[0] === 'image';
                             return isImage ? (
                                 <RenderImage file={file} key={file._id}/>

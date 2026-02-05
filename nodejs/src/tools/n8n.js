@@ -49,7 +49,7 @@ async function makeN8nRequest(endpoint, apiKey, params = null, jsonData = null, 
             response = await axios.patch(url, jsonData, { headers, params, timeout: 60000 });
         }
 
-        console.log(`Successfully received response from n8n API: ${endpoint}, url: ${url}`, "data");
+        console.log(`Successfully received response from n8n Method: ${method}, Url: ${url}`);
         return response.data;
     } catch (error) {
         const errorDetails = {
@@ -654,7 +654,7 @@ function detectWorkflowTrigger(workflowData) {
 
     const triggerType = triggerNodeTypes[triggerNode.type] || 'unknown';
     let triggerPath = null;
-    let httpMethod = 'POST';
+    let httpMethod = 'GET';
 
     // Extract webhook path
     if (triggerType === 'webhook') {
@@ -665,7 +665,7 @@ function detectWorkflowTrigger(workflowData) {
                        '';
         httpMethod = triggerNode.parameters?.httpMethod || 
                     triggerNode.parameters?.options?.httpMethod || 
-                    'POST';
+                    'GET';
     }
 
     // Extract form ID
@@ -770,7 +770,7 @@ async function executeN8nWorkflow(userId = null, workflowId, inputData = null) {
         try {
             // Construct webhook URL
             const webhookUrl = `${baseUrl}/webhook/${trigger.path}`;
-            const httpMethod = trigger.httpMethod || 'POST';
+            const httpMethod = trigger.httpMethod || 'GET';
 
             // Prepare request body
             const requestBody = inputData ? (Array.isArray(inputData) ? inputData : [inputData]) : null;
@@ -785,12 +785,12 @@ async function executeN8nWorkflow(userId = null, workflowId, inputData = null) {
             if (httpMethod === 'GET') {
                 response = await axios.get(webhookUrl, {
                     headers,
-                    params: requestBody,
                     timeout: 60000
                 });
             } else {
                 response = await axios.post(webhookUrl, requestBody, {
                     headers,
+                    params: requestBody,
                     timeout: 60000
                 });
             }

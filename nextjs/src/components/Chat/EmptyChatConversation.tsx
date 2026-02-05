@@ -57,6 +57,7 @@ const EmptyChatQuestion = ({ conversation }: EmptyChatQuestionProps) => {
                                         customGptId={conversation?.customGptId}
                                         customGptTitle={conversation?.customGptTitle}
                                         gptCoverImage={conversation?.coverImage}
+                                        workflow={conversation?.workflow}
                                     />
                                     <EmptyChatProAgentQuestion conversation={conversation} />
                                 </div>

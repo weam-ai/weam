@@ -1690,31 +1690,24 @@ async function toolExecutor(data, socket) {
     global.currentSocket = socket;
 
     try {
-        // If a workflow tag is present on the message, trigger the n8n execute MCP tool in background.
-        if (data.workflow && data.workflow.id) {
-            console.log("🚀 ~ toolExecutor ~ data111:", data)
-            try {
-                const mcpTools = await getCachedMCPClient();
-                const executeTool = mcpTools.find((t) => t.name === 'execute_n8n_workflow');
-                if (executeTool) {
-                    const userId = data.user?.id
-                    const workflowId = data.workflow.id 
-                    const inputPayload = {
-                        user_id: userId ? String(userId) : undefined,
-                        workflow_id: String(workflowId),
-                    };
-                    console.log("🚀 ~ toolExecutor ~ inputPayload:", inputPayload)
-                    // Fire-and-forget background execution; errors are logged but do not block chat.
-                    executeTool.invoke(inputPayload).catch((err) => {
-                        logger.error('Error executing n8n workflow via MCP:', err?.message || err);
-                    });
-                } else {
-                    logger.warn("execute_n8n_workflow MCP tool not found in loaded tools");
-                }
-            } catch (mcpError) {
-                logger.error('Failed to initialize or invoke execute_n8n_workflow MCP tool:', mcpError?.message || mcpError);
-            }
-        }
+        // If a workflow tag is present on the message:
+        // 1) Enrich the user query with workflow id & name (so the LLM sees clear instructions)
+        // 2) Trigger the n8n execute MCP tool in the background.
+        // if (data.workflow && data.workflow.id) {
+        //     const wfId = String(data.workflow.id);
+        //     const wfName = data.workflow.name || '';
+
+        //     // 1) Enrich the query text that goes to the model
+        //     const baseQuery = data.query || '';
+        //     const workflowInstruction =
+        //         `\n\n[WORKFLOW_EXECUTION]\n` +
+        //         `workflow_id: ${wfId}\n` +
+        //         (wfName ? `workflow_name: ${wfName}\n` : '') +
+        //         `The user has tagged this workflow to be executed. ` +
+        //         `Execute this workflow in the background and incorporate its result into your answer when appropriate.`;
+
+        //     data.query = `${baseQuery}${workflowInstruction}`;
+        // }
 
         let apiKey, model, app, agentDetails = null;
 
@@ -1733,7 +1726,9 @@ async function toolExecutor(data, socket) {
             user: data.user,
             companyId: data.companyId || data.user?.company?.id,
             promptId: data.promptId,
-            customGptId: data.customGptId
+            customGptId: data.customGptId,
+            workflow: data.workflow
+
         };
         // Inject Ollama baseUrl from company settings when applicable
         if (mappedProvider === AI_MODAL_PROVIDER.OLLAMA) {

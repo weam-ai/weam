@@ -118,6 +118,13 @@ const schema = new Schema(
                 domain: { type: String },
             }
         ],
+        workflow: {
+            db_id: { type: String },
+            id: { type: String }, // n8n workflow ID
+            name: { type: String },
+            brainId: { type: String },
+            isShare: { type: Boolean },
+        },
     },
     { timestamps: true },
 );

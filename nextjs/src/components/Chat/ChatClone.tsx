@@ -12,7 +12,7 @@ import UploadFileInput from '@/components/Chat/UploadFileInput';
 import TabGptList from '@/components/Chat/TabGptList';
 import Image from 'next/image';
 import defaultCustomGptImage from '../../../public/defaultgpt.jpg';
-import { BrainAgentType } from '@/types/brain';
+import { BrainAgentType, WorkflowType } from '@/types/brain';
 import { BrainPromptType } from '@/types/brain';
 import { GPTTypes, MESSAGE_CREDIT_LIMIT_REACHED } from '@/utils/constant';
 import {
@@ -87,7 +87,7 @@ import SeoProAgentResponse from '@/components/ProAgentAnswer/SeoProAgentResponse
 import routes from '@/utils/routes';
 import useChatMember from '@/hooks/chat/useChatMember';
 import { useThunderBoltPopup } from '@/hooks/conversation/useThunderBoltPopup';
-import ChatInputFileLoader, { ChatWebSearchLoader, ChatImageGenerationLoader } from '@/components/Loader/ChatInputFileLoader';
+import ChatInputFileLoader, { ChatWebSearchLoader } from '@/components/Loader/ChatInputFileLoader';
 import useMCP from '@/hooks/mcp/useMCP';
 import ToolsConnected from './ToolsConnected';
 import SearchIcon from '@/icons/Search';
@@ -97,7 +97,6 @@ import { usePageOperations } from '@/hooks/chat/usePageOperations';
 import Plus from '@/icons/Plus';
 import BookMarkIcon from '@/icons/Bookmark';
 import useWorkflow from '@/hooks/workflow/useWorkflow';
-import { WorkflowType } from '@/types/brain';
 
 const defaultContext: SelectedContextType = {
     type: null,
@@ -130,8 +129,8 @@ const ChatPage = memo(() => {
     const { toolStates, setToolStates } = useMCP();
     const [showAgentList, setShowAgentList] = useState(false);
     const [showPromptList, setShowPromptList] = useState(false);
-    const [searchValue, setSearchValue] = useState('');
     const [showWorkflowList, setShowWorkflowList] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
     const [showPlusMenu, setShowPlusMenu] = useState(false);
     const [showBookmarkDialog, setShowBookmarkDialog] = useState(false);
     const [isEnhanceLoading, setIsEnhanceLoading] = useState(false);
@@ -182,6 +181,7 @@ const ChatPage = memo(() => {
             ) {
                 setShowAgentList(false);
                 setShowPromptList(false);
+                setShowWorkflowList(false);
             }
             if (
                 plusMenuRef.current &&
@@ -219,35 +219,6 @@ const ChatPage = memo(() => {
         }
     }, []);
 
-    // Initialize selectedWorkflow from initialMessage.workflow when component mounts
-    // This ensures the workflow tag persists when navigating from ChatInput to ChatClone
-    useEffect(() => {
-        const workflowFromInitialMessage = (initialMessage as any)?.workflow;
-        if (workflowFromInitialMessage && !selectedWorkflow) {
-            // Reconstruct WorkflowType from initialMessage.workflow data
-            const workflowData = workflowFromInitialMessage;
-            const workflowFromInitial: WorkflowType = {
-                _id: workflowData.db_id || '',
-                name: workflowData.name || '',
-                description: '',
-                isActive: true,
-                user: {} as any,
-                brain: {
-                    _id: workflowData.brainId || '',
-                    id: workflowData.brainId || '',
-                    title: '',
-                    slug: '',
-                } as any,
-                n8nWorkflowId: workflowData.id || '', // This is the n8n workflow ID
-                createdAt: '',
-                updatedAt: '',
-                executionCount: 0,
-                isShare: workflowData.isShare || false,
-            };
-            setSelectedWorkflow(workflowFromInitial);
-        }
-    }, [initialMessage]);
-
     const handleApiKeyRequired = useCallback((data) => {
         if (data.message) {
             Toast(data.message, 'error');
@@ -259,14 +230,9 @@ const ChatPage = memo(() => {
         const { value } = event.target;
         setText(value);
         onQueryTyping();
-
-        const startsWithAt = value.startsWith('@');
-        const startsWithSlash = value.startsWith('/');
-        const startsWithHash = value.startsWith('#');
-
-        setShowAgentList(startsWithAt);
-        setShowPromptList(startsWithSlash);
-        setShowWorkflowList(startsWithHash);
+        setShowAgentList(value.startsWith('@'));
+        setShowPromptList(value.startsWith('/'));
+        setShowWorkflowList(value.startsWith('#'));
     };
 
     const handleInputChanges = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,11 +240,8 @@ const ChatPage = memo(() => {
     };
 
     const handleWorkflowSelection = (workflow: WorkflowType) => {
-        console.log("🚀 ~ handleWorkflowSelection ~ workflow:", workflow)
-        // Only tag the workflow in local state and input text.
-        // Do NOT add it to media/clone; backend uses the separate `workflow` field.
+        setText(`Execute this workflow: workflow_id: ${workflow.n8nWorkflowId}\n workflow_name: ${workflow.name}\n I have tagged this workflow to be executed. Execute this workflow in the background and incorporate its result into your answer.`);
         setSelectedWorkflow(workflow);
-        setMessage(``);
         setShowWorkflowList(false);
     };
 
@@ -309,6 +272,23 @@ const ChatPage = memo(() => {
         generateSeoArticle,
         getSalesCallResponse,
     } = useConversation();
+
+    // Current workflow to show as a sticky tag near the input.
+    // Prefer the one coming from initialMessage (first question),
+    // otherwise fall back to the latest conversation that has workflow data.
+    const currentWorkflowForTag = useMemo(() => {
+        const fromInitial = (initialMessage as any)?.workflow;
+        if (fromInitial) return fromInitial;
+
+        if (Array.isArray(conversations) && conversations.length > 0) {
+            const withWorkflow = [...conversations]
+                .reverse()
+                .find((conv: any) => (conv as any)?.workflow && (conv as any)?.workflow?.name);
+            return (withWorkflow as any)?.workflow || null;
+        }
+
+        return null;
+    }, [initialMessage, conversations]);
     const { chatInfo, socketChatById, handleAIApiType } = useChat();
     const {
         fileLoader,
@@ -563,6 +543,10 @@ const ChatPage = memo(() => {
         dispatch(setChatAccessAction(true));
          // Calculate model credit before sending request
         //  const modelCredit = getModelCredit(modalName);
+        
+        // Prefer freshly selected workflow; fall back to initialMessage.workflow for first question
+        const workflowSource: any = (initialMessage as any)?.workflow;
+        
         if (!chatHasConversation(conversations) && Object.keys(initialMessage).length > 0) {
             const newMessage = {
                 ...initialMessage,
@@ -578,6 +562,18 @@ const ChatPage = memo(() => {
                     images: [],
                     videos: []
                 },
+                workflow: workflowSource
+                    ? {
+                        db_id: workflowSource._id || workflowSource.db_id,
+                        id: workflowSource.n8nWorkflowId || workflowSource.id,
+                        name: workflowSource.name,
+                        brainId:
+                            workflowSource.brainId ||
+                            workflowSource.brain?._id ||
+                            workflowSource.brain?.id,
+                        isShare: workflowSource.isShare,
+                    }
+                    : undefined,
             };
             setConversations([newMessage]);
             dispatch(setInitialMessageAction({}));
@@ -620,6 +616,18 @@ const ChatPage = memo(() => {
                         images: [],
                         videos: []
                     },
+                    workflow: workflowSource
+                        ? {
+                            db_id: workflowSource._id || workflowSource.db_id,
+                            id: workflowSource.n8nWorkflowId || workflowSource.id,
+                            name: workflowSource.name,
+                            brainId:
+                                workflowSource.brainId ||
+                                workflowSource.brain?._id ||
+                                workflowSource.brain?.id,
+                            isShare: workflowSource.isShare,
+                        }
+                        : undefined,
                 },
             ]);
         }
@@ -669,10 +677,6 @@ const ChatPage = memo(() => {
         // Calculate model credit before sending request
         //const modelCredit = getModelCredit(modalName);
         const matchedModel = userModal.find((el) => el.name === modalName);
-
-        // Prefer freshly selected workflow; fall back to initialMessage.workflow for first question
-        const workflowSource: any = selectedWorkflow || (initialMessage as any)?.workflow;
-
         socket.emit(SOCKET_EVENTS.LLM_RESPONSE_SEND, {
             query: query,
             chatId: params.id,
@@ -695,17 +699,6 @@ const ChatPage = memo(() => {
             brainId: getDecodedObjectId(),
             usedCredit: modelCredit,
             workflow: workflowSource
-                ? {
-                    db_id: workflowSource._id || workflowSource.db_id,
-                    id: workflowSource.n8nWorkflowId || workflowSource.id,
-                    name: workflowSource.name,
-                    brainId:
-                        workflowSource.brainId ||
-                        workflowSource.brain?._id ||
-                        workflowSource.brain?.id,
-                    isShare: workflowSource.isShare,
-                }
-                : undefined,
         })
 
         if (chatTitle == '' || chatTitle === undefined) {
@@ -1547,6 +1540,7 @@ const ChatPage = memo(() => {
                                                                     customGptId={m?.customGptId}
                                                                     customGptTitle={m?.customGptTitle}
                                                                     gptCoverImage={m?.coverImage}
+                                                                    workflow={m?.workflow}
                                                                 />
                                                                 <div className="chat-content max-w-none w-full break-words text-font-14 md:text-font-16 leading-7 tracking-[0.16px] whitespace-pre-wrap">
                                                                     {m?.responseAPI == API_TYPE_OPTIONS.PRO_AGENT &&
@@ -1631,8 +1625,7 @@ const ChatPage = memo(() => {
                                                     }
                                                     <div className="flex-col gap-1 md:gap-3">
                                                         <div className="flex flex-grow flex-col max-w-full">
-                                                            {toolCallLoading.webSearch && <ChatWebSearchLoader />}
-                                                            {toolCallLoading.imageGeneration && <ChatImageGenerationLoader />}
+                                                            {toolCallLoading.webSearch && <ChatWebSearchLoader/>}
                                                             {
                                                                 (m?.proAgentData?.code === ProAgentCode.SEO_OPTIMISED_ARTICLES && (m.response === '' && answerMessage === '')) ?
                                                                     <SeoProAgentResponse conversation={conversations} proAgentData={m?.proAgentData} leftList={leftList} rightList={rightList} setLeftList={setLeftList} setRightList={setRightList} isLoading={isLoading} socket={socket} generateSeoArticle={generateSeoArticle} loading={loading} />
@@ -1913,22 +1906,20 @@ const ChatPage = memo(() => {
                                                 </div>
                                             </div>
                                         )}
-
                                     </div>
                                 )}
-
-                                    <TextAreaBox
-                                        message={text}
-                                        handleChange={handleChange}
-                                        handleKeyDown={handleKeyDown}
-                                        isDisable={selectedContext.textDisable}
-                                        autoFocus={isWebSearchActive}
-                                        onPaste={handlePasteFiles}
-                                        ref={textareaRef}
-                                    />
-                                    <div className="flex items-center z-10 px-4 pb-[6px]">
-                                        {/* Plus Menu Button */}
-                                        <button
+                                <TextAreaBox
+                                    message={text}
+                                    handleChange={handleChange}
+                                    handleKeyDown={handleKeyDown}
+                                    isDisable={selectedContext.textDisable}
+                                    autoFocus={isWebSearchActive}
+                                    onPaste={handlePasteFiles}
+                                    ref={textareaRef}
+                                />
+                                <div className="flex items-center z-10 px-4 pb-[6px]">
+                                    {/* Plus Menu Button */}
+                                    <button
                                             ref={plusButtonRef}
                                             onClick={() => setShowPlusMenu(!showPlusMenu)}
                                             className="p-2 hover:bg-gray-100 rounded-md transition-colors relative"

@@ -609,7 +609,8 @@ async function createLLMConversation (data) {
             sumhistory_checkpoint: messageCheckpoint,
             usedCredit: data.usedCredit, // Use model-specific credit from frontend, fallback to usedCredit or 1
             citations: data.citations,
-            isPaid: true
+            isPaid: true,
+            workflow: data.workflow || undefined
         });
         
         // logger.info(`📝 [THREAD_SAVED] Thread saved with usedCredit: ${creditAmount}`);

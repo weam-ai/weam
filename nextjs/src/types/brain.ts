@@ -74,6 +74,20 @@ export type BrainAgentType = {
     charimg?: string;
 }
 
+export type WorkflowType = {
+    _id: string;
+    name: string;
+    description?: string;
+    isActive: boolean;
+    user: FormatUserType;
+    brain: FormatBrainType | string;
+    n8nWorkflowId?: string;
+    createdAt: string;
+    updatedAt: string;
+    executionCount?: number;
+    isShare?: boolean;
+}
+
 type BrainTeamType = {
     teamName: string;
     id:       string;
@@ -112,24 +126,3 @@ export type UpdateBrainActionType = {
     workspaceId: string;
     customInstruction?: string;
 }
-
-export type WorkflowType = {
-    _id: string;
-    name: string;
-    description: string;
-    isActive: boolean;
-    user: FormatUserType;
-    brain: FormatBrainType;
-    trigger?: {
-        type: string;
-        value: string;
-    };
-    n8nWorkflowId?: string;
-    createdAt: string;
-    updatedAt: string;
-    lastExecutedAt?: string;
-    executionCount: number;
-    isShare?: boolean;
-    isPrivate?: boolean;
-}
-

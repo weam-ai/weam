@@ -689,8 +689,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         setShowPromptList(value.startsWith('/'));
 
         // Show workflow list if first character is '#'
-        const startsWithHash = value.startsWith('#');
-        setShowWorkflowList(startsWithHash);
+        setShowWorkflowList(value.startsWith('#'));
     };
 
     useEffect(() => {
@@ -840,7 +839,7 @@ const ChatInput = ({ aiModals }: ChatInputProps) => {
         // Only tag the workflow in local state and input text.
         // Do NOT add it to media/clone; backend uses the separate `workflow` field.
         setSelectedWorkflow(workflow);
-        setMessage(``);
+        setMessage(`Execute this workflow: workflow_id: ${workflow.n8nWorkflowId}\n workflow_name: ${workflow.name}\n I have tagged this workflow to be executed. Execute this workflow in the background and incorporate its result into your answer.`);
         setShowWorkflowList(false);
     };
     

@@ -215,6 +215,11 @@ const saveToN8n = async (req) => {
                 try {
                     // Ensure settings is present for update as well
                     const workflowToUpdate = { ...parsedWorkflow };
+                    // n8n Cloud treats "active" as read‑only in request body, so
+                    // strip it out to avoid 400 "request/body/active is read-only".
+                    if ('active' in workflowToUpdate) {
+                        delete workflowToUpdate.active;
+                    }
                     // Handle null, undefined, or non-object values
                     if (!workflowToUpdate.settings || typeof workflowToUpdate.settings !== 'object' || Array.isArray(workflowToUpdate.settings)) {
                         workflowToUpdate.settings = {
@@ -246,6 +251,11 @@ const saveToN8n = async (req) => {
                 // Remove id if it exists to create a new workflow
                 const workflowToCreate = { ...parsedWorkflow };
                 delete workflowToCreate.id;
+                // n8n Cloud treats "active" as read‑only on create as well.
+                // The API response will include the correct "active" flag.
+                if ('active' in workflowToCreate) {
+                    delete workflowToCreate.active;
+                }
                 
                 // Ensure required fields are present for n8n API
                 // n8n API requires: name, nodes, connections, settings

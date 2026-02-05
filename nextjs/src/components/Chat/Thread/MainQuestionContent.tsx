@@ -56,6 +56,7 @@ const ThreadMainQuestionContent:any = () => {
                                 customGptTitle={
                                     content?.customGptTitle
                                 }
+                                workflow={content?.workflow}
                             />
                             <div className="chat-content max-w-none w-full break-words text-font-16 leading-7 tracking-[0.16px]">
                                 {

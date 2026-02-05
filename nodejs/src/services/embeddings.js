@@ -6,7 +6,7 @@ let singletonEmbeddings = null;
 let lastErrorTime = 0;
 const ERROR_COOLDOWN = 30000; // 30 seconds
 
-function getEmbeddingsClient() {
+function getEmbeddingsClient( embeddingApiKey = null ) {
     // If we had a recent error, don't retry immediately
     if (Date.now() - lastErrorTime < ERROR_COOLDOWN) {
         console.warn('[embeddings] Skipping retry due to recent error');
@@ -15,13 +15,13 @@ function getEmbeddingsClient() {
     
     if (!singletonEmbeddings) {
         try {            
-            if (!EMBEDDINGS.API_KEY) {
+            if (!embeddingApiKey) {
                 throw new Error('No API key provided for embeddings');
             }
             
             singletonEmbeddings = new OpenAIEmbeddings({
                 model: EMBEDDINGS.MODEL,
-                openAIApiKey: EMBEDDINGS.API_KEY,
+                openAIApiKey: embeddingApiKey,
                 configuration: { 
                     timeout: 30000, // Increased timeout to 30 seconds
                 },
@@ -38,16 +38,16 @@ function getEmbeddingsClient() {
     return singletonEmbeddings;
 }
 
-async function embedText(text, apiKey = null) {
+async function embedText(text, embeddingApiKey = null) {
     try {
         let client;
         
         // If a specific API key is provided, create a temporary client
-        if (apiKey && apiKey !== EMBEDDINGS.API_KEY) {
+        if (embeddingApiKey) {
             // Using custom API key for embedding
             client = new OpenAIEmbeddings({
                 model: EMBEDDINGS.MODEL,
-                openAIApiKey: apiKey,
+                openAIApiKey: embeddingApiKey,
                 configuration: { 
                     timeout: 30000,
                 },
@@ -55,7 +55,7 @@ async function embedText(text, apiKey = null) {
             });
         } else {
             // Use singleton client for default API key
-            client = getEmbeddingsClient();
+            client = getEmbeddingsClient( embeddingApiKey );
         }
         
         if (!client) {
@@ -100,33 +100,10 @@ function generateHashVector(text, size) {
     }
 }
 
-// Health check function
-async function checkEmbeddingsHealth() {
-    try {
-        const client = getEmbeddingsClient();
-        if (!client) return { healthy: false, reason: 'Client not available' };
-        
-        // Try a simple embedding
-        const testVector = await client.embedQuery('test');
-        return { 
-            healthy: true, 
-            dimensions: testVector.length,
-            provider: EMBEDDINGS.API_BASE 
-        };
-    } catch (error) {
-        return { 
-            healthy: false, 
-            reason: error.message,
-            lastError: new Date(lastErrorTime).toISOString()
-        };
-    }
-}
-
 module.exports = {
     embedText,
     getEmbeddingsClient,
     generateHashVector,
-    checkEmbeddingsHealth,
 };
 
 
