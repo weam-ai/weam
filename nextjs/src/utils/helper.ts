@@ -237,6 +237,7 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'claude-opus-4-20250514',
         'claude-opus-4-5-20251101',
         'claude-haiku-4-5-20251001',
+        'claude-opus-4-6',
         
         // Google Gemini Models
         'gemini-1.5-pro',

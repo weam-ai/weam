@@ -483,6 +483,7 @@ export const AI_MODAL_NAME = {
     CLAUDE_SONNET_4_5_20250929: 'claude-sonnet-4-5-20250929',
     CLAUDE_OPUS_4_5_20251101: 'claude-opus-4-5-20251101',
     CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
+    CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     // CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
 
     // Perplexity models
@@ -952,6 +953,18 @@ export const MODEL_CREDIT_INFO = [
         reasoning: true,
     },
     {
+        code: 'ANTHROPIC',
+        model: 'claude-opus-4-6',
+        credit: 10,
+        displayName: 'Claude Opus 4.6',
+        snippet: 'Intelligent model for building agents and coding',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: false,
+        reasoning: true,
+    },
+    {
         code: 'PERPLEXITY',
         model: 'llama-3.1-sonar-large-128k-online',
         credit: 5,
@@ -1342,6 +1355,11 @@ export const AI_CREDITS = [
         MessageNo: '100',
     },
     {
+        modelName: 'Claude Opus 4.6',
+        creditCount: '10',
+        MessageNo: '50',
+    },
+    {
         modelName: 'Claude Sonnet 4',
         creditCount: '10',
         MessageNo: '50',
@@ -1511,6 +1529,11 @@ export const FREE_TIER_AI_CREDITS = [
         MessageNo: 20,
     },
     {
+        modelName: 'Claude Opus 4.6',
+        creditCount: '10',
+        MessageNo: '20',
+    },
+    {
         modelName: 'Claude Opus 4',
         creditCount: 50,
         MessageNo: 4,
@@ -1617,6 +1640,7 @@ export const MODEL_NAME_BY_CODE = {
     'claude-opus-4-1-20250805': 'ANTHROPIC',
     'claude-opus-4-5-20251101': 'ANTHROPIC',
     'claude-haiku-4-5-20251001': 'ANTHROPIC',
+    'claude-opus-4-6': 'ANTHROPIC',
     
     // Perplexity models
     'llama-3.1-sonar-large-128k-online': 'PERPLEXITY',

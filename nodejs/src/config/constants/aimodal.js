@@ -17,12 +17,12 @@ const OPENAI_MODAL = [
     // { name: 'o4-mini', type: 2},
     // { name: 'gpt-4.1-search-medium', type: 2},
     // { name: 'chatgpt-4o-latest', type: 2},
-    { name: 'gpt-5', type: 2},
+    { name: 'gpt-5', type: 2 },
     // { name: 'gpt-5-mini', type: 2},
     // { name: 'gpt-5-nano', type: 2},
-    { name: 'gpt-5-chat-latest', type: 2},
-    { name: 'gpt-5.1', type: 2},
-    { name: 'gpt-5.2', type: 2},
+    { name: 'gpt-5-chat-latest', type: 2 },
+    { name: 'gpt-5.1', type: 2 },
+    { name: 'gpt-5.2', type: 2 },
 ]
 
 const ANTHROPIC_MODAL = [
@@ -35,8 +35,9 @@ const ANTHROPIC_MODAL = [
     // { name: 'claude-opus-4-1-20250805', type: 2 },
     // { name: 'claude-sonnet-4-20250514', type: 2 },
     // { name: 'claude-opus-4-20250514', type: 2 },
-    {name: 'claude-opus-4-5-20251101', type: 2},
-    {name: 'claude-haiku-4-5-20251001', type: 2},
+    { name: 'claude-opus-4-5-20251101', type: 2 },
+    { name: 'claude-haiku-4-5-20251001', type: 2 },
+    { name: 'claude-opus-4-6', type: 2 }
 ]
 const ANTHROPIC_MAX_TOKENS = {
     // Claude 3.5 Haiku
@@ -57,6 +58,7 @@ const ANTHROPIC_MAX_TOKENS = {
     'claude-opus-4-1-20250805': 32000,    // Claude Opus 4.1
     'claude-opus-4-5-20251101': 64000,    // Claude Opus 4.5
     'claude-haiku-4-5-20251001': 64000,    // Claude Haiku 4.5
+    'claude-opus-4-6': 128000,
 
     // Default fallback for any new models
     'default': 4096
@@ -102,7 +104,7 @@ const MESSAGE_TYPE = {
 
 const CONVERSATION_ERROR = `We encountered an issue and were unable to receive a response. This could be due to a variety of reasons including network issues, server problems, or unexpected errors.Please try your request again later. If the problem persists, check your network connection or [contact support](mailto:hello@weam.ai) for further assistance.`
 
-const INVITE_SUBSCRIPTION_ERROR=`The user limit of your plan has been reached, please contact your administrator.`
+const INVITE_SUBSCRIPTION_ERROR = `The user limit of your plan has been reached, please contact your administrator.`
 
 const AI_MODAL_PROVIDER = {
     AZURE_OPENAI_SERVICE: 'AZURE_OPENAI_SERVICE',
@@ -114,7 +116,7 @@ const AI_MODAL_PROVIDER = {
     LOCAL_LLM: 'LOCAL_LLM',
     OPEN_AI: 'OPEN_AI',
     PERPLEXITY: 'PERPLEXITY',
-    DEEPSEEK: 'DEEPSEEK', 
+    DEEPSEEK: 'DEEPSEEK',
     LLAMA4: 'LLAMA4',
     GROK: 'GROK',
     QWEN: 'QWEN',
@@ -168,6 +170,7 @@ const MODAL_NAME = {
     CLAUDE_OPUS_4_1_20250805: 'claude-opus-4-1-20250805',
     CLAUDE_OPUS_4_5_20251101: 'claude-opus-4-5-20251101',
     CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
+    CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     GPT_5: 'gpt-5',
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',

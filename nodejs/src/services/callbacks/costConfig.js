@@ -37,7 +37,7 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.03,
         completion_tokens: 0.09
     },
-    
+
     // Anthropic Models
     'claude-3-5-sonnet-20241022': {
         prompt_tokens: 0.003,
@@ -59,7 +59,10 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.00025,
         completion_tokens: 0.00125
     },
-    
+    'claude-opus-4-6': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.025
+    },
     // Google Gemini Models
     'gemini-1.5-pro': {
         prompt_tokens: 0.00125,
@@ -73,7 +76,7 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.0005,
         completion_tokens: 0.0015
     },
-    
+
     // DeepSeek Models
     'deepseek-chat': {
         prompt_tokens: 0.00014,
@@ -83,7 +86,7 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.00014,
         completion_tokens: 0.00028
     },
-    
+
     // Meta Llama Models
     'llama-3.1-405b-instruct': {
         prompt_tokens: 0.005,
@@ -97,13 +100,13 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.00018,
         completion_tokens: 0.00018
     },
-    
+
     // Grok Models
     'grok-beta': {
         prompt_tokens: 0.005,
         completion_tokens: 0.015
     },
-    
+
     // Qwen Models
     'qwen-2.5-72b-instruct': {
         prompt_tokens: 0.0009,
@@ -132,22 +135,22 @@ const MODEL_COST_PER_1K_TOKENS = {
  */
 function getModelCostConfig(modelName) {
     if (!modelName) return null;
-    
+
     // Direct match
     if (MODEL_COST_PER_1K_TOKENS[modelName]) {
         return MODEL_COST_PER_1K_TOKENS[modelName];
     }
-    
+
     // Fuzzy matching for model variants
     const normalizedModelName = modelName.toLowerCase();
-    
+
     for (const [configModelName, config] of Object.entries(MODEL_COST_PER_1K_TOKENS)) {
-        if (normalizedModelName.includes(configModelName.toLowerCase()) || 
+        if (normalizedModelName.includes(configModelName.toLowerCase()) ||
             configModelName.toLowerCase().includes(normalizedModelName)) {
             return config;
         }
     }
-    
+
     return {
         prompt_tokens: 0.001,
         completion_tokens: 0.002
@@ -164,10 +167,10 @@ function getModelCostConfig(modelName) {
 function calculateCost(promptTokens, completionTokens, modelName) {
     const costConfig = getModelCostConfig(modelName);
     if (!costConfig) return 0;
-    
+
     const promptCost = (promptTokens / 1000) * costConfig.prompt_tokens;
     const completionCost = (completionTokens / 1000) * costConfig.completion_tokens;
-    
+
     return promptCost + completionCost;
 }
 
