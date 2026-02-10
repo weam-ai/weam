@@ -1143,7 +1143,7 @@ async function openRouterApiChecker(req) {
     try {
         const companyId = getCompanyId(req.user);
         const companydetails = req.user.company;
-        const response = await fetch(`${LINK.OPEN_ROUTER_API_URL}/v1/chat/completions`, {
+        const response = await fetch(`${LINK.OPEN_ROUTER_API_URL}/chat/completions`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${req.body.key}`,
