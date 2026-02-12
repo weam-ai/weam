@@ -13,10 +13,10 @@ if ! curl -s --connect-timeout 1 http://169.254.169.254/ >/dev/null 2>&1; then
       TARGET_DOMAIN_URL="$ENV_DOMAIN"
     fi
 
-    echo "🔄 Updating .env URLs to $TARGET_DOMAIN_URL ..."
-    sed -i.bak "s|http://localhost:4050|$TARGET_DOMAIN_URL|g" .env
-    sed -i.bak "s|http://localhost:9000|$TARGET_DOMAIN_URL|g" .env
-    sed -i.bak "s|http://localhost:3000|$TARGET_DOMAIN_URL|g" .env
+    echo "🔄 Updating .env URLs to $TARGET_DOMAIN_URL (excluding NEXT_PUBLIC_MCP_REDIRECT_URL) ..."
+    sed -i.bak "/^NEXT_PUBLIC_MCP_REDIRECT_URL=/! s|http://localhost:4050|$TARGET_DOMAIN_URL|g" .env
+    sed -i.bak "/^NEXT_PUBLIC_MCP_REDIRECT_URL=/! s|http://localhost:9000|$TARGET_DOMAIN_URL|g" .env
+    sed -i.bak "/^NEXT_PUBLIC_MCP_REDIRECT_URL=/! s|http://localhost:3000|$TARGET_DOMAIN_URL|g" .env
     echo "✅ .env updated for domain ($TARGET_DOMAIN_URL)"
   fi
 fi

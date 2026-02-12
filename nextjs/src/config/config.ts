@@ -61,7 +61,7 @@ export const BASIC_AUTH = {
 export const SLACK = {
     CLIENT_ID: process.env.NEXT_PUBLIC_SLACK_CLIENT_ID,
     CLIENT_SECRET: process.env.NEXT_PUBLIC_SLACK_CLIENT_SECRET,
-    REDIRECT_URI: `${process.env.NEXT_PUBLIC_DOMAIN_URL}/api/auth/slack/callback`,
+    REDIRECT_URI: `${process.env.NEXT_PUBLIC_MCP_REDIRECT_URL}/api/auth/slack/callback`,
     AUTH_URL: 'https://slack.com/oauth/v2/authorize',
     TOKEN_URL: 'https://slack.com/api/oauth.v2.access',
     SCOPE: "channels:write.invites,channels:write.topic,chat:write,files:write,groups:write,groups:write.invites,im:write,im:write.topic,links.embed:write,links:write,mpim:write,mpim:write.topic,stars:write,users:write,channels:history,channels:read,users:read,groups:history,im:history,mpim:history,im:read,groups:read,mpim:read"
@@ -70,7 +70,7 @@ export const SLACK = {
 export const GOOGLE_OAUTH = {
     CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
     CLIENT_SECRET: process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_SECRET,
-    REDIRECT_URI: `${process.env.NEXT_PUBLIC_DOMAIN_URL}/api/auth/google/callback`,
+    REDIRECT_URI: `${process.env.NEXT_PUBLIC_MCP_REDIRECT_URL}/api/auth/google/callback`,
     AUTH_URL: 'https://accounts.google.com/o/oauth2/v2/auth',
     TOKEN_URL: 'https://oauth2.googleapis.com/token',
     SCOPE: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/documents.readonly https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/oauth2/v2/userinfo',
@@ -78,9 +78,9 @@ export const GOOGLE_OAUTH = {
 }
 
 export const GITHUB = {
-    CLIENT_ID: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID,
+    CLIENT_ID: undefined,
     CLIENT_SECRET: process.env.NEXT_PUBLIC_GITHUB_CLIENT_SECRET,
-    REDIRECT_URI: `${process.env.NEXT_PUBLIC_DOMAIN_URL}/api/auth/github/callback`,
+    REDIRECT_URI: `${process.env.NEXT_PUBLIC_MCP_REDIRECT_URL}/api/auth/github/callback`,
     AUTH_URL: 'https://github.com/login/oauth/authorize',
     TOKEN_URL: 'https://github.com/login/oauth/access_token',
     USER_INFO_URL: 'https://api.github.com/user',
@@ -91,7 +91,7 @@ export const GITHUB = {
 export const ZOOM = {
     CLIENT_ID: process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID,
     CLIENT_SECRET: process.env.NEXT_PUBLIC_ZOOM_CLIENT_SECRET,
-    REDIRECT_URI: `${process.env.NEXT_PUBLIC_DOMAIN_URL}/api/auth/zoom/callback`,
+    REDIRECT_URI: `${process.env.NEXT_PUBLIC_MCP_REDIRECT_URL}/api/auth/zoom/callback`,
     AUTH_URL: 'https://zoom.us/oauth/authorize',
     TOKEN_URL: 'https://zoom.us/oauth/token',
     USER_INFO_URL: 'https://api.zoom.us/v2/users/me',
