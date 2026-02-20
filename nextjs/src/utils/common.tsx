@@ -340,6 +340,9 @@ export const modelNameConvert = (code: string, modelName: string) => {
     if(code == AI_MODEL_CODE.QWEN){
         return modelName.split(':')[0].split('/')?.[1] || modelName;
     }
+    // if(code == AI_MODEL_CODE.SARVAM){
+    //     return modelName.split(':')[0].split('/')?.[1] || modelName;
+    // }
     return modelName;
 }
 

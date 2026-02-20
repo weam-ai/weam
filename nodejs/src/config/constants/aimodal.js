@@ -97,6 +97,10 @@ const QWEN_MODAL = [
     { name: 'qwen/qwen3-30b-a3b:free', type: 2 },
 ]
 
+const SARVAM_MODAL = [
+    { name: 'sarvam-m', type: 2 },
+]
+
 const MESSAGE_TYPE = {
     HUMAN: 'human',
     AI: 'ai'
@@ -120,6 +124,7 @@ const AI_MODAL_PROVIDER = {
     LLAMA4: 'LLAMA4',
     GROK: 'GROK',
     QWEN: 'QWEN',
+    SARVAM: 'SARVAM',
     OPEN_ROUTER: 'OPEN_ROUTER',
     OLLAMA: 'OLLAMA',
 }
@@ -179,8 +184,18 @@ const MODAL_NAME = {
     GPT_5_2: 'gpt-5.2',
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
+    SARVAM_M: 'sarvam-m',
 }
 const PINECONE_APIKEY_CODE = "PINECONE_APIKEY"
+
+
+const SARVAM_MODEL_CONFIG = {
+    temperature: 1.5,
+    reasoning_effort: 'high',
+    max_tokens: 4096,
+    wiki_grounding: false,
+    stream: true,
+}
 module.exports = {
     OPENAI_MODAL,
     MESSAGE_TYPE,
@@ -198,5 +213,7 @@ module.exports = {
     LLAMA4_MODAL,
     GROK_MODAL,
     QWEN_MODAL,
+    SARVAM_MODAL,
     PINECONE_APIKEY_CODE,
+    SARVAM_MODEL_CONFIG,
 }

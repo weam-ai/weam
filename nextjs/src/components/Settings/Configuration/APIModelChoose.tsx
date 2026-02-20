@@ -48,6 +48,10 @@ const APIModelChoose = () => {
                 value: AI_MODEL_CODE.OLLAMA,
                 label: MODAL_NAME_CONVERSION.OLLAMA || 'Ollama',
             },
+            {
+                value: AI_MODEL_CODE.SARVAM,
+                label: MODAL_NAME_CONVERSION.SARVAM || 'Sarvam',
+            },
         ];
         return options;
     }, []);

@@ -148,6 +148,10 @@ const MODEL_CONFIGS = {
     [AI_MODAL_PROVIDER.QWEN]: {
         supportsVision: false,
         imageFormats: []
+    },
+    [AI_MODAL_PROVIDER.SARVAM]: {
+        supportsVision: false,
+        imageFormats: []
     }
 };
 
@@ -600,8 +604,8 @@ function shouldContinue(state) {
 }
 
 async function chatOpenRouterWithCallback(modelName, opts = {}, costCallback = null) {
-    const baseURL = LINK.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1';
-    
+    const baseURL = modelName.toLowerCase().includes('sarvam-m') ? LINK.SARVAM_API_URL : LINK.OPEN_ROUTER_API_URL || 'https://openrouter.ai/api/v1';
+
     return new ChatOpenAI({
         model: modelName,
         temperature: opts.temperature ?? 1,
@@ -1010,6 +1014,7 @@ async function llmFactory(modelName, opts = {}) {
         [AI_MODAL_PROVIDER.LLAMA4]: () => toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.GROK]: () => toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.QWEN]: () => chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.SARVAM]: () => chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
         [AI_MODAL_PROVIDER.PERPLEXITY]: () => ({
             _isPerplexityRaw: true,
             model: modelName,
@@ -1598,6 +1603,8 @@ async function getAgentModelConfig(agentDetails, data) {
                     inferredProvider = 'GROK';
                 } else if (modelName.includes('qwen')) {
                     inferredProvider = 'QWEN';
+                } else if (modelName.includes('sarvam-m')) {
+                    inferredProvider = 'SARVAM';
                 } else {
                     inferredProvider = 'OPEN_AI'; // Default fallback
                 }
@@ -1661,6 +1668,7 @@ function mapProviderCode(code) {
         'llama4': AI_MODAL_PROVIDER.LLAMA4,
         'grok': AI_MODAL_PROVIDER.GROK,
         'qwen': AI_MODAL_PROVIDER.QWEN,
+        'sarvam-m': AI_MODAL_PROVIDER.SARVAM,
         'perplexity': AI_MODAL_PROVIDER.PERPLEXITY,
         'azure': AI_MODAL_PROVIDER.AZURE_OPENAI_SERVICE,
         'huggingface': AI_MODAL_PROVIDER.HUGGING_FACE,
@@ -1835,6 +1843,7 @@ async function generateTitleByLLM(payload) {
             [AI_MODAL_PROVIDER.LLAMA4]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.GROK]: 'x-ai/grok-3-mini-beta',
             [AI_MODAL_PROVIDER.QWEN]: 'qwen/qwen3-30b-a3b:free',
+            [AI_MODAL_PROVIDER.SARVAM]: 'sarvam-m',
             [AI_MODAL_PROVIDER.PERPLEXITY]: 'sonar',
         };
         
