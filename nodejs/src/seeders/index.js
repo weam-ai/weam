@@ -12,7 +12,8 @@ async function initSeed () {
         await seedService.seedPrompt();
         await seedService.seedOtherRolePermission();
         await seedService.seedCountry();  
-        await seedService.seedSuperSolutionApps();            
+        await seedService.seedSuperSolutionApps(); 
+        // await seedService.companyModelSeeder();           
     } catch (error) {
         throw error; // Re-throw to ensure the application startup fails if seeding fails
     }

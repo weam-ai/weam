@@ -126,6 +126,12 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.002,
         completion_tokens: 0.008
     },
+
+    // Sarvam Models
+    'sarvam-m': {
+        prompt_tokens: 0.001,
+        completion_tokens: 0.001
+    },
 };
 
 /**

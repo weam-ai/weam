@@ -68,5 +68,10 @@
         "title": "Ollama",
         "code": "OLLAMA",
         "seq": 14
+    },
+    {
+        "title": "Sarvam",
+        "code": "SARVAM",
+        "seq": 15
     }
 ]

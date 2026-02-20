@@ -10,7 +10,7 @@ const { randomPasswordGenerator, encryptedData, generateRandomToken, genHash, ge
 const bcrypt = require('bcrypt');
 const Role = require('../models/role');
 const UserBot = require('../models/userBot');
-const { OPENAI_MODAL, AI_MODAL_PROVIDER, PINECORN_STATIC_KEY, MODAL_NAME, ANTHROPIC_MODAL, GEMINI_MODAL, PERPLEXITY_MODAL, OPENROUTER_PROVIDER, DEEPSEEK_MODAL, LLAMA4_MODAL, GROK_MODAL, QWEN_MODAL } = require('../config/constants/aimodal');
+const { OPENAI_MODAL, AI_MODAL_PROVIDER, PINECORN_STATIC_KEY, MODAL_NAME, ANTHROPIC_MODAL, GEMINI_MODAL, PERPLEXITY_MODAL, OPENROUTER_PROVIDER, DEEPSEEK_MODAL, LLAMA4_MODAL, GROK_MODAL, QWEN_MODAL, SARVAM_MODAL, SARVAM_MODEL_CONFIG } = require('../config/constants/aimodal');
 const { LINK, API, SERVER, EMAIL } = require('../config/config');
 const mongoose = require('mongoose');
 const Bot = require('../models/bot');
@@ -411,6 +411,7 @@ const checkApiKey = async (req) => {
             [AI_MODAL_PROVIDER.GEMINI]: geminiApiKeyChecker,
             [AI_MODAL_PROVIDER.PERPLEXITY]: perplexityApiChecker,
             [AI_MODAL_PROVIDER.OPEN_ROUTER]: openRouterApiChecker,
+            [AI_MODAL_PROVIDER.SARVAM]: sarvamApiChecker,
         }
         const provider = await providerObj[code](req);
         return provider;
@@ -526,7 +527,6 @@ async function createPinecornIndex(user, req) {
         
         logger.info(`Pinecone index created successfully for company: ${user.company.id}`);
     } catch (error) {
-        console.log("🚀 ~ createPinecornIndex ~ error:", error)
         handleError(error, 'Error - createPinecornIndex'); 
     }
 }
@@ -719,7 +719,7 @@ async function createFreeTierApiKey(user) {
         const company = await Company.findById(companyId).lean();
         if (!company) return;
 
-        const [huggingface, anthropic, gemini, perplexity, deepseek, llama4, grok, qwen, existingBot] = await Promise.all([
+        const [huggingface, anthropic, gemini, perplexity, deepseek, llama4, grok, qwen, sarvam, existingBot] = await Promise.all([
             Bot.findOne({ code: MODEL_CODE.HUGGING_FACE }),
             Bot.findOne({ code: MODEL_CODE.ANTHROPIC }),
             Bot.findOne({ code: MODEL_CODE.GEMINI }),
@@ -728,7 +728,8 @@ async function createFreeTierApiKey(user) {
             Bot.findOne({ code: MODEL_CODE.LLAMA4 }),
             Bot.findOne({ code: MODEL_CODE.GROK }),
             Bot.findOne({ code: MODEL_CODE.QWEN }),
-            UserBot.find({ 'bot.code': { $in: [MODEL_CODE.HUGGING_FACE, MODEL_CODE.ANTHROPIC, MODEL_CODE.GEMINI, MODEL_CODE.PERPLEXITY, MODEL_CODE.DEEPSEEK, MODEL_CODE.LLAMA4, MODEL_CODE.GROK, MODEL_CODE.QWEN] } })
+            Bot.findOne({ code: MODEL_CODE.SARVAM }),
+            UserBot.find({ 'bot.code': { $in: [MODEL_CODE.HUGGING_FACE, MODEL_CODE.ANTHROPIC, MODEL_CODE.GEMINI, MODEL_CODE.PERPLEXITY, MODEL_CODE.DEEPSEEK, MODEL_CODE.LLAMA4, MODEL_CODE.GROK, MODEL_CODE.QWEN, MODEL_CODE.SARVAM] } })
         ])
 
         const anthropicKey = encryptedData(LINK.WEAM_ANTHROPIC_KEY);
@@ -739,6 +740,7 @@ async function createFreeTierApiKey(user) {
         const llama4Key = encryptedData(LINK.WEAM_LLAMA4_KEY);
         const grokKey = encryptedData(LINK.WEAM_GROK_KEY);
         const qwenKey = encryptedData(LINK.WEAM_QWEN_KEY);
+        const sarvamKey = encryptedData(LINK.WEAM_SARVAM_KEY);
         const huggingfaceBaseConfig = {
             text: {
                 taskType: 'TEXT_GENERATION',
@@ -788,6 +790,7 @@ async function createFreeTierApiKey(user) {
         const llama4data = [];
         const grokdata = [];
         const qwendata = [];
+        const sarvamdata = [];
         // anthropic migration
         ANTHROPIC_MODAL.forEach(element => {
                 const modelConfig = constructModelConfig(element.name, anthropic, company, { apikey: anthropicKey }, { stopSequences: [], temperature: 0.7, topK: 0, topP: 0, tools: [] }, element.type);
@@ -891,6 +894,16 @@ async function createFreeTierApiKey(user) {
             else
             qwendata.push({ insertOne: { document: modelConfig } });
         });
+
+        SARVAM_MODAL.forEach(element => {
+            const modelConfig = constructModelConfig(element.name, sarvam, company, { apikey: sarvamKey }, SARVAM_MODEL_CONFIG, element.type, false, false);
+            const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === company._id.toString() && bot.bot.code === sarvam.code);
+
+            if (existingModel)
+                sarvamdata.push({ updateOne: { filter: { name: element.name, 'company.id': company._id, 'bot.code': sarvam.code }, update: { $set: modelConfig, $unset: { deletedAt: 1 } } } });
+            else
+                sarvamdata.push({ insertOne: { document: modelConfig } });
+        });
      
             // huggingface migration
             const textModelConfig = constructModelConfig('llama-3-2-3b-instruct-ctq', huggingface, company, huggingfaceBaseConfig.text, huggingfaceBaseConfig.extraConfig, 2, true, true);
@@ -930,6 +943,9 @@ async function createFreeTierApiKey(user) {
         }
         if (qwendata.length) {
             await UserBot.bulkWrite(qwendata);
+        }
+        if (sarvamdata.length) {
+            await UserBot.bulkWrite(sarvamdata);
         }
     } catch (error) {
         handleError(error, 'Error - createFreeTierApiKey');
@@ -1222,6 +1238,81 @@ async function openRouterApiChecker(req) {
         return existing;
     } catch (error) {
         handleError(error, 'Error - openRouterApiChecker');
+    }
+}
+
+async function sarvamApiChecker(req) {
+    try {
+        const companyId = getCompanyId(req.user);
+        const companydetails = req.user.company;
+        const response = await fetch(`${LINK.SARVAM_API_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'api-subscription-key': req.body.key,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: MODAL_NAME.SARVAM_M,
+                messages: [
+                    {
+                        role: 'user',
+                        content: 'hi'
+                    }
+                ],
+                stream: false,
+                reasoning_effort: 'low'
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Check for API errors in response
+        if (data?.error?.code === 'invalid_api_key_error' || !response.ok) {
+            return false;
+        }
+        
+        if (!response.ok) return false
+        const [sarvamBot, existing] = await Promise.all([
+            Bot.findOne({ code: AI_MODAL_PROVIDER.SARVAM }, { title: 1, code: 1 }),
+            UserBot.find({ 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.SARVAM })
+        ]);
+        const updates = [];
+        const inserts = [];
+        const encryptedKey = encryptedData(req.body.key);
+
+        SARVAM_MODAL.forEach(element => {
+            const existingBot = existing.find(bot => bot.name === element.name);
+            const modelConfig = {
+                name: element.name,
+                bot: formatBot(sarvamBot),
+                company: companydetails,
+                config: {
+                    apikey: encryptedKey,
+                },
+                modelType: element.type,
+                isActive: true,
+                extraConfig: SARVAM_MODEL_CONFIG
+            };
+            if (existingBot)
+                updates.push({
+                    updateOne: {
+                        filter: { name: element.name, 'company.id': companyId, 'bot.code': AI_MODAL_PROVIDER.SARVAM },
+                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                    }
+                });
+            else inserts.push(modelConfig);
+        });
+        if (updates.length) {
+            return UserBot.bulkWrite(updates);
+        }
+
+        if (inserts.length) {
+            return UserBot.insertMany(inserts);
+        }
+
+        return existing;
+    } catch (error) {
+        handleError(error, 'Error - sarvamApiChecker');
     }
 }
 

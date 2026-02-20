@@ -802,6 +802,325 @@ const seedSuperSolutionApps = async () => {
     }
 }
 
+const companyModelSeeder = async () => {
+    try {
+        const Company = require('../models/company');
+        const Bot = require('../models/bot');
+        const UserBot = require('../models/userBot');
+        const { MODEL_CODE } = require('../config/constants/common');
+        const { encryptedData } = require('../utils/helper');
+        const { LINK } = require('../config/config');
+        const { OPENAI_MODAL, MODAL_NAME, ANTHROPIC_MODAL, GEMINI_MODAL, PERPLEXITY_MODAL, OPENROUTER_PROVIDER, DEEPSEEK_MODAL, LLAMA4_MODAL, GROK_MODAL, QWEN_MODAL, SARVAM_MODAL, SARVAM_MODEL_CONFIG } = require('../config/constants/aimodal');
+
+
+        const companies = await Company.find({
+            // _id: { 
+            //       $in: [
+            //         // "68ca96aed9ff89abf285458c",
+            //         // "68cbcf484979f93414fd9bf0",
+            //         // "68cc4015ef2e026d79d86fe9",
+            //         // "68cdac9871703e17f002fa3d",
+            //         // "68d1437171703e17f003798b",
+            //         // "68d176e6309e7a3788997842",
+            //         // "68d45081f2b17f0fabf1a457",
+            //         // "68d7975a32b32039ce70bb38",
+            //         // "68d7dc86a990795d0bc04407",
+            //         // "68db9d1aa990795d0bc0c3b8",
+            //         // "68dbedc8c139fed94d183361",
+            //         // "68dd8b2e140d38658a7dd29d",
+            //         // "68de1d5ac139fed94d18700f",
+            //         // "68de8279c139fed94d187123",
+            //         // "68dec92e140d38658a7de4ea",
+            //         // "68e06267c139fed94d18c0f7",
+            //         // "68e4a3c5a887b9530e194cf7",
+            //         // "68eef482a2df6f6a8d5056f9",
+            //         // "68ef70c1e54462f3b4a6de8c",
+            //         // "68f3e94eec2b908708a6b6ac",
+            //         // "68f43a96e74c0490229a91d5",
+            //         // "68f7360be74c0490229a938d",
+            //         // "68fd914cdc3bb47bd1880c46",
+            //         // "68fe70c35dbfcce90ba55c9d",
+            //         "66e1244ba6344e751faf730c"
+            //       ]
+            //     }
+            }
+          );
+
+        let count = 0;
+        for (const currCompany of companies) {
+             
+            try {
+                const user=await User.findOne({ "company.id": currCompany._id, roleCode: ROLE_TYPE.COMPANY,inviteSts: {$eq: "ACCEPT"} });
+
+                if (user==null || Object.keys(user).length === 0) {logger.info(`🚀 ~ companyModelSeeder ACCEPTED USER~ currCompany User Not Found: ${currCompany._id}`); continue};
+                count++;
+                // OPEN_AI models migration - commented out to keep only SARVAM-related migration
+                logger.info(`🚀 ~ companyModelSeeder ACCEPTED USER~ currCompany User Found: ${currCompany._id}, ${currCompany.companyNm}`)
+              
+               
+                const companyId = currCompany._id;
+        
+                const existing = await UserBot.find({ 'company.id': companyId, 'bot.code': MODEL_CODE.OPEN_AI });
+                const bot = await Bot.findOne({ code: MODEL_CODE.OPEN_AI });
+                const modalMap = OPENAI_MODAL.reduce((map, val) => {
+                    map[val.name] = val.type;
+                    return map;
+                }, {});
+        
+                const updates = [];
+                const inserts = [];
+                for (const [key, value] of Object.entries(modalMap)) {
+                    const existingEntry = existing.find(entry => entry.name === key);
+                    const modelConfig = {
+                        bot: { title: bot.title, code: bot.code, id: bot._id },
+                        company: { name: currCompany.companyNm, slug: currCompany.slug, id: currCompany._id },
+                        name: key,
+                        config: {
+                            apikey: encryptedData(LINK.WEAM_OPEN_AI_KEY),
+                        },
+                        isActive: true,
+                    };
+                    if (modalMap.hasOwnProperty(key)) {
+                        if (value === 1) {
+                            modelConfig['modelType'] = value;
+                            modelConfig['dimensions'] = 1536;
+                        }
+                        else{
+                            if ([MODAL_NAME.GPT_O1, MODAL_NAME.GPT_O1_MINI, MODAL_NAME.GPT_O1_PREVIEW, MODAL_NAME.GPT_4_1, MODAL_NAME.GPT_4_1_MINI, MODAL_NAME.GPT_4_1_NANO, MODAL_NAME.O4_MINI, MODAL_NAME.O3, MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5, MODAL_NAME.GPT_5_MINI, MODAL_NAME.GPT_5_NANO, MODAL_NAME.GPT_5_CHAT_LATEST].includes(key)) {
+                                modelConfig['extraConfig'] = {
+                                    temperature: 1
+                                }
+                            }
+                            modelConfig['modelType'] = value;
+                        }
+                    }
+        
+                    if (existingEntry)
+                        updates.push({
+                            updateOne: {
+                                filter: { name: key, 'company.id': companyId, 'bot.code': bot.code },
+                                update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                            }
+                        });
+                    else inserts.push(modelConfig);
+                }
+        
+                if(updates.length){
+                    await UserBot.bulkWrite(updates)
+                }
+        
+                if(inserts.length){
+                    UserBot.insertMany(inserts)
+                }
+                
+                } 
+                catch (error) {
+                    logger.error('Error in companyModelSeeder function:', error);
+                    throw error;
+                }
+
+                try{
+                    // other-than-SARVAM models migration commented out to keep only SARVAM-related changes
+                    
+                    const [anthropic, gemini, perplexity, deepseek, llama4, grok, qwen, sarvam, existingBot] = await Promise.all([
+                        Bot.findOne({ code: MODEL_CODE.ANTHROPIC }),
+                        Bot.findOne({ code: MODEL_CODE.GEMINI }),
+                        Bot.findOne({ code: MODEL_CODE.PERPLEXITY }),
+                        Bot.findOne({ code: MODEL_CODE.DEEPSEEK }),
+                        Bot.findOne({ code: MODEL_CODE.LLAMA4 }),
+                        Bot.findOne({ code: MODEL_CODE.GROK }),
+                        Bot.findOne({ code: MODEL_CODE.QWEN }),
+                        Bot.findOne({ code: MODEL_CODE.SARVAM }),
+                        UserBot.find({ 'bot.code': { $in: [MODEL_CODE.HUGGING_FACE, MODEL_CODE.ANTHROPIC, MODEL_CODE.GEMINI, MODEL_CODE.PERPLEXITY, MODEL_CODE.DEEPSEEK, MODEL_CODE.LLAMA4, MODEL_CODE.GROK, MODEL_CODE.QWEN, MODEL_CODE.SARVAM] } })
+                    ])
+
+                    const anthropicKey = encryptedData(LINK.WEAM_ANTHROPIC_KEY);
+                    const geminiKey = encryptedData(LINK.WEAM_GEMINI_KEY);
+                    const perplexityKey = encryptedData(LINK.WEAM_PERPLEXITY_KEY);
+                    const deepseekKey = encryptedData(LINK.WEAM_DEEPSEEK_KEY);
+                    const llama4Key = encryptedData(LINK.WEAM_LLAMA4_KEY);
+                    const grokKey = encryptedData(LINK.WEAM_GROK_KEY);
+                    const qwenKey = encryptedData(LINK.WEAM_QWEN_KEY);
+                    const sarvamKey = encryptedData(LINK.WEAM_SARVAM_KEY);
+                    
+                    const constructModelConfig = (name, bot, company, config, extraConfig, modelType, strem = false, tool = false, provider = null) => ({
+                        name,
+                        bot: { title: bot.title, code: bot.code, id: bot._id },
+                        company: { name: company.companyNm, slug: company.slug, id: company._id },
+                        config,
+                        extraConfig,
+                        modelType,
+                        ...(provider && { provider }),
+                        ...(strem && { stream: strem }),
+                        ...(tool && { tool: tool })
+                    })
+            
+                    const anthropicdata = [];
+                    const geminidata = [];
+                    const perplexitydata = [];
+                    const deepseekdata = [];
+                    const llama4data = [];
+                    const grokdata = [];
+                    const qwendata = [];
+                    const sarvamdata = [];
+
+                    // anthropic migration
+                    ANTHROPIC_MODAL.forEach(element => {
+                            const modelConfig = constructModelConfig(element.name, anthropic, currCompany, { apikey: anthropicKey }, { stopSequences: [], temperature: 0.7, topK: 0, topP: 0, tools: [] }, element.type);
+                            const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === anthropic.code);
+                            if (existingModel)
+                                anthropicdata.push({
+                                    updateOne: {
+                                        filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': anthropic.code },
+                                        update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                    }
+                                });
+                            else 
+                                anthropicdata.push({ insertOne: { document: modelConfig } });
+                    });
+            
+                    GEMINI_MODAL.forEach(element => {
+                        const modelConfig = constructModelConfig(element.name, gemini, currCompany, { apikey: geminiKey }, { stopSequences: [], temperature: 0.7, topK: 10, topP: 0.9, tools: [] }, element.type);
+                        const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === gemini.code);
+                        if (existingModel)
+                            geminidata.push({
+                                updateOne: {
+                                    filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': gemini.code },
+                                    update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                }
+                            });
+                        else 
+                            geminidata.push({ insertOne: { document: modelConfig } });
+                    });
+            
+                    PERPLEXITY_MODAL.forEach(element => {
+                        const modelConfig = constructModelConfig(element.name, perplexity, currCompany, { apikey: perplexityKey }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type);
+                        const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === perplexity.code);
+            
+                        if (existingModel)
+                            perplexitydata.push({
+                                updateOne: {
+                                    filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': perplexity.code },
+                                    update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                }
+                            });
+                        else
+                            perplexitydata.push({ insertOne: { document: modelConfig } });
+                    });
+            
+                    DEEPSEEK_MODAL.forEach(element => {
+                        const modelConfig = constructModelConfig(element.name, deepseek, currCompany, { apikey: deepseekKey }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type, false, false, OPENROUTER_PROVIDER.DEEPSEEK);
+                        const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === deepseek.code);
+            
+                        if (existingModel)
+                            deepseekdata.push({
+                                updateOne: {
+                                    filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': deepseek.code },
+                                    update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                }
+                            });
+                        else
+                            deepseekdata.push({ insertOne: { document: modelConfig } });
+                    });
+            
+                    LLAMA4_MODAL.forEach(element => {
+                        const modelConfig = constructModelConfig(element.name, llama4, currCompany, { apikey: llama4Key }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type, false, false, OPENROUTER_PROVIDER.LLAMA4);
+                        const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === llama4.code);
+            
+                        if (existingModel)
+                            llama4data.push({
+                                updateOne: {
+                                    filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': llama4.code },
+                                    update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                }
+                            });
+                        else
+                            llama4data.push({ insertOne: { document: modelConfig } });
+                    });
+            
+                    GROK_MODAL.forEach(element => {
+                        const modelConfig = constructModelConfig(element.name, grok, currCompany, { apikey: grokKey }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type, false, false, OPENROUTER_PROVIDER.GROK);
+                        const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === grok.code);
+            
+                        if (existingModel)
+                            grokdata.push({
+                                updateOne: {
+                                    filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': grok.code },
+                                    update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                }
+                            });
+                        else
+                        grokdata.push({ insertOne: { document: modelConfig } });
+                    });
+            
+                    QWEN_MODAL.forEach(element => {
+                        const modelConfig = constructModelConfig(element.name, qwen, currCompany, { apikey: qwenKey }, { temperature : 0.7, topP : 0.9, topK : 10, stream : true}, element.type, false, false, OPENROUTER_PROVIDER.QWEN);
+                        const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === qwen.code);
+            
+                        if (existingModel)
+                            qwendata.push({
+                                updateOne: {
+                                    filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': qwen.code },
+                                    update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                }
+                            });
+                        else
+                        qwendata.push({ insertOne: { document: modelConfig } });
+                    });
+
+                    SARVAM_MODAL.forEach(element => {
+                        const modelConfig = constructModelConfig(element.name, sarvam, currCompany, { apikey: sarvamKey }, SARVAM_MODEL_CONFIG, element.type, false, false, OPENROUTER_PROVIDER.SARVAM);
+                        const existingModel = existingBot.find((bot) => bot.name === element.name && bot.company.id.toString() === currCompany._id.toString() && bot.bot.code === sarvam.code);
+                        
+                        if (existingModel)
+                            sarvamdata.push({
+                                updateOne: {
+                                    filter: { name: element.name, 'company.id': currCompany._id, 'bot.code': sarvam.code },
+                                    update: { $set: modelConfig, $unset: { deletedAt: 1 } }
+                                }
+                            });
+                        else
+                            sarvamdata.push({ insertOne: { document: modelConfig } });
+                    });
+
+                    if (anthropicdata.length) {
+                        await UserBot.bulkWrite(anthropicdata);
+                    }
+                    if (geminidata.length) {
+                        await UserBot.bulkWrite(geminidata);
+                    }
+                    if (perplexitydata.length) {
+                        await UserBot.bulkWrite(perplexitydata);
+                    }
+                    if (deepseekdata.length) {
+                        await UserBot.bulkWrite(deepseekdata);
+                    }
+                    if (llama4data.length) {
+                        await UserBot.bulkWrite(llama4data);
+                    }
+                    if (grokdata.length) {
+                        await UserBot.bulkWrite(grokdata);
+                    }
+                    if (qwendata.length) {
+                        await UserBot.bulkWrite(qwendata);
+                    }
+                    console.log("🚀 ~ companyModelSeeder ~ sarvamdata:", JSON.stringify(sarvamdata))
+                    // return true
+                    if (sarvamdata.length) {
+                        await UserBot.bulkWrite(sarvamdata);
+                    }
+                } catch (error) {
+                    logger.error('Error in companyModelSeeder function:', error);
+                    throw error;
+                }
+        }
+
+    } catch (error) {
+        logger.error('Error in companyModelSeeder function:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     seedRole,
     seedAdmin,
@@ -820,5 +1139,6 @@ module.exports = {
     botMigration,
     seedCompanyCountryCode,
     seedMigrateBlockedDomains,
-    seedSuperSolutionApps
+    seedSuperSolutionApps,
+    companyModelSeeder
 }
