@@ -260,16 +260,19 @@ const updateCustomGpt = async (req) => {
         let filteredPreviousDocs  = previousDocs;
         
         if (req.body.removeDoc) {
-            const removeDoc = JSON.parse(req.body.removeDoc);
-            
+            // parseFormData middleware already attempts to JSON.parse string fields,
+            // so here we only normalize to an array and perform removal.
+            let removeDoc = req.body.removeDoc;
+
+            if (!Array.isArray(removeDoc)) removeDoc = [removeDoc];
+
             removeDoc.forEach(doc => {
                 if (doc?.id && doc?.uri) {
                     removeExistingDocument(doc.id, doc.uri);
                 }
             });
-            // Create a Set of IDs from the removeArray for quick lookup
+
             const removeSet = new Set(removeDoc.map(item => item.id));
-            // Filter the existingArray to exclude items present in the removeSet
             filteredPreviousDocs = previousDocs.filter(existingItem => {
                 return !removeSet.has(existingItem.id.toString());
             });
@@ -291,12 +294,14 @@ const updateCustomGpt = async (req) => {
             );
 
             // Create chat docs in bulk instead of individual operations
-            ChatDocs.insertMany(docFile.map(dfile => ({
-                userId: req.userId,
-                fileId: dfile._id,
-                brainId: existingBot.brain.id,
-                doc: chatDocsFileFormat(dfile),
-            })));
+            if (existingBot?.brain?.id) {
+                ChatDocs.insertMany(docFile.map(dfile => ({
+                    userId: req.userId,
+                    fileId: dfile._id,
+                    brainId: existingBot.brain.id,
+                    doc: chatDocsFileFormat(dfile),
+                })));
+            }
 
             // default text embadding modal for text
             const defaultEmbedding = await CompanyModal.findOne({ 'company.id': company.id, name: 'text-embedding-3-small' });

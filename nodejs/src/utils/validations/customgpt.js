@@ -85,7 +85,12 @@ const updateCustomGptKeys = joi.object({
     itrTimeDuration: joi.string().allow('').optional(),
     brain: joi.object(brainSchemaKeys).required(),
     imageEnable: joi.boolean().optional(),
-    removeDoc: joi.string().optional(),
+    removeDoc: joi.alternatives().try(
+        joi.string(),
+        joi.array().items(
+            joi.object().unknown(true)
+        )
+    ).optional(),
     charimg: joi.string().optional(),
     // mcpTools: joi.array().items(joi.string()).optional()
 });
