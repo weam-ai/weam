@@ -260,7 +260,8 @@ const updateCustomGpt = async (req) => {
         let filteredPreviousDocs  = previousDocs;
         
         if (req.body.removeDoc) {
-            const removeDoc = JSON.parse(req.body.removeDoc);
+            const removeDoc = typeof req.body.removeDoc === 'string' ? JSON.parse(req.body.removeDoc) : req.body.removeDoc;
+
             
             removeDoc.forEach(doc => {
                 if (doc?.id && doc?.uri) {
@@ -291,12 +292,14 @@ const updateCustomGpt = async (req) => {
             );
 
             // Create chat docs in bulk instead of individual operations
-            ChatDocs.insertMany(docFile.map(dfile => ({
-                userId: req.userId,
-                fileId: dfile._id,
-                brainId: existingBot.brain.id,
-                doc: chatDocsFileFormat(dfile),
-            })));
+            if (existingBot?.brain?.id) {
+                ChatDocs.insertMany(docFile.map(dfile => ({
+                    userId: req.userId,
+                    fileId: dfile._id,
+                    brainId: existingBot.brain.id,
+                    doc: chatDocsFileFormat(dfile),
+                })));
+            }
 
             // default text embadding modal for text
             const defaultEmbedding = await CompanyModal.findOne({ 'company.id': company.id, name: 'text-embedding-3-small' });

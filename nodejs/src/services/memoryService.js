@@ -225,6 +225,77 @@ class MongoDBChatMessageHistory {
     async clear() {
         logger.warn('Clear operation not implemented for safety');
     }
+    /**
+     * Convenience method to add a human message
+     */
+    async addUserMessage(message) {
+        try {
+            // Accept string, LangChain HumanMessage, or internal normalized object
+            if (typeof message === 'string') {
+                return this.addMessage({ type: 'human', data: { content: message } });
+            }
+
+            if (message && typeof message === 'object') {
+                // LangChain HumanMessage has .content
+                if (typeof message.content === 'string') {
+                    return this.addMessage({ type: 'human', data: { content: message.content } });
+                }
+
+                // Already normalized internal shape
+                if (message.type === 'human' && message.data && typeof message.data.content === 'string') {
+                    return this.addMessage(message);
+                }
+
+                // Fallback for LangChain message instances
+                if (message.constructor && message.constructor.name === 'HumanMessage' && typeof message.content === 'string') {
+                    return this.addMessage({ type: 'human', data: { content: message.content } });
+                }
+            }
+
+            // Last-resort coercion
+            return this.addMessage({ type: 'human', data: { content: String(message || '') } });
+        } catch (error) {
+            logger.error(`Error in addUserMessage: ${error.message}`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Convenience method to add an AI message
+     */
+    async addAIChatMessage(message) {
+        try {
+            if (typeof message === 'string') {
+                return this.addMessage({ type: 'ai', data: { content: message } });
+            }
+
+            if (message && typeof message === 'object') {
+                if (typeof message.content === 'string') {
+                    return this.addMessage({ type: 'ai', data: { content: message.content } });
+                }
+
+                if (message.type === 'ai' && message.data && typeof message.data.content === 'string') {
+                    return this.addMessage(message);
+                }
+
+                if (message.constructor && message.constructor.name === 'AIMessage' && typeof message.content === 'string') {
+                    return this.addMessage({ type: 'ai', data: { content: message.content } });
+                }
+            }
+
+            return this.addMessage({ type: 'ai', data: { content: String(message || '') } });
+        } catch (error) {
+            logger.error(`Error in addAIChatMessage: ${error.message}`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Alias for addAIChatMessage
+     */
+    async addAiMessage(message) {
+        return this.addAIChatMessage(message);
+    }
 }
 
 /**

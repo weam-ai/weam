@@ -18,16 +18,19 @@ const { MODAL_NAME } = require('../config/constants/aimodal');
 
 const sendMessage = async (payload) => {
     try {
-        Thread.create({
-            ...payload, 
-            message: encryptedData(JSON.stringify(payload.message)),
-            user: formatUser(payload.user),
-            chat_session_id: payload.chatId,
-            seq: Date.now(),
-            _id: payload.messageId,
-            isPaid: payload.isPaid,
-            companyId: payload.companyId
-        });
+        await Thread.findOneAndUpdate(
+            { _id: payload.messageId },
+            {
+                ...payload,
+                message: encryptedData(JSON.stringify(payload.message)),
+                user: formatUser(payload.user),
+                chat_session_id: payload.chatId,
+                seq: Date.now(),
+                isPaid: payload.isPaid,
+                companyId: payload.companyId
+            },
+            { upsert: true, new: true }
+        );
         sendUserQuery(payload.chatId, { ...payload, user: payload.user, id: payload.messageId });
         return true;
     } catch (error) {
@@ -589,28 +592,31 @@ async function createLLMConversation (data) {
         // logger.info(`📝 [THREAD_DEBUG] Model: ${data.responseModel || data.model || 'unknown'}`);
         // logger.info(`📝 [THREAD_DEBUG] Credit calculation: msgCredit=${data.msgCredit}, usedCredit=${data.usedCredit}, final=${creditAmount} (stored as Double)`);
         
-        // Create the thread document with sumhistory_checkpoint
-        const threadDoc = await Thread.create({
-            message: encryptedData(JSON.stringify(formatedQuestion)),
-            ai: encryptedData(JSON.stringify(formatedResponse)),
-            user: formatUser(data.user),
-            chat_session_id: data.chatId,
-            chatId: data.chatId,
-            seq: Date.now(),
-            _id: data.messageId,
-            companyId: data.companyId,
-            promptId: data.promptId,
-            customGptId: data.customGptId,
-            media: data.media,
-            cloneMedia: data.cloneMedia,
-            responseModel: data.responseModel,
-            responseAPI: data.responseAPI,
-            proAgentData: data.proAgentData,
-            sumhistory_checkpoint: messageCheckpoint,
-            usedCredit: data.usedCredit, // Use model-specific credit from frontend, fallback to usedCredit or 1
-            citations: data.citations,
-            isPaid: true
-        });
+         // Create or update the thread document with sumhistory_checkpoint
+         const threadDoc = await Thread.findOneAndUpdate(
+            { _id: data.messageId },
+            {
+                message: encryptedData(JSON.stringify(formatedQuestion)),
+                ai: encryptedData(JSON.stringify(formatedResponse)),
+                user: formatUser(data.user),
+                chat_session_id: data.chatId,
+                chatId: data.chatId,
+                seq: Date.now(),
+                companyId: data.companyId,
+                promptId: data.promptId,
+                customGptId: data.customGptId,
+                media: data.media,
+                cloneMedia: data.cloneMedia,
+                responseModel: data.responseModel,
+                responseAPI: data.responseAPI,
+                proAgentData: data.proAgentData,
+                sumhistory_checkpoint: messageCheckpoint,
+                usedCredit: data.usedCredit, // Use model-specific credit from frontend, fallback to usedCredit or 1
+                citations: data.citations,
+                isPaid: data.isPaid
+            },
+            { upsert: true, new: true }
+        );
         
         // logger.info(`📝 [THREAD_SAVED] Thread saved with usedCredit: ${creditAmount}`);
         
@@ -776,7 +782,7 @@ const updateThreadFields = async (threadId, updateData) => {
         const result = await Thread.findByIdAndUpdate(
             threadId,
             { $set: updateData },
-            { new: true, upsert: false }
+            { new: true, upsert: true }
         );
 
         if (!result) {
