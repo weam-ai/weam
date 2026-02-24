@@ -65,12 +65,10 @@ const ANTHROPIC_MAX_TOKENS = {
 }
 
 const GEMINI_MODAL = [
-    { name: 'gemini-2.0-flash', type: 2 },
-    // { name: 'gemini-2.5-flash-preview-05-20', type: 2 },
-    // { name: 'gemini-2.5-pro-preview-05-06', type: 2 },
-    { name: 'gemini-2.5-flash', type: 2 },
-    { name: 'gemini-2.5-pro', type: 2 },
+    // Only keep current/provided Gemini preview models
     { name: 'gemini-3-pro-preview', type: 2 },
+    { name: 'gemini-3.1-pro-preview', type: 2 },
+    { name: 'gemini-3-flash-preview', type: 2 },
 ]
 
 const PERPLEXITY_MODAL = [
@@ -160,11 +158,9 @@ const MODAL_NAME = {
     GPT_4_1_MINI: 'gpt-4.1-mini',
     GPT_4_1_NANO: 'gpt-4.1-nano',
     O4_MINI: 'o4-mini',
-    GEMINI_2_5_FLASH_PREVIEW_05_20: 'gemini-2.5-flash-preview-05-20',
-    GEMINI_2_5_PRO_PREVIEW_05_06: 'gemini-2.5-pro-preview-05-06',
-    GEMINI_2_5_FLASH: 'gemini-2.5-flash',
-    GEMINI_2_5_PRO: 'gemini-2.5-pro',
     GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
+    GEMINI_3_1_PRO_PREVIEW: 'gemini-3.1-pro-preview',
+    GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
     O3: 'o3',
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
     QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b:free',

@@ -239,14 +239,13 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'claude-haiku-4-5-20251001',
         'claude-opus-4-6',
         
-        // Google Gemini Models
+        // Google Gemini Models (only keep supported preview/1.5 variants)
         'gemini-1.5-pro',
-        'gemini-2.0-flash',
-        'gemini-2.5-pro',
-        'gemini-2.5-flash',
         'gemini-2.5-flash-preview-05-20',
         'gemini-2.5-pro-preview-05-06',
         'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
+        'gemini-3-flash-preview',
         
         // Meta Llama Models
         'meta-llama/llama-4-scout',
@@ -384,6 +383,9 @@ export function allowImageGeneration(modelName: string) {
         'gpt-5-mini',
         'gpt-5-nano',
         'gpt-5-chat-latest',
+        // Gemini
+        'gemini-3.1-pro-preview',
+        'gemini-3-flash-preview',
     ];
     return allowedModels.includes(modelName);
 }
