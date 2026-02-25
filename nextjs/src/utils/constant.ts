@@ -467,12 +467,9 @@ export const AI_MODAL_NAME = {
     // GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
 
     // Gemini models
-    // GEMINI_2_5_PRO_PREVIEW_05_06: 'gemini-2.5-pro-preview-05-06',
-    GEMINI_2_5_PRO: 'gemini-2.5-pro',
-    GEMINI_2_0_FLASH: 'gemini-2.0-flash',
-    // GEMINI_2_5_FLASH_PREVIEW_05_20: 'gemini-2.5-flash-preview-05-20',
-    GEMINI_2_5_FLASH: 'gemini-2.5-flash',
     GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
+    GEMINI_3_1_PRO_PREVIEW: 'gemini-3.1-pro-preview',
+    GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
 
     // Anthropic models
     //CLAUDE_3_7_SONNET_LATEST: 'claude-3-7-sonnet-latest',
@@ -814,18 +811,6 @@ export const MODEL_CREDIT_INFO = [
         model: 'gemini-1.5-flash',
         credit: 5,
     },
-    {
-        code: 'GEMINI',
-        model: 'gemini-2.0-flash',
-        credit: 0.5,
-        displayName: 'Gemini 2.0 Flash',
-        snippet: 'Fast, multimodal, ideal for content generation.',
-        doc: true,
-        websearch: true,
-        vision: true,
-        image: true,
-        reasoning: false,
-    },
     // {
     //     code: 'GEMINI',
     //     model: 'gemini-2.5-flash-preview-05-20',
@@ -838,18 +823,6 @@ export const MODEL_CREDIT_INFO = [
     //     image: true,
     //     reasoning: true,
     // },
-    {
-        code: 'GEMINI',
-        model: 'gemini-2.5-flash',
-        credit: 10,
-        displayName: 'Gemini 2.5 Flash',
-        snippet: 'Fast for content and mid-level coding. Reasoning is good.',
-        doc: true,
-        websearch: true,
-        vision: true,
-        image: true,
-        reasoning: true,
-    },
     // {
     //     code: 'GEMINI',
     //     model: 'gemini-2.5-pro-preview-05-06',
@@ -862,12 +835,25 @@ export const MODEL_CREDIT_INFO = [
     //     image: true,
     //     reasoning: true,
     // },
+    
     {
         code: 'GEMINI',
-        model: 'gemini-2.5-pro',
+        model: 'gemini-3-flash-preview',
+        credit: 5,
+        displayName: 'Gemini 3 Flash Preview',
+        snippet: 'Fast multimodal model for real-time tasks and apps.',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: true,
+        reasoning: false,
+    },
+    {
+        code: 'GEMINI',
+        model: 'gemini-3.1-pro-preview',
         credit: 10,
-        displayName: 'Gemini 2.5 Pro',
-        snippet: 'Powerful for complex reasoning and advanced coding.',
+        displayName: 'Gemini 3.1 Pro Preview',
+        snippet: 'Strong reasoning for deep analysis and smart coding.',
         doc: true,
         websearch: true,
         vision: true,
@@ -1292,21 +1278,7 @@ export const AI_CREDITS = [
         creditCount: '10',
         MessageNo: '50',
     },
-    {
-        modelName: 'Gemini 2.0 Flash',
-        creditCount: '0.5',
-        MessageNo: '1000',
-    },
-    {
-        modelName: 'Gemini 2.5 Flash Preview',
-        creditCount: '5',
-        MessageNo: '100',
-    },
-    {
-        modelName: 'Gemini 2.5 Pro Preview',
-        creditCount: '10',
-        MessageNo: '50',
-    },
+    
     {
         modelName: 'Claude 3 Opus',
         creditCount: '50',
@@ -1466,21 +1438,7 @@ export const FREE_TIER_AI_CREDITS = [
         creditCount: '10',
         MessageNo: '20',
     },
-    {
-        modelName: 'Gemini 2.0 Flash',
-        creditCount: '0.5',
-        MessageNo: '400',
-    },
-    {
-        modelName: 'Gemini 2.5 Flash',
-        creditCount: '5',
-        MessageNo: '40',
-    },
-    {
-        modelName: 'Gemini 2.5 Pro',
-        creditCount: '10',
-        MessageNo: '20',
-    },
+    
     {
         modelName: 'Claude 3 Opus',
         creditCount: '50',
@@ -1645,14 +1603,13 @@ export const MODEL_NAME_BY_CODE = {
     
     // Gemini models
     'gemini-2.5-pro-preview-05-06': 'GEMINI',
-    'gemini-2.0-flash': 'GEMINI',
     'gemini-1.5-flash-8b': 'GEMINI',
     'gemini-1.5-pro': 'GEMINI',
     'gemini-1.5-flash': 'GEMINI',
     'gemini-2.5-pro-preview-03-25': 'GEMINI',
     'gemini-2.5-flash-preview-05-20': 'GEMINI',
-    'gemini-2.5-pro': 'GEMINI',
-    'gemini-2.5-flash': 'GEMINI',
+    'gemini-3-flash-preview': 'GEMINI',
+    'gemini-3.1-pro-preview': 'GEMINI',
     'gemini-3-pro-preview': 'GEMINI',
     
     // Anthropic models
