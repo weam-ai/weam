@@ -37,6 +37,10 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.03,
         completion_tokens: 0.09
     },
+    'gpt-5.4': {
+        prompt_tokens: 0.0025,
+        completion_tokens: 0.015
+    },
 
     // Anthropic Models
     'claude-3-5-sonnet-20241022': {
