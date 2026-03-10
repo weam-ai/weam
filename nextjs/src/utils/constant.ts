@@ -457,6 +457,7 @@ export const AI_MODAL_NAME = {
     GPT_5_CHAT: 'gpt-5-chat-latest',    
     GPT_5_1:'gpt-5.1',   
     GPT_5_2:'gpt-5.2',
+    GPT_5_4:'gpt-5.4',
     // Open AI models
     // GPT_4_1: 'gpt-4.1',
     // GPT_4_O_LATEST: 'chatgpt-4o-latest',
@@ -759,6 +760,18 @@ export const MODEL_CREDIT_INFO = [
         vision: true,
         image: true,
         reasoning: false,
+    },
+    {
+        code: 'OPEN_AI',
+        model: 'gpt-5.4',
+        credit: 10,
+        displayName: 'GPT-5.4',
+        snippet: 'Best intelligence at scale for agentic, coding, and professional workflows',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: true,
+        reasoning: true,
     },
     {
         code: 'OPEN_AI',
@@ -1269,6 +1282,11 @@ export const AI_CREDITS = [
         MessageNo: '250',
     },
     {
+        modelName: 'OpenAI gpt-5.4',
+        creditCount: '10',
+        MessageNo: '50',
+    },
+    {
         modelName: 'OpenAI gpt-5-nano',
         creditCount: '5',
         MessageNo: '100',
@@ -1600,6 +1618,7 @@ export const MODEL_NAME_BY_CODE = {
     'gpt-5-chat-latest': 'OPEN_AI',
     'gpt-5.1': 'OPEN_AI',
     'gpt-5.2': 'OPEN_AI',
+    'gpt-5.4': 'OPEN_AI',
     
     // Gemini models
     'gemini-2.5-pro-preview-05-06': 'GEMINI',
