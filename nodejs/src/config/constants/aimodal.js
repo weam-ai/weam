@@ -90,6 +90,7 @@ const LLAMA4_MODAL = [
 
 const GROK_MODAL = [
     { name: 'x-ai/grok-3-mini-beta', type: 2 },
+    { name: 'x-ai/grok-4.1-fast', type: 2 },
 ]
 
 const QWEN_MODAL = [
@@ -164,6 +165,7 @@ const MODAL_NAME = {
     GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
     O3: 'o3',
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
+    GROK_4_1_FAST: 'x-ai/grok-4.1-fast',
     QWEN_3_30B_A3B: 'qwen/qwen3-30b-a3b:free',
     GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
     CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',

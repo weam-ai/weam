@@ -1842,6 +1842,7 @@ async function generateTitleByLLM(payload) {
             [AI_MODAL_PROVIDER.DEEPSEEK]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.LLAMA4]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.GROK]: 'x-ai/grok-3-mini-beta',
+            [AI_MODAL_PROVIDER.GROK]: 'x-ai/grok-4.1-fast',
             [AI_MODAL_PROVIDER.QWEN]: 'qwen/qwen3-30b-a3b:free',
             [AI_MODAL_PROVIDER.SARVAM]: 'sarvam-m',
             [AI_MODAL_PROVIDER.PERPLEXITY]: 'sonar',
