@@ -1230,12 +1230,12 @@ async function openRouterApiChecker(req) {
         processModalBots(QWEN_MODAL, AI_MODAL_PROVIDER.QWEN, OPENROUTER_PROVIDER.QWEN);
         processModalBots(GROK_MODAL, AI_MODAL_PROVIDER.GROK, OPENROUTER_PROVIDER.GROK);
         if (updates.length) {
-            return UserBot.bulkWrite(updates);
+            await UserBot.bulkWrite(updates);
         }
         if (inserts.length) {
             return UserBot.insertMany(inserts);
         }
-        return existing;
+        return updates.length ? true : existing;
     } catch (error) {
         handleError(error, 'Error - openRouterApiChecker');
     }
