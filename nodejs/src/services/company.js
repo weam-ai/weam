@@ -1235,7 +1235,7 @@ async function openRouterApiChecker(req) {
         if (inserts.length) {
             return UserBot.insertMany(inserts);
         }
-        return updates.length ? true : existing;
+        return existing;
     } catch (error) {
         handleError(error, 'Error - openRouterApiChecker');
     }
