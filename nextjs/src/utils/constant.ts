@@ -499,7 +499,7 @@ export const AI_MODAL_NAME = {
     
     // Grok models
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
-
+    GROK_4_1_FAST: 'x-ai/grok-4.1-fast',
     // Ollama (local) models
     OLLAMA_LLAMA_3_1_8B: 'llama3.1:8b',
     OLLAMA_MISTRAL_7B: 'mistral:7b',
@@ -1057,6 +1057,15 @@ export const MODEL_CREDIT_INFO = [
         reasoning: false,
     },
     {
+        code: 'GROK',
+        model: 'x-ai/grok-4.1-fast',
+        credit: 5,
+        displayName: 'Grok 4.1 Fast',
+        snippet: 'Great for complex tasks and coding.',
+        doc: true,
+        websearch: false,
+    },
+    {
         code: 'QWEN',
         model: 'qwen/qwen3-30b-a3b:free',
         credit: 5,
@@ -1358,6 +1367,11 @@ export const AI_CREDITS = [
         MessageNo: '500',
     },
     {
+        modelName: 'Grok 4.1 Fast',
+        creditCount: '10',
+        MessageNo: '50',
+    },
+    {
         modelName: 'Qwen 3.30B A3B',
         creditCount: '5',
         MessageNo: '100',
@@ -1518,6 +1532,11 @@ export const FREE_TIER_AI_CREDITS = [
         MessageNo: '200',
     },
     {
+        modelName: 'Grok 4.1 Fast',
+        creditCount: '10',
+        MessageNo: '20',
+    },
+    {
         modelName: 'Qwen 3.30B A3B',
         creditCount: '5',
         MessageNo: '40',
@@ -1669,6 +1688,7 @@ export const MODEL_NAME_BY_CODE = {
     
     // Grok models
     'x-ai/grok-3-mini-beta': 'GROK',
+    'x-ai/grok-4.1-fast': 'GROK',
     
     // Qwen models
     'qwen/qwen3-30b-a3b:free': 'QWEN',
