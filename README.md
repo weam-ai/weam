@@ -151,6 +151,31 @@ bash winbuild.sh  (for windows)
 docker-compose up --build
 ```
 
+## Domain & Proxy Setup (RECOMMENDED)
+
+To keep all your AI applications and services under one unified, secure domain and avoid port conflicts when running multiple apps/services Weam uses an NGINX proxy setup.
+
+- **Why?** Everything under a single (local) domain is scalable and compatible with browser features that need HTTPS. It avoids conflicts you may face if running different AI apps or services on your system simultaneously.
+- We **strongly recommend** using a custom local domain (such as `https://weam.local`), rather than only using `localhost:3000`.
+- You can use any custom local domain but it **must** start with `https://` to ensure security and compatibility.
+
+**Mandatory Step Before nginx Proxy Setup:**
+
+1. Edit your `.env` file and set:
+
+   ```env
+   NEXT_PUBLIC_DOMAIN_URL=https://weam.local
+   ```
+   (You may use another local domain, but it must start with `https://`.)
+2. After first build/start, only then run:
+
+   ```bash
+   bash nginx_setup.sh
+   ```
+---
+
+> **Note:** Skipping this setup or using only localhost:3000 may cause issues with multiple apps/services or browser security features requiring HTTPS domains.
+
 - Docs: [Quickstart Guide](https://docs.weam.ai/setup/choose-your-setup/local-setup)
 - From Source / Cloud: Coming soon
 - Setup Video: Uploading soon
