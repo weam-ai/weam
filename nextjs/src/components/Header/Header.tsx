@@ -24,21 +24,27 @@ import useConversation from '@/hooks/conversation/useConversation';
 
 const HeaderLayout = () => {
     const params = useParams();
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const chatAccess = useSelector((store:RootState) => store.chat.chatAccess);
     const dispatch = useDispatch();
     const socket = useSocket();
     const currentUser = useMemo(() => getCurrentUser(), []);
     const companyId = useMemo(() => getCompanyId(currentUser), [currentUser]);
+    const brainId = useMemo(() => decodedObjectId(searchParams.get('b') ?? '') ?? '', [searchParams]);
     const {conversations} = useConversation()
     
     useEffect(() => {
         if (socket) {
-            socket.emit(SOCKET_EVENTS.JOIN_CHAT_ROOM, { chatId: params.id, companyId, userId: currentUser._id });
+            socket.emit(SOCKET_EVENTS.JOIN_CHAT_ROOM, { chatId: params.id, companyId, userId: currentUser._id, brainId });
             socket.emit(SOCKET_EVENTS.JOIN_COMPANY_ROOM, { companyId });
             socket.emit(SOCKET_EVENTS.LOAD_CONVERSATION, { chatId: params.id, companyId, userId: currentUser._id , isNewChat : conversations.length == 0});
             socket.on(SOCKET_EVENTS.LOAD_CONVERSATION, ({ access }) => {
                 dispatch(setChatAccessAction(access));
-                if (!access) Toast('You are not allowed to access this chat', 'error');
+                if (!access) {
+                    Toast('You are not allowed to access this chat', 'error');
+                    router.push(routes.main);
+                }
             });
 
             socket.on('disconnect', () => {
