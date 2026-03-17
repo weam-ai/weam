@@ -1184,7 +1184,9 @@ const ChatPage = memo(() => {
         if (socket) {
             socket.emit(SOCKET_EVENTS.JOIN_CHAT_ROOM, {
                 chatId: params.id,
-                companyId: companyId
+                companyId: companyId,
+                userId: currentUser._id,
+                brainId: getDecodedObjectId()
             });
             socket.emit(SOCKET_EVENTS.JOIN_COMPANY_ROOM, { companyId });
             threadReceiveFromSocket();
