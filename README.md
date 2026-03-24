@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://weam.ai">Website</a> •
+  <a href="https://opensource.weam.ai/">Website</a> •
   <a href="https://docs.weam.ai">Docs</a> •
   <a href="https://discord.com/invite/EyUbyUxf4n">Discord</a>
 </p>
