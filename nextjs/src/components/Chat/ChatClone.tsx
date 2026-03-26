@@ -8,7 +8,9 @@ import Toast from '@/utils/toast';
 import useChat from '@/hooks/chat/useChat';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import useMediaUpload from '@/hooks/common/useMediaUpload';
-import UploadFileInput from '@/components/Chat/UploadFileInput';
+import UploadFileInput, {
+    getResponseModel,
+} from '@/components/Chat/UploadFileInput';
 import TabGptList from '@/components/Chat/TabGptList';
 import Image from 'next/image';
 import defaultCustomGptImage from '../../../public/defaultgpt.jpg';
@@ -171,7 +173,23 @@ const ChatPage = memo(() => {
     const globalUploadedFile = useSelector((store: RootState) => store.conversation.uploadData);
     const initialMessage = useSelector((store:RootState) => store.chat.initialMessage);
     const agentPromptDropdownRef = useRef<HTMLDivElement>(null);
-
+    const modelQueryParam = queryParams.get('model');
+    const selectedAiModal = useSelector(
+        (store: RootState) => store.assignmodel.selectedModal,
+    );
+    // After refresh, Redux has no selected model; apply `model` from the URL so the header
+    // matches the link. Skip once a model is chosen so stale searchParams cannot override
+    // MESSAGE_LIST + UserModel after pushState updates the address bar.
+    useEffect(() => {
+        if (!modelQueryParam || !userModal.length || selectedAiModal?.name) return;
+        const match =
+            userModal.find(
+                (el) => getResponseModel(el.name) === modelQueryParam,
+            ) || userModal.find((el) => el.name === modelQueryParam);
+        if (match) {
+            dispatch(setSelectedAIModal(match));
+        }
+    }, [params.id, modelQueryParam, userModal, dispatch, selectedAiModal?.name]);
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (

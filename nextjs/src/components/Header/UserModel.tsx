@@ -28,19 +28,21 @@ const UserModel = () => {
     const router = useRouter();
     
     useEffect(() => {
-        if (!userModals || !userModals.length) return;
-        if (lastConversationModal?.responseModel) {
-            const selectedModal = userModals.find(el => el.name === lastConversationModal.responseModel);
-             if(isEmptyObject(selectedAIModal)){
-                const defaultModel = userModals.find(el => el.name === AI_MODEL_CODE.DEFAULT_OPENAI_SELECTED);
-                if (defaultModel) {
-                    dispatch(setSelectedAIModal(defaultModel));
-                }
-            }else{
-                dispatch(setSelectedAIModal(selectedModal));
+        if (!userModals?.length || !lastConversationModal?.responseModel) return;
+        const selectedModal = userModals.find(
+            (el) => el.name === lastConversationModal.responseModel,
+        );
+        if (selectedModal) {
+            dispatch(setSelectedAIModal(selectedModal));
+        } else if (isEmptyObject(selectedAIModal)) {
+            const defaultModel = userModals.find(
+                (el) => el.name === AI_MODEL_CODE.DEFAULT_OPENAI_SELECTED,
+            );
+            if (defaultModel) {
+                dispatch(setSelectedAIModal(defaultModel));
             }
         }
-    }, [lastConversationModal])
+    }, [lastConversationModal, userModals, dispatch]);
 
     useEffect(() => {
         fetchSocketModalList();
