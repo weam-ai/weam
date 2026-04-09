@@ -186,11 +186,11 @@ const addCustomGpt = async (req) => {
           );
 
           // Create chat docs in bulk instead of individual operations
-            if (existingBot?.brain?.id) {
+            if (existing?.brain?.id) {
                 ChatDocs.insertMany(docFile.map(dfile => ({
                     userId: req.userId,
                     fileId: dfile._id,
-                    brainId: existingBot.brain.id,
+                    brainId: existing.brain.id,
                     doc: chatDocsFileFormat(dfile),
                 })));
             }
