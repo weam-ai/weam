@@ -1199,10 +1199,31 @@ async function streamAndLog(app, data, socket, threadId = null) {
             
             // Combine cloneMedia files with agent documents
             let allFiles = [...(data.cloneMedia || [])];
+
+            if (isAgentEnabled && agentDetails) {
+                if (agentDetails.doc && Array.isArray(agentDetails.doc)) {
+                    agentDetails.doc.forEach(agentFile => {
+                        allFiles.push({
+                            name: agentFile.name,
+                            uri: agentFile.uri,
+                            isCustomGpt: true,
+                            _id: agentFile.id,
+                            mime_type: agentFile.mime_type,
+                            gptname: agentDetails.title,
+                            gptCoverImage: agentDetails.coverImg?.uri || '',
+                            responseModel: agentDetails.responseModel?.name,
+                            persistTag: agentDetails.persistTag,
+                            filename: agentFile.name,
+                            isDocument: true, // Mark as document for RAG processing
+                            brainId: agentDetails.brain?.id || data.brainId,
+                        });
+                    });
+                }
+            }
             
             const { searchWithinFilesByFileIds } = require('./qdrant');
 
-            const fileIds = allFiles.map(file => file._id);
+            const fileIds = [...new Set(allFiles.map(file => file._id))];
 
             // Search across all relevant namespaces
             const searchResults =  await searchWithinFilesByFileIds(fileIds, data.query, 18);
