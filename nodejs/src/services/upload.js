@@ -250,7 +250,7 @@ const fileUpload = async (req) => {
         await Promise.all([
             chatDocsToCreate.length > 0 ? File.insertMany(chatDocsToCreate) : null,
             vectorDataToProcess.length > 0 ? (async () => {
-                await storeVectorData(req, vectorDataToProcess);
+                await storeVectorData(vectorDataToProcess);
             })() : null,
             fileUpdates.length > 0 ? File.bulkWrite(fileUpdates) : null
         ]);
@@ -896,7 +896,7 @@ async function uploadFileViaStreams(req) {
 async function embedInParallel(stream, { mimetype, originalName, s3Key, onProgress, signal, fileId }) {
     let chunkIndex;
     try {
-        const { ensureCollection, upsertDocuments } = require('./qdrant');
+        const { ensureCollection } = require('./qdrant');
         await ensureCollection(EMBEDDINGS.VECTOR_SIZE || 1536);
         
         // Get file extension for better type detection
@@ -1643,96 +1643,6 @@ const getMimeTypeMapping = () => {
     };
 };
 
-/**
- * Pinecone embedding function - replaces the old Qdrant embedding
- * @param {ReadableStream} stream - File stream to process
- * @param {Object} options - Embedding options
- * @param {string} options.mimetype - File MIME type
- * @param {string} options.originalName - Original filename
- * @param {string} options.s3Key - S3 key
- * @param {string} options.fileId - MongoDB file ID
- * @param {string} options.companyId - Company ID for Pinecone index
- * @param {string} options.brainId - Brain ID to use as namespace
- * @param {Function} options.onProgress - Progress callback
- * @param {AbortSignal} options.signal - Abort signal
- */
-async function embedInParallelPinecone(stream, { mimetype, originalName, s3Key, fileId, companyId, brainId, onProgress, signal, embeddingApiKey = null }) {
-    let chunkIndex = 0;
-    
-    try {
-        if (!companyId) {
-            throw new Error('Company ID is required for Pinecone embedding');
-        }
-
-        if (!brainId) {
-            logger.warn(`No brainId provided for file ${originalName}, using default namespace`);
-        }
-
-        // Import Pinecone service
-        const { ensureIndex, upsertDocuments } = require('./pinecone');
-        
-        // Ensure Pinecone index exists
-        await ensureIndex(companyId, EMBEDDINGS.VECTOR_SIZE || 1536);
-        
-        // Get file extension for better type detection
-        const fileExtension = getFileExtension(originalName)?.toLowerCase();
-        
-        // Files that need full content for reliable parsing
-        const fullContentFiles = [
-            'pdf', 'doc', 'docx', 'xlsx', 'csv', 'xls', 'eml'
-        ];
-        
-        // Code files that can be processed in chunks
-        const codeFiles = [
-            'php', 'js', 'css', 'html', 'htm', 'sql', 'py', 'json', 'txt', 'text'
-        ];
-        
-        if (fullContentFiles.includes(fileExtension) || 
-            mimetype === 'application/pdf' || 
-            mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-            mimetype === 'application/vnd.ms-excel' ||
-            mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-            mimetype === 'application/msword' ||
-            mimetype === 'text/csv' ||
-            mimetype === 'message/rfc822') {
-            
-            // Collect full file content
-            const parts = [];
-            for await (const piece of stream) {
-                if (signal?.aborted) return;
-                parts.push(piece);
-            }
-            const fullBuffer = Buffer.concat(parts);
-            chunkIndex = 0;
-            await embedAndUpsertPinecone(fullBuffer, { mimetype, originalName, s3Key, chunkIndex: 0, onProgress, fileId, companyId, brainId, embeddingApiKey });
-            logger.info(`[Pinecone embed] Completed embedding for ${originalName}`);
-            return;
-        }
-        
-        // For text and code files, process in windows to start embedding earlier
-        if (codeFiles.includes(fileExtension) || mimetype?.startsWith('text/')) {
-            let buffered = Buffer.alloc(0);
-            chunkIndex = 0;
-            const windowBytes = 1024 * 1024; // 1MB
-            for await (const piece of stream) {
-                if (signal?.aborted) return;
-                buffered = Buffer.concat([buffered, piece]);
-                if (buffered.length >= windowBytes) {
-                    await embedAndUpsertPinecone(buffered, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId, companyId, brainId, embeddingApiKey });
-                    chunkIndex += 1;
-                    buffered = Buffer.alloc(0);
-                }
-            }
-            if (buffered.length) {
-                await embedAndUpsertPinecone(buffered, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId, companyId, brainId, embeddingApiKey });
-            }
-            logger.info(`[Pinecone embed] Completed embedding for ${originalName}`);
-        }
-    } catch (error) {
-        logger.error(`[Pinecone embed] Failed to process ${originalName}, chunk ${chunkIndex}:`, error.message);
-        throw error;
-    }
-}
 
 /**
  * Generate hash-based vector for fallback when embeddings fail
@@ -1757,143 +1667,6 @@ function generateHashVector(text, size) {
     } catch (error) {
         // Ultimate fallback: return zero vector
         return new Array(size).fill(0);
-    }
-}
-
-/**
- * Pinecone embed and upsert function
- * @param {Buffer} buf - File buffer
- * @param {Object} options - Options object
- * @param {string} options.mimetype - File MIME type
- * @param {string} options.originalName - Original filename
- * @param {string} options.s3Key - S3 key
- * @param {number} options.chunkIndex - Chunk index
- * @param {Function} options.onProgress - Progress callback
- * @param {string} options.fileId - MongoDB file ID
- * @param {string} options.companyId - Company ID for Pinecone index
- * @param {string} options.brainId - Brain ID to use as namespace
- */
-async function embedAndUpsertPinecone(buf, { mimetype, originalName, s3Key, chunkIndex, onProgress, fileId, companyId, brainId, embeddingApiKey = null }) {
-    try {
-        logger.info(`Starting Pinecone embedAndUpsert for file: ${originalName} with fileId: ${fileId}`);
-        
-        const text = await extractTextFromBuffer(buf, mimetype, originalName);
-        if (!text || !text.trim()) {
-            logger.info(`No text extracted for file: ${originalName}, skipping embedding`);
-            return;
-        }
-
-        const chunks = await textSplitter.splitText(text);
-        if (!chunks.length) {
-            logger.info(`No chunks created for ${originalName}, chunk ${chunkIndex}`);
-            return;
-        }
-
-        logger.info(`Created ${chunks.length} chunks for file: ${originalName} with fileId: ${fileId}`);
-
-        const expectDim = EMBEDDINGS.VECTOR_SIZE || 1536;
-        const batchSize = EMBEDDINGS.BATCH_SIZE || 32;
-        const client = typeof getEmbeddingsClient === 'function' ? getEmbeddingsClient() : null;
-
-        // Get namespace and tag for this file
-        const namespace = brainId || '__default__';  // Use brainId as namespace
-        const tag = s3Key.split('/')[1];                    // Use filename as tag
-        
-        logger.info(`Using namespace: ${namespace} (brainId), tag: ${tag} (filename) for file: ${originalName}`);
-        
-        if (!brainId) {
-            logger.warn(`⚠️  No brainId provided, using default namespace. This may cause search issues.`);
-        }
-
-        let processed = 0;
-        for (let i = 0; i < chunks.length; i += batchSize) {
-            const batch = chunks.slice(i, i + batchSize);
-            let vectors = null;
-
-            // 1) Try a single API call for the whole batch (fast path)
-            if (client && typeof client.embedDocuments === 'function') {
-                try {
-                    const out = await client.embedDocuments(batch);
-                    // Validate shape & dims
-                    if (Array.isArray(out) && out.length === batch.length) {
-                        vectors = out.map((v, idx) =>
-                            Array.isArray(v) && v.length === expectDim
-                                ? v
-                                : generateHashVector(batch[idx], expectDim)
-                        );
-                    }
-                } catch (e) {
-                    logger.warn('[Pinecone embeddings] Batch API failed; falling back per-chunk:', e.message);
-                    // vectors stays null → fall back below
-                }
-            }
-
-            // 2) Fallback: per-chunk (still parallel across network due to pipeline, but one call each)
-            if (!vectors) {
-                vectors = [];
-                for (let j = 0; j < batch.length; j++) {
-                    try {
-                        const v = await embedText(batch[j], embeddingApiKey);
-                        vectors.push(
-                            Array.isArray(v) && v.length === expectDim ? v : generateHashVector(batch[j], expectDim)
-                        );
-                    } catch (err) {
-                        logger.warn('[Pinecone embeddings] Per-chunk embedding failed; hashing:', err.message);
-                        vectors.push(generateHashVector(batch[j], expectDim));
-                    }
-                }
-            }
-
-            // 3) Prepare Pinecone upsert data with namespace and tag
-            const points = vectors.map((vector, j) => ({
-                id: uuidv4(),
-                values: vector,
-                metadata: {
-                    s3_key: s3Key,
-                    filename: originalName,
-                    fileId: fileId,
-                    mimetype,
-                    chunk_index: chunkIndex,
-                    text: batch[j],
-                    companyId: companyId,
-                    tag: tag,
-                    namespace: namespace
-                }
-            }));
-
-            logger.info(`Storing ${points.length} vectors for file: ${originalName} with fileId: ${fileId} in namespace: ${namespace}`);
-
-            try {
-                // Import Pinecone service
-                const { upsertDocuments } = require('./pinecone');
-                const result = await upsertDocuments(companyId, points, namespace);
-                logger.info(`✅ Successfully stored ${points.length} vectors for file: ${originalName} with fileId: ${fileId} in namespace: ${namespace}`);
-            } catch (e) {
-                logger.error(`[Pinecone embed] Batch upsert failed for file: ${originalName} with fileId: ${fileId}:`, e.message);
-                // degrade gracefully so we don't lose data
-                for (let j = 0; j < points.length; j++) {
-                    try { 
-                        const { upsertDocuments } = require('./pinecone');
-                        await upsertDocuments(companyId, [points[j]], namespace); 
-                    }
-                    catch (e2) { 
-                        logger.error(`[Pinecone embed] Single upsert failed for chunk ${i + j}:`, e2.message); 
-                    }
-                }
-            }
-
-            processed += batch.length;
-            onProgress && onProgress({
-                filename: originalName,
-                s3Key,
-                embeddedChunks: processed,
-                chunkIndex,
-                totalChunks: chunks.length
-            });
-        }
-    } catch (error) {
-        logger.error(`[Pinecone embed] Failed to process ${originalName}, chunk ${chunkIndex}:`, error.message);
-        throw error;
     }
 }
 

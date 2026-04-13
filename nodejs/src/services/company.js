@@ -482,55 +482,6 @@ const createVerifyLink = async (user, payload, expireTime = 60) => {
     }
 }
 
-async function createPinecornIndex(user, req) {
-    try {
-        const { ensureIndex } = require('./pinecone');
-        
-        // Create Pinecone index directly using the new service
-        await ensureIndex(user.company.id, 1536);
-        
-        // Store metadata in MongoDB for reference
-        const data = mongoose.connection;
-        const result = data.db.collection('companypinecone');
-        await result.insertOne({
-            company: {
-                name: user.company.name,
-                slug: user.company.slug,
-                id: user.company.id
-            },
-            vector_index: user.company.id,
-            dimensions: 1536,
-            environment: 'us-west-2',
-            metric: 'cosine',
-            cloud: 'aws',
-            region: 'us-west-2'
-        });
-
-        // Set up OpenAI bot if available
-        const openAiBot = await Bot.findOne({ code: AI_MODAL_PROVIDER.OPEN_AI }, { title: 1, code: 1 });
-        if (openAiBot) {
-            req.body = {
-                ...req.body,
-                bot: {
-                    id: openAiBot._id,
-                    title: openAiBot.title,
-                    code: openAiBot.code,
-                },
-                key: LINK.WEAM_OPEN_AI_KEY,
-            };
-            req.user = user;
-            req.roleCode = user.roleCode
-            await aiModalCreation(req);
-        }
-
-        await createFreeTierApiKey(user);
-        
-        logger.info(`Pinecone index created successfully for company: ${user.company.id}`);
-    } catch (error) {
-        handleError(error, 'Error - createPinecornIndex'); 
-    }
-}
-
 async function huggingFaceApiChecker(req) {
     try {
         const { user, body } = req;
@@ -1421,7 +1372,6 @@ module.exports = {
     addTeamMembers,
     checkApiKey,
     resendVerification,
-    createPinecornIndex,
     huggingFaceApiChecker,
     extractAuthToken,
     anthropicApiChecker,

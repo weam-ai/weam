@@ -14,9 +14,6 @@ const ollamaService = require('./ollamaService');
 const { SearxNGSearchTool } = require('./searchTool');
 const { createLLMConversation } = require('./thread');
 const { getConversationHistory } = require('./memoryService');
-// Commented out qdrant imports - using pinecone instead
-// const { getFilesListFromCollection, searchWithinFileByName, searchWithinFileByFileId } = require('./qdrant');
-const { getFilesListFromIndex, searchWithinFileByName, searchWithinFileByFileId } = require('./pinecone');
 const CustomGpt = require('../models/customgpt');
 const ChatDocs = require('../models/chatdocs');
 const { createCostCallback } = require('./callbacks/contextManager');
@@ -1200,116 +1197,15 @@ async function streamAndLog(app, data, socket, threadId = null) {
                 throw new Error('Company ID is required for pinecone search');
             }
             
-            
-            // Get unique tags and namespaces from uploaded files and agent documents
-            const tagList = [];
-            const namespaceList = [];
-            const seenTags = new Set();
-            
             // Combine cloneMedia files with agent documents
             let allFiles = [...(data.cloneMedia || [])];
             
-            // Add agent's pre-configured documents if agent is enabled
-            if (isAgentEnabled && agentDetails) {
-                if (agentDetails.doc && Array.isArray(agentDetails.doc)) {
-                    agentDetails.doc.forEach(agentFile => {
-                        // Convert agent file format to match cloneMedia structure
-                        allFiles.push({
-                            name: agentFile.name,
-                            filename: agentFile.name,
-                            uri: agentFile.uri,
-                            isCustomGpt: true,
-                            isDocument: true, // Mark as document for RAG processing
-                            brainId: agentDetails.brain?.id || data.brainId,
-                            _id: agentFile._id
-                        });
-                    });
-                }
-            }
-            
-            
-            for (const file of allFiles) {
-                // Debug: Log the file object structure
-                
-                // Extract filename from URI (priority method)
-                // URI format: /documents/676ac4b5103171b59d6daf41.pdf
-                let filename = null;
-                
-                // Method 1: Use URI parsing (primary method - matches upload process)
-                if (file.uri) {
-                    filename = file.uri.split('/')[2]; // Extract: 676ac4b5103171b59d6daf41.pdf
-                }
-                // Method 2: Use file._id as fallback
-                else if (file._id) {
-                    const extension = file.name?.split('.').pop() || file.filename?.split('.').pop() || 'pdf';
-                    filename = `${file._id.toString()}.${extension}`;
-                }
-                // Method 3: Use file.id as fallback  
-                else if (file.id) {
-                    const extension = file.name?.split('.').pop() || file.filename?.split('.').pop() || 'pdf';
-                    filename = `${file.id.toString()}.${extension}`;
-                }
-                // Method 4: Use name/filename fields as final fallback
-                else if (file.name) {
-                    filename = file.name;
-                }
-                else if (file.filename) {
-                    filename = file.filename;
-                }
-                
-                if (filename) {
-                    // Try multiple ways to get the brain ID
-                    let fileBrainId = null;
-                    
-                    // Method 1: Use file.brainId if available (most reliable)
-                    if (file.brainId) {
-                        fileBrainId = file.brainId.toString();
-                    }
-                    // Method 2: Use file.brain.id if available
-                    else if (file.brain?.id) {
-                        fileBrainId = file.brain.id.toString();
-                    }
-                    // Method 3: Use file.brain._id if available
-                    else if (file.brain?._id) {
-                        fileBrainId = file.brain._id.toString();
-                    }
-                    // Method 4: Try to lookup brain ID from database using file ID
-                    else if (file._id || file.id) {
-                        try {
-                            const fileId = file._id || file.id;
-                            const chatDoc = await ChatDocs.findOne({ fileId: fileId }).select('brainId');
-                            if (chatDoc && chatDoc.brainId) {
-                                fileBrainId = chatDoc.brainId.toString();
-                            } else {
-                                fileBrainId = data.brainId;
-                                logger.warn(`🧠 Database lookup failed, using current brain: ${fileBrainId} for file: ${fileId}`);
-                            }
-                        } catch (error) {
-                            logger.error(`🧠 Error looking up brain ID: ${error.message}`);
-                            fileBrainId = data.brainId;
-                            logger.warn(`🧠 Database error, using current brain: ${fileBrainId}`);
-                        }
-                    }
-                    // Method 5: Final fallback to current brain ID
-                    else {
-                        fileBrainId = data.brainId;
-                        logger.warn(`🧠 No file brain ID found, using current brain: ${fileBrainId}`);
-                    }
-                    
-                    const searchKey = `${filename}_${fileBrainId}`; // Create unique key to prevent duplicates across brains
-                    if (!seenTags.has(searchKey)) {
-                        seenTags.add(searchKey);
-                        tagList.push(filename);           // Tag = filename
-                        namespaceList.push(fileBrainId); // Namespace = file's brain ID
-                    }
-                } else {
-                    logger.warn(`❌ Could not extract filename from file object:`, file);
-                }
-            }
-            const { searchWithinFileByFileId } = require('./qdrant');
+            const { searchWithinFilesByFileIds } = require('./qdrant');
+
+            const fileIds = allFiles.map(file => file._id);
 
             // Search across all relevant namespaces
-            const searchResults =  await searchWithinFileByFileId(allFiles[0]._id, data.query, 18);
+            const searchResults =  await searchWithinFilesByFileIds(fileIds, data.query, 18);
             
             // Build enhanced context from search results
             let enhancedContext = '';
