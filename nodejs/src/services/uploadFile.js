@@ -264,7 +264,7 @@ const fileUpload = async (req) => {
         await Promise.all([
             chatDocsToCreate.length > 0 ? File.insertMany(chatDocsToCreate) : null,
             vectorDataToProcess.length > 0 ? (async () => {
-                await storeVectorData(req, vectorDataToProcess);
+                await storeVectorData(vectorDataToProcess);
             })() : null,
             fileUpdates.length > 0 ? File.bulkWrite(fileUpdates) : null
         ]);
@@ -893,7 +893,7 @@ async function uploadFileViaStreams(req) {
 async function embedInParallel(stream, { mimetype, originalName, s3Key, onProgress, signal, fileId,embeddingApiKey }) {
     let chunkIndex = 0;
     try {
-        const { ensureCollection, upsertDocuments } = require('./qdrant');
+        const { ensureCollection } = require('./qdrant');
         await ensureCollection(EMBEDDINGS.VECTOR_SIZE || 1536);
         
         // Get file extension for better type detection
@@ -1206,26 +1206,20 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
             return;
         }
 
-        const size = EMBEDDINGS.CHUNK_SIZE_CHARS || 1800;
-        const overlap = EMBEDDINGS.CHUNK_OVERLAP_CHARS || 200;
-        // const chunks = splitText(text, size, overlap);
         const chunks = await textSplitter.splitText(text);
         if (!chunks.length) {
             
             return;
         }
-
         
 
         const expectDim = EMBEDDINGS.VECTOR_SIZE || 1536;
         const batchSize = EMBEDDINGS.BATCH_SIZE || 32; // tune 32–128
         const client = typeof getEmbeddingsClient === 'function' ? getEmbeddingsClient( embeddingApiKey ) : null;
-
         let processed = 0;
         for (let i = 0; i < chunks.length; i += batchSize) {
             const batch = chunks.slice(i, i + batchSize);
             let vectors = null;
-
             // 1) Try a single API call for the whole batch (fast path)
             if (client && typeof client.embedDocuments === 'function') {
                 try {
@@ -1243,7 +1237,6 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
                     // vectors stays null → fall back below
                 }
             }
-
             // 2) Fallback: per-chunk (still parallel across network due to pipeline, but one call each)
             if (!vectors) {
                 vectors = [];
@@ -1259,7 +1252,6 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
                     }
                 }
             }
-
             // 3) Bulk upsert this batch (fewer DB round trips)
             const docs = vectors.map((vector, j) => ({
                 id: uuidv4(),
@@ -1267,18 +1259,16 @@ async function embedAndUpsert(buf, { mimetype, originalName, s3Key, chunkIndex, 
                 payload: {
                     s3_key: s3Key,
                     filename: originalName,
-                    fileId: fileId, // Add MongoDB fileId to payload
+                    fileId: fileId?.toString?.() || fileId, // normalize for stable filtering
                     mimetype,
                     chunk_index: chunkIndex,
                     text: batch[j],
                 }
             }));
-
             
 
             try {
-                const result = await upsertDocuments(docs);
-                
+                await upsertDocuments(docs);
             } catch (e) {
                 logger.error(`[embed] Batch upsert failed for file: ${originalName} with fileId: ${fileId}:`, e.message);
                 // degrade gracefully so we don't lose data
@@ -1739,5 +1729,6 @@ module.exports = {
     getS3UrlByKey,
     getSupportedFileTypes,
     isFileTypeSupported,
-    getMimeTypeMapping
+    getMimeTypeMapping,
+    embedAndUpsert
 }

@@ -1,5 +1,5 @@
 const CustomGpt = require('../models/customgpt');
-const { formatUser, formatDBFileData, formatBrain, getCompanyId } = require('../utils/helper');
+const { formatUser, formatDBFileData, formatBrain, getCompanyId, decryptedData } = require('../utils/helper');
 const dbService = require('../utils/dbService');
 const CompanyModal = require('../models/userBot');
 const File = require('../models/file');
@@ -9,11 +9,9 @@ const ShareBrain = require('../models/shareBrain');
 const { accessOfBrainToUser } = require('./common');
 const { MODAL_NAME } = require('../config/constants/aimodal');
 const { getShareBrains, getBrainStatus } = require('./brain');
-const { ensureIndex, upsertDocuments } = require('./pinecone');
-const { embedText } = require('./embeddings');
+const { ensureCollection } = require('./qdrant');
 const { RecursiveCharacterTextSplitter } = require('@langchain/textsplitters');
 const { EMBEDDINGS } = require('../config/config');
-const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 const AWS = require('aws-sdk');
 const { AWS_CONFIG } = require('../config/config');
@@ -151,10 +149,6 @@ function chatDocsFileFormat(file) {
     }
 }
 
-async function createChatDocs(payload) {
-    ChatDocs.create(payload);
-}
-
 const addCustomGpt = async (req) => {
     try {
         const { fileData } = require('./uploadFile');
@@ -180,11 +174,11 @@ const addCustomGpt = async (req) => {
 
         if (req.files?.doc?.length > 0) {
             const defaultEmbedding = await CompanyModal.findOne({ 'company.id': company.id, name: 'text-embedding-3-small' });
+            const embeddingApiKey = decryptedData(defaultEmbedding.config.apikey);
 
           const docFile = await File.insertMany(
             req.files["doc"].map((file) => fileData(file))
           );
-
           // Create chat docs in bulk instead of individual operations
             if (existing?.brain?.id) {
                 ChatDocs.insertMany(docFile.map(dfile => ({
@@ -198,15 +192,15 @@ const addCustomGpt = async (req) => {
             const vectorData = docFile.map(file => ({
             type: file.type,
             companyId: company.id,
-            fileId: file.id,
-            api_key_id: defaultEmbedding._id.toString(),
-                tag: file.uri.split('/')[2], // Extract filename from URI: /documents/fileId.extension
+            fileId: file._id,
+            api_key_id: embeddingApiKey,
+            tag: file.uri.split('/')[2], 
             uri: file.uri,
             brainId,
                 file_name: file.name
           }));
 
-          storeVectorData(req, vectorData);
+          await storeVectorData(vectorData);
 
             createData['doc'] = docFile.map(file => formatDBFileData(file));
             createData['embedding_model'] = {
@@ -303,7 +297,7 @@ const updateCustomGpt = async (req) => {
 
             // default text embadding modal for text
             const defaultEmbedding = await CompanyModal.findOne({ 'company.id': company.id, name: 'text-embedding-3-small' });
-
+            const embeddingApiKey = decryptedData(defaultEmbedding.config.apikey);
             updateBody['doc'] = docFile.map(file => formatDBFileData(file));
             updateBody['embedding_model'] = {
                 name: defaultEmbedding.name,
@@ -315,8 +309,8 @@ const updateCustomGpt = async (req) => {
                 const vectorData = docFile.map(file => ({
                     type: file.type,
                     companyId: company.id,
-                    fileId: file.id,
-                    api_key_id: defaultEmbedding._id.toString(),
+                    fileId: file._id,
+                    api_key_id: embeddingApiKey,
                     tag: file.uri.split('/')[2],
                     uri: file.uri,
                     brainId: existingBot.brain.id.toString(),
@@ -324,7 +318,7 @@ const updateCustomGpt = async (req) => {
                 }));
  
             // Store vector data
-            storeVectorData(req, vectorData);
+            await storeVectorData(vectorData);
             }
             const newDocs = docFile.map(file => formatDBFileData(file));
             Object.assign(updateBody, { doc: [...filteredPreviousDocs, ...newDocs] });            
@@ -413,102 +407,36 @@ const partialUpdate = async (req) => {
 }
 
 /**
- * Process and store vector data using Pinecone instead of Python API
+ * Process and store vector data using Qdrant
  * @param {Object} req - Request object
  * @param {Array} payloads - Array of file payloads to process
  * @returns {Promise<boolean>} - Success status
  */
-const storeVectorData = async (req, payloads) => {
+const storeVectorData = async (payloads) => {
     try {
+        const { embedAndUpsert } = require('./uploadFile');
+        if (typeof embedAndUpsert !== 'function') {
+            throw new Error('embedAndUpsert is not available from uploadFile service');
+        }
+
         // Process each file payload
         for (const payload of payloads) {
             try {
-                
                 // 1. Fetch file from S3
                 const fileBuffer = await fetchFileFromS3(payload.uri);
-                
-                // 2. Extract text content
-                const textContent = await extractTextFromFile(fileBuffer, payload.type, payload.file_name);
-                
-                if (!textContent || !textContent.trim()) {
-                    logger.warn(`No text content extracted from ${payload.file_name}, skipping`);
-                    continue;
-                }
-                
-                // 3. Split text into chunks
-                const chunks = await textSplitter.splitText(textContent);
-                
-                if (chunks.length === 0) {
-                    logger.warn(`No chunks created for ${payload.file_name}, skipping`);
-                    continue;
-                }
-                
-                // 4. Ensure Pinecone index exists
-                await ensureIndex(payload.companyId, EMBEDDINGS.VECTOR_SIZE || 1536);
-                
-                // 5. Generate embeddings and prepare vectors
-                const vectors = [];
-                const expectDim = EMBEDDINGS.VECTOR_SIZE || 1536;
-                
-                for (let i = 0; i < chunks.length; i++) {
-                    try {
-                        // Generate embedding for this chunk
-                        const embedding = await embedText(chunks[i]);
-                        
-                        // Validate embedding
-                        const vector = Array.isArray(embedding) && embedding.length === expectDim 
-                            ? embedding 
-                            : generateHashVector(chunks[i], expectDim);
-                        
-                        // Create Pinecone point
-                        const point = {
-                            id: uuidv4(),
-                            values: vector,
-                            metadata: {
-                                filename: payload.file_name,
-                                fileId: payload.fileId,
-                                companyId: payload.companyId,
-                                brainId: payload.brainId,
-                                tag: payload.tag,
-                                chunkIndex: i,
-                                text: chunks[i],
-                                mimetype: payload.type,
-                                s3Key: payload.uri.replace(/^\//, '')
-                            }
-                        };
-                        
-                        vectors.push(point);
-                        
-                    } catch (embedError) {
-                        logger.warn(`Embedding failed for chunk ${i} of ${payload.file_name}: ${embedError.message}`);
-                        
-                        // Use hash vector as fallback
-                        const point = {
-                            id: uuidv4(),
-                            values: generateHashVector(chunks[i], expectDim),
-                            metadata: {
-                                filename: payload.file_name,
-                                fileId: payload.fileId,
-                                companyId: payload.companyId,
-                                brainId: payload.brainId,
-                                tag: payload.tag,
-                                chunkIndex: i,
-                                text: chunks[i],
-                                mimetype: payload.type,
-                                s3Key: payload.uri.replace(/^\//, '')
-                            }
-                        };
-                        
-                        vectors.push(point);
-                    }
-                }
-                
-                // 6. Store vectors in Pinecone
-                if (vectors.length > 0) {
-                    const namespace = payload.brainId || '__default__';
-                    await upsertDocuments(payload.companyId, vectors, namespace);
-                }
-                
+
+                // 2. Ensure Qdrant collection exists
+                await ensureCollection(EMBEDDINGS.VECTOR_SIZE || 1536);
+                // 3. Reuse uploadFile embedding pipeline (same as uploadFile.js line 929 flow)
+                await embedAndUpsert(fileBuffer, {
+                    mimetype: payload.type,
+                    originalName: payload.file_name,
+                    s3Key: payload.uri.replace(/^\//, ''),
+                    chunkIndex: 0,
+                    onProgress: null,
+                    fileId: payload.fileId,
+                    embeddingApiKey: payload.api_key_id
+                });
             } catch (fileError) {
                 logger.error(`Error processing file ${payload.file_name}: ${fileError.message}`);
                 // Continue with other files even if one fails

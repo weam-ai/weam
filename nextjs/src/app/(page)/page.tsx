@@ -1,6 +1,5 @@
 import { RESPONSE_STATUS, RESPONSE_STATUS_CODE } from '@/utils/constant';
 import { fetchAiModal } from '@/actions/modals';
-import { getSubscriptionStatusAction } from '@/actions/chat';
 import { HomeAiModelWrapper, HomeChatInputWrapper, RefreshTokenClientWrapper } from '@/components/Chat/ChatWrapper';
 
 export default async function Home() {

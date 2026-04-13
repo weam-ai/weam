@@ -8,16 +8,6 @@ const qdrant = new QdrantClient({
     timeout: 10000 // 10 second timeout
 });
 
-// async function ensureCollection(vectorSize) {
-//     const collections = await qdrant.getCollections();
-//     const exists = collections?.collections?.some(c => c.name === QDRANT.COLLECTION);
-//     if (!exists) {
-//         await qdrant.createCollection(QDRANT.COLLECTION, {
-//             vectors: { size: vectorSize, distance: 'Cosine' },
-//         });
-//     }
-// }
-
 async function ensureCollection(vectorSize) {
 
     try{
@@ -27,13 +17,16 @@ async function ensureCollection(vectorSize) {
     if (!exists) {
       try {
         await qdrant.createCollection(QDRANT.COLLECTION, {
-          vectors: { size: vectorSize, distance: 'Cosine' },
-          on_disk_payload: true,
-          optimizers_config: { default_segment_number: 2 },
-          hnsw_config: { m: 16, ef_construct: 100 },
+            vectors: { size: vectorSize, distance: 'Cosine' },
+            on_disk_payload: true,
+            optimizers_config: { default_segment_number: 2 },
+            hnsw_config: { m: 16, ef_construct: 100 },
         });
-        await qdrant.createPayloadIndex(QDRANT.COLLECTION, { field_name: 'fileId', field_schema: 'keyword' });
-        await qdrant.createPayloadIndex(QDRANT.COLLECTION, { field_name: 'filename', field_schema: 'keyword' });
+        await Promise.all([
+            qdrant.createPayloadIndex(QDRANT.COLLECTION, { field_name: 'fileId', field_schema: 'keyword' }),
+            qdrant.createPayloadIndex(QDRANT.COLLECTION, { field_name: 'filename', field_schema: 'keyword' }),
+            qdrant.createPayloadIndex(QDRANT.COLLECTION, { field_name: 's3_key', field_schema: 'keyword' }),
+        ]);
       } catch (error) {
         console.log('error: ensureCollection', error);
       }
@@ -44,12 +37,19 @@ async function ensureCollection(vectorSize) {
 }
 
 async function upsertDocuments(points) {
-    try {        
-        const result = await qdrant.upsert(QDRANT.COLLECTION, { points });
+    const startedAt = Date.now();
+    try {
+
+        const timeoutMs = 15000;
+        const result = await Promise.race([
+            qdrant.upsert(QDRANT.COLLECTION, { points, wait: true }),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`Qdrant upsert timeout after ${timeoutMs}ms`)), timeoutMs)
+            ),
+        ]);
         return result;
     } catch (error) {
-        console.error('Qdrant upsert failed:', error);
-        console.error('Error details:', error.message);
+        console.error(`[qdrant] upsert failed elapsedMs=${Date.now() - startedAt}`, error?.message || error);
         throw error;
     }
 }
@@ -142,66 +142,33 @@ async function getQueryVector(text) {
     }
 }
 
-async function searchWithinFileByName(filename, query, k) {
+async function searchWithinFilesByFileIds(fileIds, query, k = 18) {
     try {
-        const vector = await getQueryVector(query); // or use your own embedText(query)
-        const hits = await qdrant.search(QDRANT.COLLECTION, {
-            vector,
-            limit: k,
-            with_payload: true,
-            with_vectors: false,
-            filter: {
-                must: [{ key: 'filename', match: { value: filename } }],
-            },
-        });
-        return hits;
-    } catch (err) {
-        console.error('Scoped search failed:', err);
-        return [];
-    }
-}
+        const normalizedFileIds = (fileIds || [])
+            .map((id) => (id != null ? id.toString() : null))
+            .filter(Boolean);
 
-async function searchWithinFileByFileId(fileId, query, k) {
-    try {
+        if (!normalizedFileIds.length) return [];
+
         const vector = await getQueryVector(query);
-        
+
         const hits = await qdrant.search(QDRANT.COLLECTION, {
             vector,
             limit: k,
             with_payload: true,
             with_vectors: false,
             filter: {
-                must: [{ key: 'fileId', match: { value: fileId } }],
+                should: normalizedFileIds.map((fileId) => ({
+                    key: 'fileId',
+                    match: { value: fileId }
+                }))
             },
             score_threshold: 0.15
         });
-        
+
         return hits;
     } catch (err) {
-        console.error('Scoped search by fileId failed:', err);
         console.error('Error details:', err.message);
-        return [];
-    }
-}
-
-async function extractDataFromQdrant(filename, query, k = 18) {
-    try {
-        const files = await getFilesListFromCollection();
-        const hits = await searchWithinFileByName(filename, query, k);
-        return hits;
-    } catch (error) {
-        logger.error('extractDataFromQdrant', error);
-        return [];
-    }
-}
-
-async function extractDataFromQdrantByFileId(fileId, query, k = 18) {
-    try {
-        const files = await getFilesListByFileId(fileId);
-        const hits = await searchWithinFileByFileId(fileId, query, k);
-        return hits;
-    } catch (error) {
-        logger.error('extractDataFromQdrantByFileId', error);
         return [];
     }
 }
@@ -210,10 +177,7 @@ module.exports = {
     qdrant, 
     ensureCollection, 
     upsertDocuments, 
-    extractDataFromQdrant,
-    extractDataFromQdrantByFileId,
     getFilesListFromCollection,
     getFilesListByFileId,
-    searchWithinFileByName,
-    searchWithinFileByFileId
+    searchWithinFilesByFileIds
 };

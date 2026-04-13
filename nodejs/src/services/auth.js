@@ -528,7 +528,6 @@ const inviteLogin = async (req) => {
                             await sendSESMail(existingUser.email, template.subject, template.body);
                         }
                     ),
-                        // createPinecornIndex(existingUser, req)
                     ])
                     const defaultWorkSpace = await addDefaultWorkSpace(companyObj, existingUser);
                     if (defaultWorkSpace) {

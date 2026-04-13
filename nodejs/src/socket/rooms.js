@@ -5,14 +5,10 @@ const { createAdapter } = require('@socket.io/redis-adapter');
 const Chat = require('../models/chat');
 const ChatMember = require('../models/chatmember');
 const ShareBrain = require('../models/shareBrain');
-const { getSubscriptionStatus, handleError, catchSocketAsync, isSubscriptionFree } = require("../utils/helper");
-const Company = require('../models/company');
-const UserBot = require('../models/userBot');
-const { LINK } = require('../config/config');
-const { decryptedData } = require('../utils/helper');
+const { catchSocketAsync } = require("../utils/helper");
 const logger = require("../utils/logger");
 const { checkChatAccess, socketFetchChatById, initializeChat } = require('../services/chat');
-const { socketMessageList, sendMessage, getUsedCredit } = require('../services/thread');
+const { socketMessageList, sendMessage } = require('../services/thread');
 const { socketWorkSpaceList } = require("../services/workspace");
 const { socketChatMemberList } = require("../services/chatmember");
 const User = require('../models/user');
@@ -31,7 +27,6 @@ sockets.on('connection', function (socket) {
     /* join & Leave room for chat */
     socket.on(SOCKET_EVENTS.JOIN_CHAT_ROOM, catchSocketAsync(async (data) => {
         const roomName = `${SOCKET_ROOM_PREFIX.CHAT}${data['chatId']}`;
-        const subscriptionStatus = await getSubscriptionStatus(data.companyId); 
         const isMemberExistInBrain = await ShareBrain.findOne({ 'brain.id': data.brainId, 'user.id': data.userId }, { 'user.email': 1 });
         if(!isMemberExistInBrain){
             socket.emit(SOCKET_EVENTS.LOAD_CONVERSATION, { access: false });
