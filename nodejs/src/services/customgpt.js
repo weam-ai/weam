@@ -10,13 +10,10 @@ const { accessOfBrainToUser } = require('./common');
 const { MODAL_NAME } = require('../config/constants/aimodal');
 const { getShareBrains, getBrainStatus } = require('./brain');
 const { ensureCollection } = require('./qdrant');
-const { RecursiveCharacterTextSplitter } = require('@langchain/textsplitters');
 const { EMBEDDINGS } = require('../config/config');
 const logger = require('../utils/logger');
 const AWS = require('aws-sdk');
 const { AWS_CONFIG } = require('../config/config');
-const pdf = require('pdf-parse');
-const crypto = require('crypto');
 
 // Configure AWS S3
 AWS.config.update({
@@ -35,11 +32,6 @@ const S3 = new AWS.S3({ accessKeyId: AWS_CONFIG.AWS_ACCESS_ID,
     useAccelerateEndpoint: false,
     
  });
-const textSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: EMBEDDINGS.CHUNK_SIZE_CHARS,
-    chunkOverlap: EMBEDDINGS.CHUNK_OVERLAP_CHARS,
-    separators: ['\n\n', '\n', '.', ' ', ''],
-});
 
 /**
  * Fetch file content from S3 bucket
@@ -62,80 +54,6 @@ async function fetchFileFromS3(fileUri) {
     } catch (error) {
         logger.error(`Error fetching file from S3: ${error.message}`);
         throw new Error(`Failed to fetch file from S3: ${error.message}`);
-    }
-}
-
-/**
- * Extract text content from file buffer based on file type
- * @param {Buffer} buffer - File buffer
- * @param {string} mimetype - File MIME type
- * @param {string} filename - Original filename
- * @returns {Promise<string>} - Extracted text content
- */
-async function extractTextFromFile(buffer, mimetype, filename) {
-    try {
-        const fileExtension = getFileExtension(filename)?.toLowerCase();
-        
-        // Handle PDF files
-        if (mimetype === 'application/pdf' || fileExtension === 'pdf') {
-            const data = await pdf(buffer);
-            return data.text || '';
-        }
-        
-        // Handle text files
-        if (mimetype?.startsWith('text/') || ['txt', 'text'].includes(fileExtension)) {
-            return buffer.toString('utf8');
-        }
-        
-        // Handle code files
-        if (['php', 'js', 'css', 'html', 'htm', 'sql', 'py', 'json'].includes(fileExtension)) {
-            return buffer.toString('utf8');
-        }
-        
-        // Handle CSV files
-        if (fileExtension === 'csv' || mimetype === 'text/csv') {
-            return buffer.toString('utf8');
-        }
-        
-        // For other file types, try to extract as text
-        return buffer.toString('utf8');
-        
-    } catch (error) {
-        logger.error(`Error extracting text from file ${filename}: ${error.message}`);
-        return '';
-    }
-}
-
-/**
- * Get file extension from filename
- * @param {string} filename - Filename
- * @returns {string} - File extension
- */
-function getFileExtension(filename) {
-    if (!filename) return '';
-    const parts = filename.split('.');
-    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
-}
-
-/**
- * Generate hash-based vector for fallback when embeddings fail
- * @param {string} text - Text to hash
- * @param {number} size - Vector size
- * @returns {Array} Hash-based vector
- */
-function generateHashVector(text, size) {
-    try {
-        const hash = crypto.createHash('sha256').update(text).digest('hex');
-        const vector = new Array(size).fill(0);
-        
-        for (let i = 0; i < size; i++) {
-            const hashIndex = (i * 7) % hash.length;
-            const charCode = parseInt(hash[hashIndex], 16);
-            vector[i] = (charCode / 15) - 0.5;
-        }
-        return vector;
-    } catch (error) {
-        return new Array(size).fill(0);
     }
 }
 
@@ -406,6 +324,24 @@ const partialUpdate = async (req) => {
     }
 }
 
+const resolveEmbeddingApiKey = async (rawApiKey) => {
+    if (!rawApiKey) return null;
+    const apiKeyString = rawApiKey?.toString?.() || '';
+    if (apiKeyString.startsWith('sk-')) {
+        return apiKeyString;
+    }
+
+    if (/^[a-f0-9]{24}$/i.test(apiKeyString)) {
+        const modelDoc = await CompanyModal.findById(apiKeyString).lean();
+        const encryptedKey = modelDoc?.config?.apikey;
+        if (!encryptedKey) return null;
+        const decrypted = decryptedData(encryptedKey);
+        return decrypted || null;
+    }
+
+    return null;
+};
+
 /**
  * Process and store vector data using Qdrant
  * @param {Object} req - Request object
@@ -419,9 +355,13 @@ const storeVectorData = async (payloads) => {
             throw new Error('embedAndUpsert is not available from uploadFile service');
         }
 
-        // Process each file payload
         for (const payload of payloads) {
             try {
+                const fileDoc = payload?.fileId ? await File.findById(payload.fileId, { mime_type: 1, name: 1 }).lean() : null;
+                const resolvedApiKey = await resolveEmbeddingApiKey(payload.api_key_id);
+                const resolvedMimetype = fileDoc?.mime_type || payload?.mime_type || payload?.type || '';
+                const resolvedFilename = fileDoc?.name || payload?.file_name || payload?.uri?.split('/')?.pop() || 'document';
+
                 // 1. Fetch file from S3
                 const fileBuffer = await fetchFileFromS3(payload.uri);
 
@@ -429,13 +369,13 @@ const storeVectorData = async (payloads) => {
                 await ensureCollection(EMBEDDINGS.VECTOR_SIZE || 1536);
                 // 3. Reuse uploadFile embedding pipeline (same as uploadFile.js line 929 flow)
                 await embedAndUpsert(fileBuffer, {
-                    mimetype: payload.type,
-                    originalName: payload.file_name,
+                    mimetype: resolvedMimetype,
+                    originalName: resolvedFilename,
                     s3Key: payload.uri.replace(/^\//, ''),
                     chunkIndex: 0,
                     onProgress: null,
                     fileId: payload.fileId,
-                    embeddingApiKey: payload.api_key_id
+                    embeddingApiKey: resolvedApiKey
                 });
             } catch (fileError) {
                 logger.error(`Error processing file ${payload.file_name}: ${fileError.message}`);

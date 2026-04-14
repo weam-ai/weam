@@ -1223,7 +1223,11 @@ async function streamAndLog(app, data, socket, threadId = null) {
             
             const { searchWithinFilesByFileIds } = require('./qdrant');
 
-            const fileIds = [...new Set(allFiles.map(file => file._id))];
+            const fileIds = [...new Set(
+                allFiles
+                    .map((file) => file?._id?.toString?.() || file?.id?.toString?.())
+                    .filter(Boolean)
+            )];
 
             // Search across all relevant namespaces
             const searchResults =  await searchWithinFilesByFileIds(fileIds, data.query, 18);
