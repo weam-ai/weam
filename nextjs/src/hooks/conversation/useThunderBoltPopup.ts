@@ -113,7 +113,7 @@ export const useThunderBoltPopup = ({
                     name: data?.title,
                     uri: isEmptyObject(data.coverImg) || !data.coverImg ? `${defaultCustomGptImage.src}` : `${LINK.AWS_S3_URL}${data.coverImg.uri}`,
                     isCustomGpt: true,
-                    _id: data.doc[0].id,
+                    _id: data.doc[0].id, // Not make any sense to pass first id here as we are fetching agent details from custom_gpt_id, pass id to handle _id error.
                     mime_type: 'application/jpeg',
                     type: 'application/jpeg',
                     gptname: data?.title,

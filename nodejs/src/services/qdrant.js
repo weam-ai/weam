@@ -152,19 +152,36 @@ async function searchWithinFilesByFileIds(fileIds, query, k = 18) {
 
         const vector = await getQueryVector(query);
 
-        const hits = await qdrant.search(QDRANT.COLLECTION, {
+        const baseSearchParams = {
             vector,
             limit: k,
             with_payload: true,
-            with_vectors: false,
+            with_vectors: false
+        };
+
+        let hits = await qdrant.search(QDRANT.COLLECTION, {
+            ...baseSearchParams,
+            score_threshold: 0.15,
             filter: {
                 should: normalizedFileIds.map((fileId) => ({
                     key: 'fileId',
                     match: { value: fileId }
                 }))
-            },
-            score_threshold: 0.15
+            }
         });
+        if (!hits?.length) {
+            hits = await qdrant.search(QDRANT.COLLECTION, {
+                ...baseSearchParams,
+                filter: {
+                    must: [
+                        {
+                            key: 'fileId',
+                            match: { any: normalizedFileIds }
+                        }
+                    ]
+                },
+            });
+        }
 
         return hits;
     } catch (err) {
