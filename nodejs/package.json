@@ -55,6 +55,7 @@
         "i18next-http-middleware": "^3.5.0",
         "joi": "^17.12.1",
         "jsonwebtoken": "^9.0.2",
+        "jszip": "^3.10.1",
         "kafkajs": "^2.2.4",
         "langchain": "^0.3.30",
         "mime-types": "^2.1.35",
