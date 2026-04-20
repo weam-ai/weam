@@ -6,7 +6,7 @@ const { authentication, checkPermission } = require('../middleware/authenticatio
 const authController = require('../controller/web/authController');
 const superSolutionController = require('../controller/admin/superSolutionController');
 const { apiBasicAuth} = require('../middleware/apiBasicAuth');
-const { updateCreditKeys } = require('../utils/validations/user');
+const { updateCreditKeys,addCompanyModelKeys } = require('../utils/validations/user');
 
 //manage email contain apis
 router.post('/email-template/create', validate(emailTemplateKeys), authentication, commonController.updateEmailTemplate);
@@ -30,4 +30,5 @@ router.post('/update-credit', validate(updateCreditKeys), apiBasicAuth, commonCo
 router.post('/free-message-count-migration', apiBasicAuth, commonController.freeMessageCountMigration);
 router.put('/update-mcp-data', authentication, authController.updateMcpData);
 router.post('/check-access-solution', apiBasicAuth, superSolutionController.userHasAccessOfSolution);
+router.post('/add-company-model', validate(addCompanyModelKeys), apiBasicAuth, commonController.addCompanyModel);
 module.exports = router;

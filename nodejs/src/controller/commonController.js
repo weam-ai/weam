@@ -105,7 +105,11 @@ const freeMessageCountMigration = catchAsync(async (req, res) => {
     res.message = _localize('module.update', req, 'free message count');
     return util.successResponse(result, res);
 });
-
+const addCompanyModel = catchAsync(async (req, res) => {
+    const result = await companyService.addCompanyModel(req);
+    res.message = _localize('module.update', req, 'company model');
+    return util.successResponse(result, res);
+});
 module.exports = {
     updateEmailTemplate,
     viewEmailTemplate,
@@ -119,4 +123,5 @@ module.exports = {
     sendInviteEmail,
     updateCredit,
     freeMessageCountMigration,
+    addCompanyModel,
 }
