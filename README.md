@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://opensource.weam.ai/">Website</a> •
-  <a href="https://docs.weam.ai">Docs</a> •
+  <a href="https://opensource.weam.ai/docs/">Docs</a> •
   <a href="https://discord.com/invite/EyUbyUxf4n">Discord</a>
 </p>
 
@@ -47,7 +47,7 @@ But we didn't stop at chat. Weam is built to grow with your needs. Customize exi
 ### 📚 Documentation Hub
 
 
-Visit our comprehensive [**Documentation**](https://docs.weam.ai/).
+Visit our comprehensive [**Documentation**](https://opensource.weam.ai/docs/).
  for:
 - Step-by-step installation guides  
 - Video tutorials for all features  
@@ -151,7 +151,7 @@ bash winbuild.sh  (for windows)
 docker-compose up --build
 ```
 
-- Docs: [Quickstart Guide](https://docs.weam.ai/setup/choose-your-setup/local-setup)
+- Docs: [Quickstart Guide](https://opensource.weam.ai/docs/setup/choose-your-setup/local-setup)
 - From Source / Cloud: Coming soon
 - Setup Video: Uploading soon
 
@@ -171,7 +171,7 @@ docker-compose up --build
 ## Community & Support
 
 - [Discord](https://discord.gg/qhuPkhWh)  
-- [Docs](https://docs.weam.ai)  
+- [Docs](https://opensource.weam.ai/docs/setup/choose-your-setup/local-setup)  
 - [GitHub Issues](https://github.com/weam-ai/weam/issues)  
 - Email: hello@weam.ai  
 
