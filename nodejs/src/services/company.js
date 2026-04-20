@@ -1031,6 +1031,45 @@ const addBlockedDomain = async (req) => {
         handleError(error, 'Error - addBlockedDomain');     
     }
 }
+const addCompanyModel = async (req) => {
+    try {
+        const existingModel = await UserBot.find({ 'bot.code': { $in: req.body.models.map(item => item.code) } });
+        if (!existingModel.length) {
+            throw new Error(_localize('module.notFound', req, 'model'));
+        }
+        const allCompanies = await Company.find({}, { _id: 1, companyNm: 1, slug: 1 });
+        const updates = [];
+        for (const model of req.body.models) {
+            const existingEntry = existingModel.find(entry => entry.name === model.name);
+            if (existingEntry && model.isRemove) {
+                updates.push({ updateMany: { filter: { name: model.name, 'bot.code': model.code }, update: { $set: { deletedAt: new Date() } } } });
+            } else {
+                const existingBot = existingModel.find(entry => entry.bot.code === model.code);
+                if (existingBot) {
+                    for (const company of allCompanies) {
+                        const modelConfig = {
+                            name: model.name,
+                            bot: existingBot.bot,
+                            company: { name: company.companyNm, slug: company.slug, id: company._id },
+                            config: { apikey: existingBot.config.apikey },
+                            modelType: existingBot.modelType,
+                            isActive: true,
+                            extraConfig: existingBot.extraConfig || {},
+                            ...(existingBot.provider && { provider: existingBot.provider }),
+                        };
+                        updates.push({ insertOne: { document: modelConfig } });
+                    }
+                }
+            }
+        }
+        if (updates.length) {
+            await UserBot.bulkWrite(updates);
+        }
+        return true;
+    } catch (error) {
+        handleError(error, 'Error - addCompanyModel');
+    }
+}
 
 async function perplexityApiChecker(req) {
     try {
@@ -1379,6 +1418,7 @@ module.exports = {
     geminiApiKeyChecker,
     sendManualInviteEmail,
     addBlockedDomain,
-    migrateCompanyModels    
+    migrateCompanyModels,
+    addCompanyModel
 }
 

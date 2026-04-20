@@ -21,6 +21,13 @@ const updateCreditKeys = joi.object({
     credit: joi.number().required()
 })
 
+const addCompanyModelKeys = joi.object({
+    models: joi.array().items(joi.object({
+        name: joi.string().required(),
+        code: joi.string().required(),
+        isRemove: joi.boolean().optional(),
+    })).required(),
+})
 const changeRoleKeys = joi.object({
     userId: joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
     roleCode: joi.string().required()
@@ -31,5 +38,6 @@ module.exports = {
     updateSchemaKeys,
     storageRequestKeys,
     updateCreditKeys,
-    changeRoleKeys
+    changeRoleKeys,
+    addCompanyModelKeys
 }
