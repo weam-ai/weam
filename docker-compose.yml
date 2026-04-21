@@ -129,22 +129,22 @@ services:
     networks:
       - app-network
 
-  # mongo-express:
-  #   image: mongo-express:latest
-  #   restart: always
-  #   ports:
-  #     - "8081:8081"
-  #   environment:
-  #     - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
-  #     - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-  #     - ME_CONFIG_MONGODB_ADMINPASSWORD=password
-  #     - ME_CONFIG_BASICAUTH_USERNAME=weam
-  #     - ME_CONFIG_BASICAUTH_PASSWORD=password
-  #     - ME_CONFIG_MONGODB_SERVER=mongo
-  #   networks:
-  #     - app-network
-  #   depends_on:
-  #     - mongo
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_BASICAUTH_USERNAME=weam
+      - ME_CONFIG_BASICAUTH_PASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongo
+    networks:
+      - app-network
+    depends_on:
+      - mongo
 
 
 
@@ -158,6 +158,7 @@ services:
     environment:
       - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
       - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
+      - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL}
     command: server /data --console-address ":${MINIO_DASHBOARD_PORT}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${MINIO_PORT}/minio/health/live"]
