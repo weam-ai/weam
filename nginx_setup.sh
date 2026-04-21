@@ -25,6 +25,11 @@ if [ -z "$NEXT_PUBLIC_DOMAIN_URL" ]; then
     exit 1
 fi
 
+if [ -z "$BASIC_AUTH_USERNAME" ] || [ -z "$BASIC_AUTH_PASSWORD" ]; then
+    echo "❌ BASIC_AUTH_USERNAME or BASIC_AUTH_PASSWORD missing in .env"
+    exit 1
+fi
+
 DOMAIN=$(echo "$NEXT_PUBLIC_DOMAIN_URL" | sed -E 's|^[a-zA-Z]+:/{0,2}||' | sed -E 's|[:/].*$||')
 echo "🌐 Using domain: $DOMAIN"
 
@@ -145,7 +150,11 @@ if [ "$ENVIRONMENT_TYPE" = "local" ]; then
         --network "$NETWORK_NAME" \
         -p 80:80 \
         -p 443:443 \
+        -p 6333:6333 \
+        -p 9001:9001 \
         -e DOMAIN_NAME="$DOMAIN" \
+        -e BASIC_AUTH_USERNAME="$BASIC_AUTH_USERNAME" \
+        -e BASIC_AUTH_PASSWORD="$BASIC_AUTH_PASSWORD" \
         weam-nginx:latest
 
     echo "✅ Local nginx setup completed successfully!"

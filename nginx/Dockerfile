@@ -1,10 +1,10 @@
 FROM nginx:alpine
 
-# Install openssl and gettext for SSL certificate generation and envsubst
-RUN apk add --no-cache openssl gettext
+# Install tools for SSL, envsubst, and htpasswd generation
+RUN apk add --no-cache openssl gettext apache2-utils
 
-# Create SSL directory
-RUN mkdir -p /etc/nginx/ssl
+# Create required directories
+RUN mkdir -p /etc/nginx/ssl /etc/nginx/auth
 
 # Copy nginx configuration template
 COPY weam-https.conf /etc/nginx/conf.d/weam-https.conf.template
@@ -12,9 +12,17 @@ COPY weam-https.conf /etc/nginx/conf.d/weam-https.conf.template
 # Create startup script
 RUN echo '#!/bin/sh' > /startup.sh && \
     echo 'DOMAIN_NAME=${DOMAIN_NAME}' >> /startup.sh && \
+    echo 'BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}' >> /startup.sh && \
+    echo 'BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}' >> /startup.sh && \
     echo 'DOMAIN_NAME=$(echo $DOMAIN_NAME | sed "s|^https\?://||")' >> /startup.sh && \
     echo 'DOMAIN_NAME=$(echo $DOMAIN_NAME | sed "s|:[0-9]*$||")' >> /startup.sh && \
     echo 'echo "Using domain: $DOMAIN_NAME"' >> /startup.sh && \
+    echo 'if [ -z "$BASIC_AUTH_USERNAME" ] || [ -z "$BASIC_AUTH_PASSWORD" ]; then' >> /startup.sh && \
+    echo '  echo "ERROR: BASIC_AUTH_USERNAME and BASIC_AUTH_PASSWORD are required."' >> /startup.sh && \
+    echo '  exit 1' >> /startup.sh && \
+    echo 'fi' >> /startup.sh && \
+    echo 'htpasswd -bc /etc/nginx/auth/.htpasswd "$BASIC_AUTH_USERNAME" "$BASIC_AUTH_PASSWORD"' >> /startup.sh && \
+    echo 'chmod 644 /etc/nginx/auth/.htpasswd' >> /startup.sh && \
     echo 'if [ ! -f /etc/nginx/ssl/cert.pem ] || [ ! -f /etc/nginx/ssl/key.pem ]; then' >> /startup.sh && \
     echo '  echo "Generating SSL certificate..."' >> /startup.sh && \
     echo '  mkdir -p /tmp/ssl' >> /startup.sh && \
