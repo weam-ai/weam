@@ -973,7 +973,7 @@ export const MODEL_CREDIT_INFO = [
     {
         code: 'ANTHROPIC',
         model: 'claude-opus-4-7',
-        credit: 10,
+        credit: 50,
         displayName: 'Claude Opus 4.7',
         snippet: 'Intelligent model for Complex reasoning and agentic coding',
         doc: true,
