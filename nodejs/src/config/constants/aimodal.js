@@ -24,6 +24,7 @@ const OPENAI_MODAL = [
     { name: 'gpt-5.1', type: 2 },
     { name: 'gpt-5.2', type: 2 },
     { name: 'gpt-5.4', type: 2},
+    { name: 'gpt-5.5', type: 2},
 ]
 
 const ANTHROPIC_MODAL = [
@@ -82,6 +83,8 @@ const PERPLEXITY_MODAL = [
 
 const DEEPSEEK_MODAL = [
     { name: 'deepseek/deepseek-r1:free', type: 2 },
+    { name: 'deepseek/deepseek-v4-pro', type: 2 },
+    { name: 'deepseek/deepseek-v4-flash', type: 2 },    
     //{ name: 'deepseek/deepseek-r1-distill-llama-70b', type: 2 },
 ]
 
@@ -153,6 +156,8 @@ const MODAL_NAME = {
     CLAUDE_3_SONNET_20240229: 'claude-3-sonnet-20240229',
     CLAUDE_3_HAIKU_20240307: 'claude-3-haiku-20240307',
     DEEPSEEK_R1: 'deepseek/deepseek-r1:free',
+    DEEPSEEK_V4_PRO: 'deepseek/deepseek-v4-pro',
+    DEEPSEEK_V4_FLASH: 'deepseek/deepseek-v4-flash',
     GPT_O1: 'o1',
     GPT_O1_MINI: 'o1-mini',
     GPT_O1_PREVIEW: 'o1-preview',
@@ -185,6 +190,7 @@ const MODAL_NAME = {
     GPT_5_1: 'gpt-5.1',
     GPT_5_2: 'gpt-5.2',
     GPT_5_4: 'gpt-5.4',
+    GPT_5_5: 'gpt-5.5',
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
     SARVAM_M: 'sarvam-m',

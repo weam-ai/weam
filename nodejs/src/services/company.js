@@ -1052,7 +1052,7 @@ const addCompanyModel = async (req) => {
                             bot: existingBot.bot,
                             company: { name: company.companyNm, slug: company.slug, id: company._id },
                             config: { apikey: existingBot.config.apikey },
-                            modelType: existingBot.modelType,
+                            modelType: model.model_type || 2,
                             isActive: true,
                             extraConfig: existingBot.extraConfig || {},
                             ...(existingBot.provider && { provider: existingBot.provider }),
