@@ -486,6 +486,7 @@ export const AI_MODAL_NAME = {
     CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
     CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     CLAUDE_OPUS_4_7: 'claude-opus-4-7',
+    CLAUDE_OPUS_4_8: 'claude-opus-4-8',
     // CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
 
     // Perplexity models
@@ -997,6 +998,18 @@ export const MODEL_CREDIT_INFO = [
         reasoning: true,
     },
     {
+        code: 'ANTHROPIC',
+        model: 'claude-opus-4-8',
+        credit: 20,
+        displayName: 'Claude Opus 4.8',
+        snippet: 'Anthropic flagship model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: false,
+        reasoning: true,
+    },
+    {
         code: 'PERPLEXITY',
         model: 'llama-3.1-sonar-large-128k-online',
         credit: 5,
@@ -1442,6 +1455,11 @@ export const AI_CREDITS = [
         MessageNo: '50',
     },
     {
+        modelName: 'Claude Opus 4.8',
+        creditCount: '10',
+        MessageNo: '20',
+    },
+    {
         modelName: 'Claude Sonnet 4',
         creditCount: '10',
         MessageNo: '50',
@@ -1745,6 +1763,7 @@ export const MODEL_NAME_BY_CODE = {
     'claude-haiku-4-5-20251001': 'ANTHROPIC',
     'claude-opus-4-6': 'ANTHROPIC',
     'claude-opus-4-7': 'ANTHROPIC',
+    'claude-opus-4-8': 'ANTHROPIC',
     // Perplexity models
     'llama-3.1-sonar-large-128k-online': 'PERPLEXITY',
     'sonar': 'PERPLEXITY',

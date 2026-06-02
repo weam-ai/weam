@@ -40,7 +40,8 @@ const ANTHROPIC_MODAL = [
     { name: 'claude-opus-4-5-20251101', type: 2 },
     { name: 'claude-haiku-4-5-20251001', type: 2 },
     { name: 'claude-opus-4-6', type: 2 },
-    { name: 'claude-opus-4-7', type: 2 }
+    { name: 'claude-opus-4-7', type: 2 },
+    { name: 'claude-opus-4-8', type: 2 }
 ]
 const ANTHROPIC_MAX_TOKENS = {
     // Claude 3.5 Haiku
@@ -63,6 +64,7 @@ const ANTHROPIC_MAX_TOKENS = {
     'claude-haiku-4-5-20251001': 64000,    // Claude Haiku 4.5
     'claude-opus-4-6': 128000,
     'claude-opus-4-7': 128000,
+    'claude-opus-4-8': 128000,
 
     // Default fallback for any new models
     'default': 4096
@@ -183,6 +185,7 @@ const MODAL_NAME = {
     CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
     CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     CLAUDE_OPUS_4_7: 'claude-opus-4-7',
+    CLAUDE_OPUS_4_8: 'claude-opus-4-8',
     GPT_5: 'gpt-5',
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',
