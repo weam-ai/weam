@@ -32,6 +32,7 @@ import VideoGenIcon from '@/icons/VideoGenIcon';
     'writing-icon': AIDocsIcon,
     'document-icon': FileText,
     'ai-docs-icon': AIDocsIcon,
+    'ai-presentation-icon': AIDocsIcon,
     'foloup-icon': FoloupIcon,
     'chat-bot-icon': ChatBotIcon,
     'seo-article-icon': SeoGenIcon,

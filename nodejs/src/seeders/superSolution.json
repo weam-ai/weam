@@ -35,6 +35,15 @@
         "isActive": true,
         "pathToOpen": "/call-analyzer",
         "sequence": 5
+      },
+      {
+        "name": "AI Presentation",
+        "description": "AI Presentation is a tool that helps you create presentations with AI, give you ideas and content for your presentation.",
+        "charimg": "/solution-characters/nature-3.svg",
+        "category": "Productivity & Document Management",
+        "isActive": true,
+        "pathToOpen": "/ai-presentation",
+        "sequence": 6
       }
     ]
   }
