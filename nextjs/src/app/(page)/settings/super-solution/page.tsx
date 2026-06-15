@@ -296,7 +296,8 @@ const SuperSolutionPage = () => {
             'AI Recruiter': 'ai-recruiter',
             'Page Revamp': 'page-revamp',
             'Blog Engine': 'blog-engine',
-            'Call Analyzer': 'call-analyzer'
+            'Call Analyzer': 'call-analyzer',
+            'AI Presentation': 'ai-presentation'
         };
         return mapping[appName] || '';
     };

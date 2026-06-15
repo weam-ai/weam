@@ -7,6 +7,14 @@ const SOLUTION_CONFIGS = {
         branchName: 'main',
         envFile: 'env.example'
     },
+    'ai-presentation': {
+        repoUrl: 'https://github.com/weam-ai/ai-presentation',
+        repoName: 'ai-presentation',
+        imageName: ['ai-presentation-img'],
+        containerName: ['ai-presentation-container'],
+        branchName: 'main',
+        envFile: 'env.example'
+    },
     'ai-recruiter': {
         repoUrl: 'https://github.com/weam-ai/ai-recruiter.git',
         repoName: 'ai-recruiter',
