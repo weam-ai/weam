@@ -44,6 +44,15 @@
         "isActive": true,
         "pathToOpen": "/ai-presentation",
         "sequence": 6
+      },
+      {
+        "name": "AI Content Copy",
+        "description": "AI Content Copy is a tool that helps you create content for your website with AI, give you ideas and content for your website.",
+        "charimg": "/solution-characters/nature-3.svg",
+        "category": "Productivity & Document Management",
+        "isActive": true,
+        "pathToOpen": "/ai-content",
+        "sequence": 7
       }
     ]
   }
