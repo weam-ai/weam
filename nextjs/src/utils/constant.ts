@@ -458,6 +458,7 @@ export const AI_MODAL_NAME = {
     GPT_5_1:'gpt-5.1',   
     GPT_5_2:'gpt-5.2',
     GPT_5_4:'gpt-5.4',
+    GPT_5_5: 'gpt-5.5',
     // Open AI models
     // GPT_4_1: 'gpt-4.1',
     // GPT_4_O_LATEST: 'chatgpt-4o-latest',
@@ -485,6 +486,7 @@ export const AI_MODAL_NAME = {
     CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
     CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     CLAUDE_OPUS_4_7: 'claude-opus-4-7',
+    CLAUDE_OPUS_4_8: 'claude-opus-4-8',
     // CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
 
     // Perplexity models
@@ -493,7 +495,8 @@ export const AI_MODAL_NAME = {
 
     // DeepSeek models
     DEEPSEEK_R1: 'deepseek/deepseek-r1:free',
-
+    DEEPSEEK_V4_PRO: 'deepseek/deepseek-v4-pro',
+    DEEPSEEK_V4_FLASH: 'deepseek/deepseek-v4-flash',
     // Llama models
     LLAMA_4_MAVERICK: 'meta-llama/llama-4-maverick',
     LLAMA_4_SCOUT: 'meta-llama/llama-4-scout',
@@ -776,6 +779,18 @@ export const MODEL_CREDIT_INFO = [
     },
     {
         code: 'OPEN_AI',
+        model: 'gpt-5.5',
+        credit: 20,
+        displayName: 'GPT-5.5',
+        snippet: 'Best intelligence at scale for coding and professional work',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: true,
+        reasoning: true,
+    },
+    {
+        code: 'OPEN_AI',
         model: 'gpt-4.1-search-medium',
         credit: 10,
         displayName: 'GPT 4.1 Search',
@@ -983,6 +998,18 @@ export const MODEL_CREDIT_INFO = [
         reasoning: true,
     },
     {
+        code: 'ANTHROPIC',
+        model: 'claude-opus-4-8',
+        credit: 20,
+        displayName: 'Claude Opus 4.8',
+        snippet: 'Anthropic flagship model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: false,
+        reasoning: true,
+    },
+    {
         code: 'PERPLEXITY',
         model: 'llama-3.1-sonar-large-128k-online',
         credit: 5,
@@ -1030,8 +1057,21 @@ export const MODEL_CREDIT_INFO = [
     },
     {
         code: 'DEEPSEEK',
-        model: 'deepseek/deepseek-r1-distill-llama-70b',
-        credit: 1,
+        model: 'deepseek/deepseek-v4-pro',
+        credit: 10,
+        displayName: 'DeepSeek V4 Pro',
+        snippet: 'Designed for advanced reasoning, coding and software engineering benchmarks.',
+        doc: true,
+        websearch: false,
+    },
+    {
+        code: 'DEEPSEEK',
+        model: 'deepseek/deepseek-v4-flash',
+        credit: 5,
+        displayName: 'DeepSeek V4 Flash',
+        snippet: 'Fast, high-throughput inference with strong reasoning and coding performance.',
+        doc: true,
+        websearch: false,
     },
     {
         code: 'LLAMA4',
@@ -1314,6 +1354,11 @@ export const AI_CREDITS = [
         MessageNo: '100',
     },
     {
+        modelName: 'OpenAI gpt-5.5',
+        creditCount: '20',
+        MessageNo: '50',
+    },
+    {
         modelName: 'OpenAI gpt-5-chat-latest',
         creditCount: '10',
         MessageNo: '50',
@@ -1359,6 +1404,16 @@ export const AI_CREDITS = [
         creditCount: '5',
         MessageNo: '100',
     },
+    {
+        modelName: 'DeepSeek V4 Pro',
+        creditCount: '10',
+        MessageNo: '50',
+    },
+    {
+        modelName: 'DeepSeek V4 Flash',
+        creditCount: '5',
+        MessageNo: '100',
+    },
     // {
     //     modelName: 'DeepSeek R1 Distill Llama 70B',
     //     creditCount: '1',
@@ -1398,6 +1453,11 @@ export const AI_CREDITS = [
         modelName: 'Claude Opus 4.7',
         creditCount: '10',
         MessageNo: '50',
+    },
+    {
+        modelName: 'Claude Opus 4.8',
+        creditCount: '10',
+        MessageNo: '20',
     },
     {
         modelName: 'Claude Sonnet 4',
@@ -1488,7 +1548,11 @@ export const FREE_TIER_AI_CREDITS = [
         creditCount: '10',
         MessageNo: '20',
     },
-    
+    {
+        modelName: 'OpenAI gpt-5.5',
+        creditCount: '20',
+        MessageNo: '20',
+    },
     {
         modelName: 'Claude 3 Opus',
         creditCount: '50',
@@ -1526,6 +1590,16 @@ export const FREE_TIER_AI_CREDITS = [
     // },
     {
         modelName: 'DeepSeek R1',
+        creditCount: '5',
+        MessageNo: '40',
+    },
+    {
+        modelName: 'DeepSeek V4 Pro',
+        creditCount: '10',
+        MessageNo: '20',
+    },
+    {
+        modelName: 'DeepSeek V4 Flash',
         creditCount: '5',
         MessageNo: '40',
     },
@@ -1661,6 +1735,7 @@ export const MODEL_NAME_BY_CODE = {
     'gpt-5.1': 'OPEN_AI',
     'gpt-5.2': 'OPEN_AI',
     'gpt-5.4': 'OPEN_AI',
+    'gpt-5.5': 'OPEN_AI',
     
     // Gemini models
     'gemini-2.5-pro-preview-05-06': 'GEMINI',
@@ -1688,6 +1763,7 @@ export const MODEL_NAME_BY_CODE = {
     'claude-haiku-4-5-20251001': 'ANTHROPIC',
     'claude-opus-4-6': 'ANTHROPIC',
     'claude-opus-4-7': 'ANTHROPIC',
+    'claude-opus-4-8': 'ANTHROPIC',
     // Perplexity models
     'llama-3.1-sonar-large-128k-online': 'PERPLEXITY',
     'sonar': 'PERPLEXITY',
@@ -1701,6 +1777,8 @@ export const MODEL_NAME_BY_CODE = {
     'deepseek/deepseek-r1-distill-llama-70b': 'DEEPSEEK',
     'deepseek/deepseek-r1-distill-qwen-32b': 'DEEPSEEK',
     'deepseek/deepseek-r1': 'DEEPSEEK',
+    'deepseek/deepseek-v4-pro': 'DEEPSEEK',
+    'deepseek/deepseek-v4-flash': 'DEEPSEEK',
     
     // Llama models
     'llama-4-scout': 'LLAMA4',

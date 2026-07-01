@@ -59,7 +59,8 @@ const SuperSolutionHover = ({ className }: SuperSolutionHoverProps) => {
             'Page Revamp': 'page-revamp',
             'Blog Engine': 'blog-engine',
             'Call Analyzer': 'call-analyzer',
-            'AI Presentation': 'ai-presentation'
+            'AI Presentation': 'ai-presentation',
+            'AI Content': 'ai-content'
         };
         return mapping[appName] || '';
     };

@@ -215,6 +215,7 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'gpt-4.1-nano',
         'gpt-4.1-search-medium',
         "gpt-5.4",
+        "gpt-5.5",
         "gpt-5.2",
         'chatgpt-4o-latest',
         'o3',
@@ -241,6 +242,7 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'claude-haiku-4-5-20251001',
         'claude-opus-4-6',
         'claude-opus-4-7',
+        'claude-opus-4-8',
         // Google Gemini Models (only keep supported preview/1.5 variants)
         'gemini-1.5-pro',
         'gemini-2.5-flash-preview-05-20',
@@ -383,6 +385,7 @@ export function allowImageGeneration(modelName: string) {
         'o4-mini',
         'gpt-5',
         "gpt-5.4",
+        "gpt-5.5",
         "gpt-5.2",
         'gpt-5-mini',
         'gpt-5-nano',

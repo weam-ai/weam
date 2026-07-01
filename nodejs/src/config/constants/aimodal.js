@@ -24,6 +24,7 @@ const OPENAI_MODAL = [
     { name: 'gpt-5.1', type: 2 },
     { name: 'gpt-5.2', type: 2 },
     { name: 'gpt-5.4', type: 2},
+    { name: 'gpt-5.5', type: 2},
 ]
 
 const ANTHROPIC_MODAL = [
@@ -39,7 +40,8 @@ const ANTHROPIC_MODAL = [
     { name: 'claude-opus-4-5-20251101', type: 2 },
     { name: 'claude-haiku-4-5-20251001', type: 2 },
     { name: 'claude-opus-4-6', type: 2 },
-    { name: 'claude-opus-4-7', type: 2 }
+    { name: 'claude-opus-4-7', type: 2 },
+    { name: 'claude-opus-4-8', type: 2 }
 ]
 const ANTHROPIC_MAX_TOKENS = {
     // Claude 3.5 Haiku
@@ -62,6 +64,7 @@ const ANTHROPIC_MAX_TOKENS = {
     'claude-haiku-4-5-20251001': 64000,    // Claude Haiku 4.5
     'claude-opus-4-6': 128000,
     'claude-opus-4-7': 128000,
+    'claude-opus-4-8': 128000,
 
     // Default fallback for any new models
     'default': 4096
@@ -82,6 +85,8 @@ const PERPLEXITY_MODAL = [
 
 const DEEPSEEK_MODAL = [
     { name: 'deepseek/deepseek-r1:free', type: 2 },
+    { name: 'deepseek/deepseek-v4-pro', type: 2 },
+    { name: 'deepseek/deepseek-v4-flash', type: 2 },    
     //{ name: 'deepseek/deepseek-r1-distill-llama-70b', type: 2 },
 ]
 
@@ -153,6 +158,8 @@ const MODAL_NAME = {
     CLAUDE_3_SONNET_20240229: 'claude-3-sonnet-20240229',
     CLAUDE_3_HAIKU_20240307: 'claude-3-haiku-20240307',
     DEEPSEEK_R1: 'deepseek/deepseek-r1:free',
+    DEEPSEEK_V4_PRO: 'deepseek/deepseek-v4-pro',
+    DEEPSEEK_V4_FLASH: 'deepseek/deepseek-v4-flash',
     GPT_O1: 'o1',
     GPT_O1_MINI: 'o1-mini',
     GPT_O1_PREVIEW: 'o1-preview',
@@ -178,6 +185,7 @@ const MODAL_NAME = {
     CLAUDE_HAIKU_4_5_20251001: 'claude-haiku-4-5-20251001',
     CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     CLAUDE_OPUS_4_7: 'claude-opus-4-7',
+    CLAUDE_OPUS_4_8: 'claude-opus-4-8',
     GPT_5: 'gpt-5',
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',
@@ -185,6 +193,7 @@ const MODAL_NAME = {
     GPT_5_1: 'gpt-5.1',
     GPT_5_2: 'gpt-5.2',
     GPT_5_4: 'gpt-5.4',
+    GPT_5_5: 'gpt-5.5',
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
     SARVAM_M: 'sarvam-m',

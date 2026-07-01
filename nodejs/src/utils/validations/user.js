@@ -26,6 +26,7 @@ const addCompanyModelKeys = joi.object({
         name: joi.string().required(),
         code: joi.string().required(),
         isRemove: joi.boolean().optional(),
+        model_type: joi.number().optional(),
     })).required(),
 })
 const changeRoleKeys = joi.object({
