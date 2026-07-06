@@ -8,15 +8,15 @@ const SOLUTION_CONFIGS = {
         envFile: 'env.example'
     },
     'ai-presentation': {
-        repoUrl: 'https://github.com/weam-ai/ai-presentation',
+        repoUrl: 'https://github.com/weam-ai/ai-presentation.git',
         repoName: 'ai-presentation',
         imageName: ['ai-presentation-img'],
         containerName: ['ai-presentation-container'],
         branchName: 'main',
-        envFile: 'env.example'
+        envFile: 'env.example',
     },
     'ai-content': {
-        repoUrl: 'https://github.com/weam-ai/ai-content-copy',
+        repoUrl: 'https://github.com/weam-ai/ai-content-copy.git',
         repoName: 'ai-content-copy',
         imageName: ['ai-content-copy-img'],
         containerName: ['ai-content-copy-container'],
