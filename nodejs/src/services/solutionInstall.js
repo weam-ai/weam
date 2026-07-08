@@ -130,6 +130,47 @@ async function mergeEnvironmentFiles(rootEnvPath, localEnvPath, outputPath, repo
 
 
 /**
+ * Resolves the docker compose CLI available in the runtime container.
+ * @returns {Promise<string>}
+ */
+async function resolveDockerComposeCommand() {
+    try {
+        await runCommand('docker-compose --version');
+        return 'docker-compose';
+    } catch (error) {
+        try {
+            await runCommand('docker compose version');
+            return 'docker compose';
+        } catch (innerError) {
+            console.log('📦 Installing Docker Compose...');
+            await installDockerCompose();
+            return 'docker-compose';
+        }
+    }
+}
+
+/**
+ * Copies bundled Docker/deployment files into a cloned repo when the upstream
+ * repository does not ship its own docker-compose setup.
+ * @param {object} config - Solution configuration
+ * @param {string} repoPath - Repository path
+ * @returns {Promise<void>}
+ */
+async function applyDockerTemplates(config, repoPath) {
+    if (!config.dockerTemplateDir) {
+        return;
+    }
+
+    const templatePath = path.join(__dirname, '../../docker-templates', config.dockerTemplateDir);
+    if (!fs.existsSync(templatePath)) {
+        throw new Error(`[${config.repoName}] Docker template not found: ${templatePath}`);
+    }
+
+    console.log(`[${config.repoName}] 📦 Applying Docker templates from ${templatePath}...`);
+    await runCommand(`cp -R ${templatePath}/. ${repoPath}/`, config.repoName);
+}
+
+/**
  * Detects if Docker Compose is available
  * @returns {Promise<boolean>} - True if docker-compose is available
  */
@@ -242,7 +283,8 @@ async function cleanupExistingContainers(config) {
         if (require('fs').existsSync(repoPath)) {
             try {
                 console.log(`[${config.repoName}] 🛑 Trying docker-compose cleanup...`);
-                await runCommand(`cd ${repoPath} && docker-compose down -v --remove-orphans`, config.repoName);
+                const composeCmd = await resolveDockerComposeCommand();
+                await runCommand(`cd ${repoPath} && ${composeCmd} down -v --remove-orphans`, config.repoName);
             } catch (error) {
                 console.log(`[${config.repoName}] ⚠️ Docker compose cleanup failed (expected if not using compose):`, error.message);
             }
@@ -310,7 +352,8 @@ async function uninstallSolution(config, repoPath) {
         if (require('fs').existsSync(repoPath)) {
             try {
                 console.log(`[${config.repoName}] 🛑 Trying docker-compose cleanup...`);
-                await runCommand(`cd ${repoPath} && docker-compose down -v --remove-orphans`, config.repoName);
+                const composeCmd = await resolveDockerComposeCommand();
+                await runCommand(`cd ${repoPath} && ${composeCmd} down -v --remove-orphans`, config.repoName);
             } catch (error) {
                 console.log(`[${config.repoName}] ⚠️ Docker compose cleanup failed (expected if not using compose):`, error.message);
             }
@@ -425,19 +468,14 @@ async function installDockerComposeService(config, repoPath) {
         // Use Docker Compose
         console.log(`[${config.repoName}] 📦 Using Docker Compose (${repoStructure.composeFile})...`);
         
-        // Check if docker-compose is available
-        const isComposeAvailable = await isDockerComposeAvailable();
-        if (!isComposeAvailable) {
-            console.log(`[${config.repoName}] 📦 Installing Docker Compose...`);
-            await installDockerCompose();
-        }
+        const composeCmd = await resolveDockerComposeCommand();
         
         // Use temporary .env file for docker-compose
         await runCommand(`cp ${tempEnvPath} ${localEnvPath}`, config.repoName);
         
         // Build and start services
         console.log(`[${config.repoName}] 🚀 Building and starting services...`);
-        await runCommand(`cd ${repoPath} && docker-compose up --build -d`, config.repoName);
+        await runCommand(`cd ${repoPath} && ${composeCmd} up --build -d`, config.repoName);
         
         // Keep the merged .env file (don't restore original .env.example)
         // This ensures all merged variables are preserved for the running container
@@ -476,11 +514,14 @@ const installWithProgress = async (req, res) => {
         // Step 2: Clone repository
         console.log(`[${config.repoName}] 📥 Cloning repository...`);
         await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
+
+        // Step 3: Apply bundled Docker templates when upstream repo lacks them
+        await applyDockerTemplates(config, repoPath);
         
-        // Step 3: Clean up existing containers
+        // Step 4: Clean up existing containers
         await cleanupExistingContainers(config);
         
-        // Step 4: Install using Docker Compose
+        // Step 5: Install using Docker Compose
         await installDockerComposeService(config, repoPath);
         
         console.log(`[${config.repoName}] ✅ Installation completed successfully!`);
@@ -552,8 +593,11 @@ const syncWithProgress = async (req, res) => {
         // Step 3: Clone repository
         console.log(`[${config.repoName}] 📥 Cloning repository...`);
         await runCommand(`git clone -b ${config.branchName} ${config.repoUrl} ${repoPath}`, config.repoName);
+
+        // Step 4: Apply bundled Docker templates when upstream repo lacks them
+        await applyDockerTemplates(config, repoPath);
         
-        // Step 4: Install using Docker Compose
+        // Step 5: Install using Docker Compose
         await installDockerComposeService(config, repoPath);
         
         console.log(`[${config.repoName}] ✅ Sync completed successfully!`);
