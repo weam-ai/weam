@@ -25,6 +25,14 @@ const SOLUTION_CONFIGS = {
         envFile: 'env.example',
         dockerTemplateDir: 'ai-content',
     },
+    'ai-content': {
+        repoUrl: 'https://github.com/weam-ai/ai-content-copy',
+        repoName: 'ai-content-copy',
+        imageName: ['ai-content-copy-img'],
+        containerName: ['ai-content-copy-container'],
+        branchName: 'main',
+        envFile: 'env.example'
+    },
     'ai-recruiter': {
         repoUrl: 'https://github.com/weam-ai/ai-recruiter.git',
         repoName: 'ai-recruiter',

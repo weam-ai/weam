@@ -298,8 +298,7 @@ const SuperSolutionPage = () => {
             'Blog Engine': 'blog-engine',
             'Call Analyzer': 'call-analyzer',
             'AI Presentation': 'ai-presentation',
-            'AI Content': 'ai-content',
-            'AI Content Copy': 'ai-content'
+            'AI Content': 'ai-content'
         };
         return mapping[appName] || '';
     };
