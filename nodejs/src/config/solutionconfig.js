@@ -14,6 +14,7 @@ const SOLUTION_CONFIGS = {
         containerName: ['ai-presentation-container'],
         branchName: 'main',
         envFile: 'env.example',
+        dockerTemplateDir: 'ai-presentation',
     },
     'ai-content': {
         repoUrl: 'https://github.com/weam-ai/ai-content-copy.git',
@@ -21,7 +22,8 @@ const SOLUTION_CONFIGS = {
         imageName: ['ai-content-copy-img'],
         containerName: ['ai-content-copy-container'],
         branchName: 'main',
-        envFile: 'env.example'
+        envFile: 'env.example',
+        dockerTemplateDir: 'ai-content',
     },
     'ai-recruiter': {
         repoUrl: 'https://github.com/weam-ai/ai-recruiter.git',
