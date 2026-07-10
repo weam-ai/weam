@@ -1012,6 +1012,9 @@ async function llmFactory(modelName, opts = {}) {
         [AI_MODAL_PROVIDER.GROK]: () => toolChatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.QWEN]: () => chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
         [AI_MODAL_PROVIDER.SARVAM]: () => chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback),
+        [AI_MODAL_PROVIDER.MINIMAX]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
+        [AI_MODAL_PROVIDER.GLM]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
+        [AI_MODAL_PROVIDER.KIMI]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.PERPLEXITY]: () => ({
             _isPerplexityRaw: true,
             model: modelName,
@@ -1526,6 +1529,12 @@ async function getAgentModelConfig(agentDetails, data) {
                     inferredProvider = 'QWEN';
                 } else if (modelName.includes('sarvam-m')) {
                     inferredProvider = 'SARVAM';
+                } else if (modelName.includes('minimax')) {
+                    inferredProvider = 'MINIMAX';
+                } else if (modelName.includes('glm')) {
+                    inferredProvider = 'GLM';
+                } else if (modelName.includes('kimi')) {
+                    inferredProvider = 'KIMI';
                 } else {
                     inferredProvider = 'OPEN_AI'; // Default fallback
                 }
@@ -1595,7 +1604,11 @@ function mapProviderCode(code) {
         'huggingface': AI_MODAL_PROVIDER.HUGGING_FACE,
         'local': AI_MODAL_PROVIDER.LOCAL_LLM,
         'anyscale': AI_MODAL_PROVIDER.ANYSCALE,
-        'ollama': AI_MODAL_PROVIDER.OLLAMA
+        'ollama': AI_MODAL_PROVIDER.OLLAMA,
+        'anyscale': AI_MODAL_PROVIDER.ANYSCALE,
+        'minimax': AI_MODAL_PROVIDER.MINIMAX,
+        'glm': AI_MODAL_PROVIDER.GLM,
+        'kimi': AI_MODAL_PROVIDER.KIMI,
     };
     
     // Check exact matches first
@@ -1767,6 +1780,9 @@ async function generateTitleByLLM(payload) {
             [AI_MODAL_PROVIDER.QWEN]: 'qwen/qwen3-30b-a3b:free',
             [AI_MODAL_PROVIDER.SARVAM]: 'sarvam-m',
             [AI_MODAL_PROVIDER.PERPLEXITY]: 'sonar',
+            [AI_MODAL_PROVIDER.MINIMAX]: 'minimax/minimax-m3',
+            [AI_MODAL_PROVIDER.GLM]: 'z-ai/glm-4.7',
+            [AI_MODAL_PROVIDER.KIMI]: 'moonshotai/kimi-k2.7-code',
         };
         
         const defaultModel = defaultModelMap[mappedProvider] || defaultModelMap[AI_MODAL_PROVIDER.OPEN_AI];
