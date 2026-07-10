@@ -41,7 +41,9 @@ const ANTHROPIC_MODAL = [
     { name: 'claude-haiku-4-5-20251001', type: 2 },
     { name: 'claude-opus-4-6', type: 2 },
     { name: 'claude-opus-4-7', type: 2 },
-    { name: 'claude-opus-4-8', type: 2 }
+    { name: 'claude-opus-4-8', type: 2 },
+    { name: 'claude-fable-5', type: 2 },
+    { name: 'claude-sonnet-5', type: 2 },
 ]
 const ANTHROPIC_MAX_TOKENS = {
     // Claude 3.5 Haiku
@@ -65,6 +67,8 @@ const ANTHROPIC_MAX_TOKENS = {
     'claude-opus-4-6': 128000,
     'claude-opus-4-7': 128000,
     'claude-opus-4-8': 128000,
+    'claude-fable-5': 128000,
+    'claude-sonnet-5': 128000,
 
     // Default fallback for any new models
     'default': 4096
@@ -98,6 +102,7 @@ const LLAMA4_MODAL = [
 const GROK_MODAL = [
     { name: 'x-ai/grok-3-mini-beta', type: 2 },
     { name: 'x-ai/grok-4.1-fast', type: 2 },
+    { name: 'x-ai/grok-4.5', type: 2 },
 ]
 
 const QWEN_MODAL = [
@@ -106,6 +111,18 @@ const QWEN_MODAL = [
 
 const SARVAM_MODAL = [
     { name: 'sarvam-m', type: 2 },
+]
+
+const GLM_MODAL = [
+    { name: 'z-ai/glm-4.7', type: 2 },
+]
+
+const KIMI_MODAL = [
+    { name: 'moonshotai/kimi-k2.7-code', type: 2 },
+]
+
+const MINIMAX_MODAL = [
+    { name: 'minimax/minimax-m3', type: 2 },
 ]
 
 const MESSAGE_TYPE = {
@@ -134,6 +151,9 @@ const AI_MODAL_PROVIDER = {
     SARVAM: 'SARVAM',
     OPEN_ROUTER: 'OPEN_ROUTER',
     OLLAMA: 'OLLAMA',
+    GLM: 'GLM',
+    KIMI: 'KIMI',
+    MINIMAX: 'MINIMAX',
 }
 
 const OPENROUTER_PROVIDER = {
@@ -141,9 +161,14 @@ const OPENROUTER_PROVIDER = {
     LLAMA4: 'WEAM',
     GROK: 'WEAM',
     QWEN: 'WEAM',
+    GLM: 'WEAM',
+    KIMI: 'WEAM',
+    MINIMAX: 'WEAM',
 }
 
-const PINECORN_STATIC_KEY = 'm3NwQE4/JIHLt7GZfQQSWEamMdA1JtSLvi41oG1fHsA6Qox26eVt76elBxrbd5c0'
+const PINECORN_STATIC_KEY = 'm3NwQE4/JIHLt7GZfQQSWEamMdA1JtSLvi41oG1fHsA6Qox26eVt76elBxrbd5c0';
+
+const OPENROUTER_WEAM_PROVIDER = 'WEAM';
 
 const MODAL_NAME = {
     GPT_4_TURBO: 'gpt-4-turbo',
@@ -228,4 +253,5 @@ module.exports = {
     SARVAM_MODAL,
     PINECONE_APIKEY_CODE,
     SARVAM_MODEL_CONFIG,
+    OPENROUTER_WEAM_PROVIDER,
 }

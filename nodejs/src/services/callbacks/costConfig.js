@@ -79,6 +79,14 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.005,
         completion_tokens: 0.025
     },
+    'claude-fable-5': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.025
+    },
+    'claude-sonnet-5': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.025
+    },
     // Google Gemini Models
     'gemini-1.5-pro': {
         prompt_tokens: 0.00125,
@@ -123,6 +131,11 @@ const MODEL_COST_PER_1K_TOKENS = {
         completion_tokens: 0.015
     },
 
+    'x-ai/grok-4.5': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.015
+    },
+
     // Qwen Models
     'qwen-2.5-72b-instruct': {
         prompt_tokens: 0.0009,
@@ -147,6 +160,24 @@ const MODEL_COST_PER_1K_TOKENS = {
     'sarvam-m': {
         prompt_tokens: 0.001,
         completion_tokens: 0.001
+    },
+
+    // Kimi Models
+    'moonshotai/kimi-k2.7-code': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.015
+    },
+
+    // Minimax Models
+    'minimax/minimax-m3': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.015
+    },
+
+    // Glm Models
+    'z-ai/glm-4.7': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.015
     },
 };
 

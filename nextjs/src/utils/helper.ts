@@ -243,6 +243,8 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'claude-opus-4-6',
         'claude-opus-4-7',
         'claude-opus-4-8',
+        'claude-fable-5',
+        'claude-sonnet-5',
         // Google Gemini Models (only keep supported preview/1.5 variants)
         'gemini-1.5-pro',
         'gemini-2.5-flash-preview-05-20',

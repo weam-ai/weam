@@ -487,6 +487,8 @@ export const AI_MODAL_NAME = {
     CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     CLAUDE_OPUS_4_7: 'claude-opus-4-7',
     CLAUDE_OPUS_4_8: 'claude-opus-4-8',
+    CLAUDE_FABLE_5: 'claude-fable-5',
+    CLAUDE_SONNET_5: 'claude-sonnet-5',
     // CLAUDE_SONNET_4_20250514: 'claude-sonnet-4-20250514',
 
     // Perplexity models
@@ -504,6 +506,7 @@ export const AI_MODAL_NAME = {
     // Grok models
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
     GROK_4_1_FAST: 'x-ai/grok-4.1-fast',
+    GROK_4_5: 'x-ai/grok-4.5',
     // Ollama (local) models
     OLLAMA_LLAMA_3_1_8B: 'llama3.1:8b',
     OLLAMA_MISTRAL_7B: 'mistral:7b',
@@ -1000,9 +1003,33 @@ export const MODEL_CREDIT_INFO = [
     {
         code: 'ANTHROPIC',
         model: 'claude-opus-4-8',
-        credit: 20,
+        credit: 10,
         displayName: 'Claude Opus 4.8',
         snippet: 'Anthropic flagship model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: false,
+        reasoning: true,
+    },
+    {
+        code: 'ANTHROPIC',
+        model: 'claude-fable-5',
+        credit: 50,
+        displayName: 'Claude Fable 5',
+        snippet: 'Claude Fable 5 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: true,
+        vision: true,
+        image: false,
+        reasoning: false,
+    },
+    {
+        code: 'ANTHROPIC',
+        model: 'claude-sonnet-5',
+        credit: 10,
+        displayName: 'Claude Sonnet 5',
+        snippet: 'Claude Sonnet 5 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
         doc: true,
         websearch: true,
         vision: true,
@@ -1119,6 +1146,15 @@ export const MODEL_CREDIT_INFO = [
         websearch: false,
     },
     {
+        code: 'GROK',
+        model: 'x-ai/grok-4.5',
+        credit: 5,
+        displayName: 'Grok 4.1 Fast',
+        snippet: 'Great for complex tasks and coding.',
+        doc: true,
+        websearch: false,
+    },
+    {
         code: 'QWEN',
         model: 'qwen/qwen3-30b-a3b:free',
         credit: 5,
@@ -1208,6 +1244,42 @@ export const MODEL_CREDIT_INFO = [
         model: 'mistral:7b',
         credit: 0,
         displayName: 'Mistral 7B (Local)'
+    },
+    {
+        code: 'GLM',
+        model: 'z-ai/glm-4.7',
+        credit: 10,
+        displayName: 'GLM 4.7',
+        snippet: 'GLM 4.7 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: false,
+        vision: false,
+        image: false,
+        reasoning: true,
+    },
+    {
+        code: 'KIMI',
+        model: 'moonshotai/kimi-k2.7-code',
+        credit: 10,
+        displayName: 'Kimi K2.7 Code',
+        snippet: 'Kimi K2.7 Code is a model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: false,
+        vision: false,
+        image: false,
+        reasoning: true,
+    },
+    {
+        code: 'MINIMAX',
+        model: 'minimax/minimax-m3',
+        credit: 10,
+        displayName: 'MiniMax M3',
+        snippet: 'MiniMax M3 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: false,
+        vision: false,
+        image: false,
+        reasoning: true,
     },
     {
         code: 'PRO_AGENT',
@@ -1764,6 +1836,8 @@ export const MODEL_NAME_BY_CODE = {
     'claude-opus-4-6': 'ANTHROPIC',
     'claude-opus-4-7': 'ANTHROPIC',
     'claude-opus-4-8': 'ANTHROPIC',
+    'claude-fable-5': 'ANTHROPIC',
+    'claude-sonnet-5': 'ANTHROPIC',
     // Perplexity models
     'llama-3.1-sonar-large-128k-online': 'PERPLEXITY',
     'sonar': 'PERPLEXITY',
@@ -1790,6 +1864,7 @@ export const MODEL_NAME_BY_CODE = {
     // Grok models
     'x-ai/grok-3-mini-beta': 'GROK',
     'x-ai/grok-4.1-fast': 'GROK',
+    'x-ai/grok-4.5': 'GROK',
     
     // Qwen models
     'qwen/qwen3-30b-a3b:free': 'QWEN',

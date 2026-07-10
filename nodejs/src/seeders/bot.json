@@ -73,5 +73,20 @@
         "title": "Sarvam",
         "code": "SARVAM",
         "seq": 15
+    },
+    {
+        "title": "Glm",
+        "code": "GLM",
+        "seq": 16
+    },
+    {
+        "title": "Kimi",
+        "code": "KIMI",
+        "seq": 17
+    },
+    {
+        "title": "Minimax",
+        "code": "MINIMAX",
+        "seq": 18
     }
 ]
