@@ -25,6 +25,9 @@ const OPENAI_MODAL = [
     { name: 'gpt-5.2', type: 2 },
     { name: 'gpt-5.4', type: 2},
     { name: 'gpt-5.5', type: 2},
+    { name: 'gpt-5.6-sol', type: 2 },
+    { name: 'gpt-5.6-terra', type: 2 },
+    { name: 'gpt-5.6-luna', type: 2 },
 ]
 
 const ANTHROPIC_MODAL = [
@@ -211,6 +214,8 @@ const MODAL_NAME = {
     CLAUDE_OPUS_4_6: 'claude-opus-4-6',
     CLAUDE_OPUS_4_7: 'claude-opus-4-7',
     CLAUDE_OPUS_4_8: 'claude-opus-4-8',
+    CLAUDE_FABLE_5: 'claude-fable-5',
+    CLAUDE_SONNET_5: 'claude-sonnet-5',
     GPT_5: 'gpt-5',
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',
@@ -219,6 +224,9 @@ const MODAL_NAME = {
     GPT_5_2: 'gpt-5.2',
     GPT_5_4: 'gpt-5.4',
     GPT_5_5: 'gpt-5.5',
+    GPT_5_6_SOL: 'gpt-5.6-sol',
+    GPT_5_6_TERRA: 'gpt-5.6-terra',
+    GPT_5_6_LUNA: 'gpt-5.6-luna',
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
     SARVAM_M: 'sarvam-m',

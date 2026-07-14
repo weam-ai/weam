@@ -715,7 +715,7 @@ async function llmFactory(modelName, opts = {}) {
             });
             
             // chatgpt-4o-latest doesn't support tools, so don't bind them
-            if (modelName.toLowerCase().includes('chatgpt-4o-latest')){
+            if ([MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5_6_SOL, MODAL_NAME.GPT_5_6_TERRA, MODAL_NAME.GPT_5_6_LUNA].includes(modelName.toLowerCase())) {
                 if (!needsTools) {
                     simpleModelCache.set(cacheKey, openAIModel);
                 }
@@ -750,10 +750,18 @@ async function llmFactory(modelName, opts = {}) {
                 return simpleModelCache.get(cacheKey);
             }
 
+            const isFable5 = [MODAL_NAME.CLAUDE_FABLE_5].includes(modelName.toLowerCase());
             let anthropicModel = new ChatAnthropic({
                 ...baseConfig,
                 anthropicApiKey: opts.apiKey || process.env.ANTHROPIC_API_KEY,
                 maxTokens: getAnthropicMaxTokens(modelName), // Model-specific max_tokens
+                ...(isFable5
+                    ? {
+                          thinking: {
+                              type: "adaptive",
+                          },
+                      }
+                    : {}),
             });
 
             anthropicModel.topP = undefined
