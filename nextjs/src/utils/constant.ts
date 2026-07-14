@@ -267,6 +267,9 @@ export const AI_MODEL_CODE = {
     SARVAM: 'SARVAM',
     OLLAMA: 'OLLAMA',
     OPEN_ROUTER: 'OPEN_ROUTER',
+    GLM: 'GLM',
+    MINIMAX: 'MINIMAX',
+    KIMI: 'KIMI',
     // error conversation response
     CONVERSATION_ERROR: `We encountered an issue and were unable to receive a response. This could be due to a variety of reasons including network issues, server problems, or unexpected errors.Please try your request again later. If the problem persists, check your network connection or [contact support](mailto:hello@weam.ai) for further assistance.`,
 }
@@ -387,7 +390,10 @@ export const MODEL_IMAGE_BY_CODE={
     GROK: '/grok.png',
     QWEN: '/qwen.png',
     SARVAM: '/sarvam.png',
-    OLLAMA: '/ollama-model.svg'
+    OLLAMA: '/ollama-model.svg',
+    GLM: '/glm.png',
+    MINIMAX: '/minimax.png',
+    KIMI: '/kimi.svg',
 }
 
 export const ALLOWED_TYPES = [
@@ -459,6 +465,9 @@ export const AI_MODAL_NAME = {
     GPT_5_2:'gpt-5.2',
     GPT_5_4:'gpt-5.4',
     GPT_5_5: 'gpt-5.5',
+    GPT_5_6_SOL: 'gpt-5.6-sol',
+    GPT_5_6_TERRA: 'gpt-5.6-terra',
+    GPT_5_6_LUNA: 'gpt-5.6-luna',
     // Open AI models
     // GPT_4_1: 'gpt-4.1',
     // GPT_4_O_LATEST: 'chatgpt-4o-latest',
@@ -517,6 +526,15 @@ export const AI_MODAL_NAME = {
     
     // Sarvam models
     SARVAM_M: 'sarvam-m',
+
+    // GLM models
+    GLM_4_7: 'z-ai/glm-4.7',
+
+    // MINIMAX models
+    MINIMAX_M3: 'minimax/minimax-m3',
+
+    // KIMI models
+    KIMI_K2_7_CODE: 'moonshotai/kimi-k2.7-code',
 }
 
 export const USER_STATUS = {
@@ -600,7 +618,10 @@ export const MODAL_NAME_CONVERSION = {
     QWEN: 'Qwen',
     SARVAM: 'Sarvam',
     OPEN_ROUTER: 'Open Router',
-    OLLAMA: 'Ollama'
+    OLLAMA: 'Ollama',
+    GLM: 'GLM',
+    MINIMAX: 'MINIMAX',
+    KIMI: 'KIMI',
 }
 
 // Ollama schema moved from schema/usermodal.ts
@@ -827,6 +848,42 @@ export const MODEL_CREDIT_INFO = [
         vision: true,
         image: true,
         reasoning: true,
+    },
+    {
+        code: 'OPEN_AI',
+        model: 'gpt-5.6-sol',
+        credit: 50,
+        displayName: 'GPT 5.6 Sol',
+        snippet: 'Powerful for deep understanding and complex problem-solving.',
+        doc: true,
+        websearch: false,
+        vision: true,
+        image: true,
+        reasoning: false,
+    },
+    {
+        code: 'OPEN_AI',
+        model: 'gpt-5.6-terra',
+        credit: 20,
+        displayName: 'GPT 5.6 Terra',
+        snippet: 'Powerful for deep understanding and complex problem-solving.',
+        doc: true,
+        websearch: false,
+        vision: true,
+        image: true,
+        reasoning: false,
+    },
+    {
+        code: 'OPEN_AI',
+        model: 'gpt-5.6-luna',
+        credit: 10,
+        displayName: 'GPT 5.6 Luna',
+        snippet: 'Powerful for deep understanding and complex problem-solving.',
+        doc: true,
+        websearch: false,
+        vision: true,
+        image: true,
+        reasoning: false,
     },
     {
         code: 'GEMINI',
@@ -1808,6 +1865,9 @@ export const MODEL_NAME_BY_CODE = {
     'gpt-5.2': 'OPEN_AI',
     'gpt-5.4': 'OPEN_AI',
     'gpt-5.5': 'OPEN_AI',
+    'gpt-5.6-sol': 'OPEN_AI',
+    'gpt-5.6-terra': 'OPEN_AI',
+    'gpt-5.6-luna': 'OPEN_AI',
     
     // Gemini models
     'gemini-2.5-pro-preview-05-06': 'GEMINI',
@@ -1878,6 +1938,15 @@ export const MODEL_NAME_BY_CODE = {
 
     // Sarvam models
     'sarvam-m': 'SARVAM',
+
+    // GLM models
+    'z-ai/glm-4.7': 'GLM',
+
+    // KIMI models
+    'moonshotai/kimi-k2.7-code': 'KIMI',
+
+    // MINIMAX models
+    'minimax/minimax-m3': 'MINIMAX',
 }
 
 export const getModelImageByName = (name: string) => {
@@ -1906,7 +1975,7 @@ export const SUBSCRIPTION_PLAN_CREDITS = {
 }
 
 
-export const SEQUENCE_MODEL_LIST = [AI_MODEL_CODE.OPEN_AI, AI_MODEL_CODE.GEMINI, AI_MODEL_CODE.ANTHROPIC, AI_MODEL_CODE.PERPLEXITY, AI_MODEL_CODE.DEEPSEEK, AI_MODEL_CODE.OLLAMA, AI_MODEL_CODE.LLAMA4, AI_MODEL_CODE.QWEN, AI_MODEL_CODE.GROK, AI_MODEL_CODE.OLLAMA, AI_MODEL_CODE.SARVAM] as const;
+export const SEQUENCE_MODEL_LIST = [AI_MODEL_CODE.OPEN_AI, AI_MODEL_CODE.GEMINI, AI_MODEL_CODE.ANTHROPIC, AI_MODEL_CODE.PERPLEXITY, AI_MODEL_CODE.DEEPSEEK, AI_MODEL_CODE.OLLAMA, AI_MODEL_CODE.LLAMA4, AI_MODEL_CODE.QWEN, AI_MODEL_CODE.GROK, AI_MODEL_CODE.OLLAMA, AI_MODEL_CODE.SARVAM, AI_MODEL_CODE.GLM, AI_MODEL_CODE.KIMI, AI_MODEL_CODE.MINIMAX] as const;
 
 export const FILE_UPLOAD_FOLDER = {
     SALES_CALL_AGENT: 'sales-call',
