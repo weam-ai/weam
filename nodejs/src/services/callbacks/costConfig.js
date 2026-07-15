@@ -87,6 +87,14 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.005,
         completion_tokens: 0.025
     },
+    'claude-fable-5': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.025
+    },
+    'claude-sonnet-5': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.025
+    },
     // Google Gemini Models
     'gemini-1.5-pro': {
         prompt_tokens: 0.00125,

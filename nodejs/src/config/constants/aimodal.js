@@ -28,6 +28,9 @@ const OPENAI_MODAL = [
     { name: 'gpt-5.6-sol', type: 2 },
     { name: 'gpt-5.6-terra', type: 2 },
     { name: 'gpt-5.6-luna', type: 2 },
+    { name: 'gpt-5.6-sol', type: 2 },
+    { name: 'gpt-5.6-terra', type: 2 },
+    { name: 'gpt-5.6-luna', type: 2 },
 ]
 
 const ANTHROPIC_MODAL = [

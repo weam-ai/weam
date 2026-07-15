@@ -716,6 +716,7 @@ async function llmFactory(modelName, opts = {}) {
             
             // chatgpt-4o-latest doesn't support tools, so don't bind them
             if ([MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5_6_SOL, MODAL_NAME.GPT_5_6_TERRA, MODAL_NAME.GPT_5_6_LUNA].includes(modelName.toLowerCase())) {
+            if ([MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5_6_SOL, MODAL_NAME.GPT_5_6_TERRA, MODAL_NAME.GPT_5_6_LUNA].includes(modelName.toLowerCase())) {
                 if (!needsTools) {
                     simpleModelCache.set(cacheKey, openAIModel);
                 }
