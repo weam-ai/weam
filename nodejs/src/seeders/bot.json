@@ -88,5 +88,10 @@
         "title": "Minimax",
         "code": "MINIMAX",
         "seq": 18
+    },
+    {
+        "title": "Xiaomi",
+        "code": "XIAOMI",
+        "seq": 19
     }
 ]

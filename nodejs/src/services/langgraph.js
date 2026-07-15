@@ -1023,6 +1023,7 @@ async function llmFactory(modelName, opts = {}) {
         [AI_MODAL_PROVIDER.MINIMAX]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.GLM]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.KIMI]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
+        [AI_MODAL_PROVIDER.XIAOMI]: await chatOpenRouterWithCallback(modelName, { ...opts, apiKey: opts.apiKey }, costCallback, selectedTools),
         [AI_MODAL_PROVIDER.PERPLEXITY]: () => ({
             _isPerplexityRaw: true,
             model: modelName,
@@ -1521,32 +1522,27 @@ async function getAgentModelConfig(agentDetails, data) {
             let inferredProvider = responseModel.provider;
             if (!inferredProvider || inferredProvider === 'undefined') {
                 const modelName = responseModel.name.toLowerCase();
-                if (modelName.includes('gemini')) {
-                    inferredProvider = 'GEMINI';
-                } else if (modelName.includes('claude')) {
-                    inferredProvider = 'ANTHROPIC';
-                } else if (modelName.includes('gpt') || modelName.includes('o1') || modelName.includes('o3')) {
-                    inferredProvider = 'OPEN_AI';
-                } else if (modelName.includes('deepseek')) {
-                    inferredProvider = 'DEEPSEEK';
-                } else if (modelName.includes('llama')) {
-                    inferredProvider = 'LLAMA4';
-                } else if (modelName.includes('grok')) {
-                    inferredProvider = 'GROK';
-                } else if (modelName.includes('qwen')) {
-                    inferredProvider = 'QWEN';
-                } else if (modelName.includes('sarvam-m')) {
-                    inferredProvider = 'SARVAM';
-                } else if (modelName.includes('minimax')) {
-                    inferredProvider = 'MINIMAX';
-                } else if (modelName.includes('glm')) {
-                    inferredProvider = 'GLM';
-                } else if (modelName.includes('kimi')) {
-                    inferredProvider = 'KIMI';
-                } else {
-                    inferredProvider = 'OPEN_AI'; // Default fallback
+                const mapper = {
+                    'gemini': AI_MODAL_PROVIDER.GEMINI,
+                    'claude': AI_MODAL_PROVIDER.ANTHROPIC,
+                    'gpt': AI_MODAL_PROVIDER.OPEN_AI,
+                    'deepseek': AI_MODAL_PROVIDER.DEEPSEEK,
+                    'llama': AI_MODAL_PROVIDER.LLAMA4,
+                    'grok': AI_MODAL_PROVIDER.GROK,
+                    'qwen': AI_MODAL_PROVIDER.QWEN,
+                    'minimax': AI_MODAL_PROVIDER.MINIMAX,
+                    'glm': AI_MODAL_PROVIDER.GLM,
+                    'kimi': AI_MODAL_PROVIDER.KIMI,
+                    'xiaomi': AI_MODAL_PROVIDER.XIAOMI,
+                    'sarvam-m': AI_MODAL_PROVIDER.SARVAM,
+                    'perplexity': AI_MODAL_PROVIDER.PERPLEXITY,
+                    'azure': AI_MODAL_PROVIDER.AZURE_OPENAI_SERVICE,
+                    'huggingface': AI_MODAL_PROVIDER.HUGGING_FACE,
+                    'local': AI_MODAL_PROVIDER.LOCAL_LLM,
+                    'anyscale': AI_MODAL_PROVIDER.ANYSCALE,
+                    'ollama': AI_MODAL_PROVIDER.OLLAMA,
                 }
-                
+                inferredProvider = mapper[modelName] || AI_MODAL_PROVIDER.OPEN_AI;
             }
             
             // Return agent-specific configuration
@@ -1617,6 +1613,7 @@ function mapProviderCode(code) {
         'minimax': AI_MODAL_PROVIDER.MINIMAX,
         'glm': AI_MODAL_PROVIDER.GLM,
         'kimi': AI_MODAL_PROVIDER.KIMI,
+        'xiaomi': AI_MODAL_PROVIDER.XIAOMI,
     };
     
     // Check exact matches first
@@ -1789,8 +1786,9 @@ async function generateTitleByLLM(payload) {
             [AI_MODAL_PROVIDER.SARVAM]: 'sarvam-m',
             [AI_MODAL_PROVIDER.PERPLEXITY]: 'sonar',
             [AI_MODAL_PROVIDER.MINIMAX]: 'minimax/minimax-m3',
-            [AI_MODAL_PROVIDER.GLM]: 'z-ai/glm-4.7',
+            [AI_MODAL_PROVIDER.GLM]: 'z-ai/glm-5.2',
             [AI_MODAL_PROVIDER.KIMI]: 'moonshotai/kimi-k2.7-code',
+            [AI_MODAL_PROVIDER.XIAOMI]: 'xiaomi/mimo-v2.5',
         };
         
         const defaultModel = defaultModelMap[mappedProvider] || defaultModelMap[AI_MODAL_PROVIDER.OPEN_AI];

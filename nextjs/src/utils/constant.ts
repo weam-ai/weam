@@ -270,6 +270,7 @@ export const AI_MODEL_CODE = {
     GLM: 'GLM',
     MINIMAX: 'MINIMAX',
     KIMI: 'KIMI',
+    XIAOMI: 'XIAOMI',
     // error conversation response
     CONVERSATION_ERROR: `We encountered an issue and were unable to receive a response. This could be due to a variety of reasons including network issues, server problems, or unexpected errors.Please try your request again later. If the problem persists, check your network connection or [contact support](mailto:hello@weam.ai) for further assistance.`,
 }
@@ -394,6 +395,7 @@ export const MODEL_IMAGE_BY_CODE={
     GLM: '/glm.png',
     MINIMAX: '/minimax.png',
     KIMI: '/kimi.svg',
+    XIAOMI: '/xiaomi.png',
 }
 
 export const ALLOWED_TYPES = [
@@ -528,13 +530,16 @@ export const AI_MODAL_NAME = {
     SARVAM_M: 'sarvam-m',
 
     // GLM models
-    GLM_4_7: 'z-ai/glm-4.7',
+    GLM_5_2: 'z-ai/glm-5.2',
 
     // MINIMAX models
     MINIMAX_M3: 'minimax/minimax-m3',
 
     // KIMI models
     KIMI_K2_7_CODE: 'moonshotai/kimi-k2.7-code',
+
+    // XIAOMI models
+    XIAOMI_MIMO_V2_5: 'xiaomi/mimo-v2.5',
 }
 
 export const USER_STATUS = {
@@ -620,8 +625,9 @@ export const MODAL_NAME_CONVERSION = {
     OPEN_ROUTER: 'Open Router',
     OLLAMA: 'Ollama',
     GLM: 'GLM',
-    MINIMAX: 'MINIMAX',
-    KIMI: 'KIMI',
+    MINIMAX: 'MiniMax',
+    KIMI: 'Kimi',
+    XIAOMI: 'Xiaomi',
 }
 
 // Ollama schema moved from schema/usermodal.ts
@@ -850,7 +856,7 @@ export const MODEL_CREDIT_INFO = [
         reasoning: true,
     },
     {
-        code: 'OPEN_AI',
+        code: AI_MODEL_CODE.OPEN_AI,
         model: 'gpt-5.6-sol',
         credit: 50,
         displayName: 'GPT 5.6 Sol',
@@ -862,7 +868,7 @@ export const MODEL_CREDIT_INFO = [
         reasoning: false,
     },
     {
-        code: 'OPEN_AI',
+        code: AI_MODEL_CODE.OPEN_AI,
         model: 'gpt-5.6-terra',
         credit: 20,
         displayName: 'GPT 5.6 Terra',
@@ -874,7 +880,7 @@ export const MODEL_CREDIT_INFO = [
         reasoning: false,
     },
     {
-        code: 'OPEN_AI',
+        code: AI_MODEL_CODE.OPEN_AI,
         model: 'gpt-5.6-luna',
         credit: 10,
         displayName: 'GPT 5.6 Luna',
@@ -1203,7 +1209,7 @@ export const MODEL_CREDIT_INFO = [
         websearch: false,
     },
     {
-        code: 'GROK',
+        code: AI_MODEL_CODE.GROK,
         model: 'x-ai/grok-4.5',
         credit: 5,
         displayName: 'Grok 4.1 Fast',
@@ -1303,11 +1309,11 @@ export const MODEL_CREDIT_INFO = [
         displayName: 'Mistral 7B (Local)'
     },
     {
-        code: 'GLM',
-        model: 'z-ai/glm-4.7',
+        code: AI_MODEL_CODE.GLM,
+        model: 'z-ai/glm-5.2',
         credit: 10,
-        displayName: 'GLM 4.7',
-        snippet: 'GLM 4.7 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
+        displayName: 'GLM 5.2',
+        snippet: 'GLM 5.2 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
         doc: true,
         websearch: false,
         vision: false,
@@ -1315,7 +1321,7 @@ export const MODEL_CREDIT_INFO = [
         reasoning: true,
     },
     {
-        code: 'KIMI',
+        code: AI_MODEL_CODE.KIMI,
         model: 'moonshotai/kimi-k2.7-code',
         credit: 10,
         displayName: 'Kimi K2.7 Code',
@@ -1327,11 +1333,23 @@ export const MODEL_CREDIT_INFO = [
         reasoning: true,
     },
     {
-        code: 'MINIMAX',
+        code: AI_MODEL_CODE.MINIMAX,
         model: 'minimax/minimax-m3',
         credit: 10,
         displayName: 'MiniMax M3',
         snippet: 'MiniMax M3 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
+        doc: true,
+        websearch: false,
+        vision: false,
+        image: false,
+        reasoning: true,
+    },
+    {
+        code: AI_MODEL_CODE.XIAOMI,
+        model: 'xiaomi/mimo-v2.5',
+        credit: 10,
+        displayName: 'Mimo V2.5',
+        snippet: 'XIAOMI Mimo V2.5 is a model for advanced reasoning, agentic workflows, coding and knowledge work',
         doc: true,
         websearch: false,
         vision: false,
@@ -1940,13 +1958,16 @@ export const MODEL_NAME_BY_CODE = {
     'sarvam-m': 'SARVAM',
 
     // GLM models
-    'z-ai/glm-4.7': 'GLM',
+    'z-ai/glm-5.2': 'GLM',
 
     // KIMI models
     'moonshotai/kimi-k2.7-code': 'KIMI',
 
     // MINIMAX models
     'minimax/minimax-m3': 'MINIMAX',
+
+    // XIAOMI models
+    'xiaomi/mimo-v2.5': 'XIAOMI',
 }
 
 export const getModelImageByName = (name: string) => {
@@ -1975,10 +1996,26 @@ export const SUBSCRIPTION_PLAN_CREDITS = {
 }
 
 
-export const SEQUENCE_MODEL_LIST = [AI_MODEL_CODE.OPEN_AI, AI_MODEL_CODE.GEMINI, AI_MODEL_CODE.ANTHROPIC, AI_MODEL_CODE.PERPLEXITY, AI_MODEL_CODE.DEEPSEEK, AI_MODEL_CODE.OLLAMA, AI_MODEL_CODE.LLAMA4, AI_MODEL_CODE.QWEN, AI_MODEL_CODE.GROK, AI_MODEL_CODE.OLLAMA, AI_MODEL_CODE.SARVAM, AI_MODEL_CODE.GLM, AI_MODEL_CODE.KIMI, AI_MODEL_CODE.MINIMAX] as const;
+export const SEQUENCE_MODEL_LIST = [
+    AI_MODEL_CODE.OPEN_AI,
+    AI_MODEL_CODE.GEMINI,
+    AI_MODEL_CODE.ANTHROPIC,
+    AI_MODEL_CODE.PERPLEXITY,
+    AI_MODEL_CODE.DEEPSEEK,
+    AI_MODEL_CODE.OLLAMA,
+    AI_MODEL_CODE.LLAMA4,
+    AI_MODEL_CODE.QWEN,
+    AI_MODEL_CODE.GROK,
+    AI_MODEL_CODE.OLLAMA,
+    AI_MODEL_CODE.SARVAM,
+    AI_MODEL_CODE.GLM,
+    AI_MODEL_CODE.KIMI,
+    AI_MODEL_CODE.MINIMAX,
+    AI_MODEL_CODE.XIAOMI,
+] as const;
 
 export const FILE_UPLOAD_FOLDER = {
-    SALES_CALL_AGENT: 'sales-call',
+    SALES_CALL_AGENT: "sales-call",
 } as const;
 
 export const WEEKLY_REPORT_CAN_ACCESS = [

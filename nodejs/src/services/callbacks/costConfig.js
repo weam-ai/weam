@@ -175,7 +175,13 @@ const MODEL_COST_PER_1K_TOKENS = {
     },
 
     // Glm Models
-    'z-ai/glm-4.7': {
+    'z-ai/glm-5.2': {
+        prompt_tokens: 0.005,
+        completion_tokens: 0.015
+    },
+
+    // Xiaomi Models
+    'xiaomi/mimo-v2.5': {
         prompt_tokens: 0.005,
         completion_tokens: 0.015
     },

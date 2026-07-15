@@ -117,7 +117,7 @@ const SARVAM_MODAL = [
 ]
 
 const GLM_MODAL = [
-    { name: 'z-ai/glm-4.7', type: 2 },
+    { name: 'z-ai/glm-5.2', type: 2 },
 ]
 
 const KIMI_MODAL = [
@@ -126,6 +126,10 @@ const KIMI_MODAL = [
 
 const MINIMAX_MODAL = [
     { name: 'minimax/minimax-m3', type: 2 },
+]
+
+const XIAOMI_MODAL = [
+    { name: 'xiaomi/mimo-v2.5', type: 2 },
 ]
 
 const MESSAGE_TYPE = {
@@ -157,6 +161,7 @@ const AI_MODAL_PROVIDER = {
     GLM: 'GLM',
     KIMI: 'KIMI',
     MINIMAX: 'MINIMAX',
+    XIAOMI: 'XIAOMI',
 }
 
 const OPENROUTER_PROVIDER = {
@@ -230,6 +235,7 @@ const MODAL_NAME = {
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
     SARVAM_M: 'sarvam-m',
+    XIAOMI_MIMO_V2_5: 'xiaomi/mimo-v2.5',
 }
 const PINECONE_APIKEY_CODE = "PINECONE_APIKEY"
 
