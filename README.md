@@ -59,7 +59,7 @@ Visit our comprehensive [**Documentation**](https://opensource.weam.ai/docs/).
 ### Platform Features
 
 #### 💬 Chat System
-- **Multi-LLM Support:** OpenAI, Anthropic, Gemini, Llama, Perplexity, DeepSeek, Open Router, Hugging Face, Grok, and more  
+- **Multi-LLM Support:** OpenAI, Anthropic, Gemini, Llama, Perplexity, DeepSeek, OpenRouter, Hugging Face, Grok, GLM, MiniMax, Kimi, Xiaomi MiMo, and more.
 a- **Intelligent Context:** Full conversation history maintains coherent, context-aware discussions  
 - **Local Model Support (Ollama):** Connect to self-hosted models via Ollama — no API key required.  
 - **Conversation Management:** Fork chats to explore different directions  
