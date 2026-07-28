@@ -137,6 +137,14 @@ The Blog Engine helps you craft SEO-optimized blog posts and articles. It also s
 The Smart Bots lets you create RAG (Retrieval-Augmented Generation)-based chatbots that can be embedded directly into your website. It also provides conversation history and usage analytics for ongoing improvement.  
 👉 [Check out the repository](https://github.com/weam-ai/ai-chatbot)
 
+#### AI Presentation Generator
+The AI Presentation Generator helps you create visually engaging presentations using AI. Generate slide decks from prompts or documents, customize themes and layouts, edit content, and export presentations to PowerPoint for seamless sharing and collaboration.
+👉 [Check out the repository](https://github.com/weam-ai/ai-presentation)
+
+#### AI Content Copy
+The AI Content Copy platform helps you generate high-quality marketing content using AI. Create Facebook posts, Instagram captions and stories, LinkedIn posts, SEO-optimized articles, backlink content, product descriptions, and more—all from a simple prompt to streamline your content creation workflow.  
+👉 [Check out the repository](https://github.com/weam-ai/ai-content-copy)
+
 ---
 
 ## Installation Options
