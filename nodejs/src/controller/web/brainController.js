@@ -39,11 +39,53 @@ const deleteBrain = catchAsync(async (req, res) => {
 })
 
 const deleteAllBrain = catchAsync(async (req, res) => {
+    // Feature flag check
+    if (process.env.BULK_DELETE_BRAINS_ENABLED !== 'true') {
+        return res.status(403).json({ error: 'Bulk delete is disabled by feature flag.' });
+    }
+
+    // Confirm param check
+    if (req.query.confirm !== 'true' && req.body.confirm !== true) {
+        return res.status(400).json({ error: 'Explicit confirmation required (confirm=true).' });
+    }
+
+    // Role/permission defense-in-depth
+    const allowedRoles = ['COMPANY', 'MANAGER'];
+    const userRoles = req.user.roles || [];
+    const userPermissions = req.user.permissions || [];
+    if (!userRoles.some(role => allowedRoles.includes(role)) || !userPermissions.includes('brain.delete_all')) {
+        return res.status(403).json({ error: 'Forbidden: insufficient permissions.' });
+    }
+
+    // Rate limiting (simple in-memory, replace with Redis for prod)
+    if (!global.bulkDeleteRateLimit) global.bulkDeleteRateLimit = {};
+    const userId = req.userId;
+    const now = Date.now();
+    const windowMs = 60 * 60 * 1000; // 1 hour
+    const maxDeletes = 2;
+    const userLimit = global.bulkDeleteRateLimit[userId] || { count: 0, last: 0 };
+    if (userLimit.last + windowMs > now) {
+        if (userLimit.count >= maxDeletes) {
+            return res.status(429).json({ error: 'Rate limit exceeded for bulk delete.' });
+        }
+        userLimit.count++;
+    } else {
+        userLimit.count = 1;
+        userLimit.last = now;
+    }
+    global.bulkDeleteRateLimit[userId] = userLimit;
+
+    // Audit logging
+    const logger = require('../../utils/logger');
+    logger.info(`Bulk delete brains requested by user ${userId} (${req.user.email}) at ${new Date().toISOString()}`);
+
     const result = await brainService.deleteAllBrain(req);
     if (result) {
+        logger.info(`Bulk delete brains SUCCESS for user ${userId} (${req.user.email}) at ${new Date().toISOString()}`);
         res.message = _localize('module.delete', req, BRAIN);
         return util.successResponse(result, res);
     }
+    logger.error(`Bulk delete brains FAILURE for user ${userId} (${req.user.email}) at ${new Date().toISOString()}`);
     return util.failureResponse(_localize('module.deleteError', req, BRAIN), res);
 })
 
