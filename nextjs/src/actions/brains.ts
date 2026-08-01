@@ -1,5 +1,5 @@
 'use server';
-import { DEFAULT_SORT, MODULE_ACTIONS, MODULES, REVALIDATE_TAG_NAME, ROLE_TYPE } from '@/utils/constant';
+import { DEFAULT_SORT, MODULE_ACTIONS, MODULES, REVALIDATE_TAG_NAME, ROLE_TYPE, BRAIN_ID_REQUIRED } from '@/utils/constant';
 import { revalidateTagging, serverApi } from './serverApi';
 import { getSessionUser } from '@/utils/handleAuth';
 import { FormatUserType, ObjectType } from '@/types/common';
@@ -285,4 +285,36 @@ export const convertToSharedAction = async (brainId: string, data: { members?: O
         revalidateTagging(response, `${REVALIDATE_TAG_NAME.BRAIN}-${sessionUser.companyId}`),
     ]);
     return response;
+};
+
+export const leaveBrainAction = async (brainId: string) => {
+  const sessionUser = await getSessionUser();
+  
+  if (!brainId) {
+    return {
+      status: 400,
+      code: 'ERROR',
+      message: BRAIN_ID_REQUIRED,
+      data: {}
+    };
+  }
+  
+  if (!sessionUser?._id) {
+    return {
+      status: 401,
+      code: 'ERROR',
+      message: 'Authentication required',
+      data: {}
+    };
+  }
+  
+  const response = await serverApi({
+    action: MODULE_ACTIONS.UNSHARE,
+    parameters: [brainId],
+    data: { user_id: sessionUser._id }
+  });
+  
+  await revalidateTagging(response, `${REVALIDATE_TAG_NAME.BRAIN}-${sessionUser.companyId}`);
+  
+  return response;
 };

@@ -121,13 +121,13 @@ const workspaceWiseList = catchAsync(async (req, res) => {
     return util.recordNotFound(null, res);
 })
 
-const convertToShared = catchAsync(async (req, res) => {
-    const result = await brainService.convertToShared(req);
+const leaveBrain = catchAsync(async (req, res) => {
+    const result = await brainService.leaveBrain(req);
     if (result) {
-        res.message = _localize('module.convertToShared', req, BRAIN);
+        res.message = _localize('module.leave', req, BRAIN);
         return util.successResponse(result, res);
     }
-    return util.failureResponse(_localize('module.convertToSharedError', req, BRAIN), res);
+    return util.failureResponse(_localize('module.leaveError', req, BRAIN), res);
 })
 
 module.exports = {
@@ -144,6 +144,6 @@ module.exports = {
     restoreBrain,
     deleteAllBrain,
     workspaceWiseList,
-    convertToShared
+    leaveBrain
 } 
 

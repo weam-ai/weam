@@ -39,6 +39,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import ConvertToSharedModal from './ConvertToSharedModal';
 import { ShareBrainIcon } from '@/icons/Share';
+import LeaveBrainButton from './LeaveBrainButton';
 
 type DefaultEditOptionProps = {
     onEdit: () => void;
@@ -53,6 +54,7 @@ type CommonListProps = {
     b: BrainListType;
     currentUser: SetUserData;
     closeSidebar: () => void;
+    onBrainLeave?: (brainId: string) => void;
 }
 
 type LinkItemsProps = {
@@ -188,7 +190,6 @@ const DefaultEditOption = React.memo(
                         className="edit-collapse-title"
                         onClick={handleEditBrain}
                     >
-                        
                         <SettingsIcon width={14}
                             height={16} className="w-[14] h-4 object-contain fill-b4 me-2.5" />
                         Manage
@@ -199,7 +200,7 @@ const DefaultEditOption = React.memo(
     }
 );
 
-export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) => {
+export const CommonList = ({ b, currentUser, closeSidebar, onBrainLeave }: CommonListProps) => {
     
     const dispatch = useDispatch();
     const router = useRouter();
@@ -209,7 +210,7 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
     const [isEditing, setIsEditing] = useState(false);
     const [editedTitle, setEditedTitle] = useState(b.title);
     const inputRef = useRef(null);
-    const buttonRef=useRef(null)
+    const buttonRef = useRef(null);
     const [deleteBrain, isDeletePending] = useServerAction(deleteBrainAction);
     const [updateBrain, isUpdatePending] = useServerAction(updateBrainAction);
     const [showConvertModal, setShowConvertModal] = useState(false);
@@ -226,6 +227,8 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
     const defaultCharacter = useMemo(() => {
         return getRandomCharacter();
     }, [b?._id]); // Only changes if brain ID changes
+
+    const isOwner = b.user.id === currentUser._id;
 
     const handleEditClick = () => {
         setIsEditing(true);
@@ -258,16 +261,16 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
 
 
     const handleSaveClick = async () => {
-        if(b.title !==inputRef.current.value){
+        if(b.title !== inputRef.current.value){
             const payload = {
                 title: editedTitle,
                 isShare: b?.isShare,
                 workspaceId: b?.workspaceId
             };
 
-            const response:any=await updateBrain(payload, b?._id);
+            const response: any = await updateBrain(payload, b?._id);
 
-            if(response?.code=='ERROR'){
+            if(response?.code == 'ERROR'){
                 setEditedTitle(b?.title)
             }
             setIsEditing(false)
@@ -320,8 +323,7 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
 
     return (
         <>
-
-<ConvertToSharedModal
+            <ConvertToSharedModal
                 open={showConvertModal}
                 close={() => setShowConvertModal(false)}
                 brain={b}
@@ -347,8 +349,15 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
                                     height={20}
                                     className="mr-2 flex-shrink-0 rounded collapsed-brain-logo"
                                 />
-                             ) : <Image src={defaultCharacter.image} alt={b.title} width={20} height={20} className="mr-2 flex-shrink-0 rounded collapsed-brain-logo" />
-                            }
+                             ) : (
+                                <Image 
+                                    src={defaultCharacter.image} 
+                                    alt={b.title} 
+                                    width={20} 
+                                    height={20} 
+                                    className="mr-2 flex-shrink-0 rounded collapsed-brain-logo" 
+                                />
+                            )}
                             {isEditing ? (
                                 <input
                                     type="text"
@@ -378,18 +387,32 @@ export const CommonList = ({ b, currentUser, closeSidebar }: CommonListProps) =>
                                 </button>
                             ) : null}
                             {b?.slug != `default-brain-${currentUser?._id}` &&
-                                b?.slug !== GENERAL_BRAIN_SLUG &&
-                                ((currentUser?.roleCode === ROLE_TYPE.USER &&
-                                    b.user.id === currentUser?._id) ||
-                                    currentUser?.roleCode !== ROLE_TYPE.USER) && (
-                                    <DefaultEditOption
-                                        onEdit={handleEditClick}
-                                        handleEditBrain={() => handleEditBrain(b)}
-                                        handleDeleteBrain={() => handleDeleteBrain(b)}
-                                        handleConvertToShared={!b.isShare ? handleConvertToShared : undefined}
-                                        isDeletePending={isDeletePending}
-                                        isPrivate={!b.isShare}
-                        />
+                                b?.slug !== GENERAL_BRAIN_SLUG && (
+                                    <>
+                                        {currentUser?.roleCode === ROLE_TYPE.USER && !isOwner && (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <LeaveBrainButton
+                                                    brainId={b._id}
+                                                    brainTitle={b.title}
+                                                    buttonClassName="ml-auto md:opacity-0 group-hover:opacity-100 dropdown-action transparent-ghost-btn btn-round btn-round-icon"
+                                                    iconClassName="w-5 h-auto md:w-4"
+                                                    hideLabel={true}
+                                                    onLeaveSuccess={onBrainLeave}
+                                                />
+                                            </div>
+                                        )}
+                                        {((currentUser?.roleCode === ROLE_TYPE.USER && isOwner) ||
+                                            currentUser?.roleCode !== ROLE_TYPE.USER) && (
+                                            <DefaultEditOption
+                                                onEdit={handleEditClick}
+                                                handleEditBrain={() => handleEditBrain(b)}
+                                                handleDeleteBrain={() => handleDeleteBrain(b)}
+                                                handleConvertToShared={!b.isShare ? handleConvertToShared : undefined}
+                                                isDeletePending={isDeletePending}
+                                                isPrivate={!b.isShare}
+                                            />
+                                        )}
+                                    </>
                                 )}
                         </button>
                     </TooltipTrigger>

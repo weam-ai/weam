@@ -21,6 +21,7 @@ import Toast from '@/utils/toast';
 import { convertBrainToShared } from '@/lib/slices/brain/brainlist';
 import { useForm } from 'react-hook-form';
 import ValidationError from '@/widgets/ValidationError';
+import { CONVERT_TO_SHARED_SUCCESS, CONVERT_TO_SHARED_ERROR } from '@/utils/constant';
 
 interface ConvertToSharedModalProps {
     open: boolean;
@@ -116,20 +117,19 @@ const ConvertToSharedModal = ({ open, close, brain }: ConvertToSharedModalProps)
                 })) || [],
                 customInstruction,
             };
-            
+
             const response = await runAction(brain._id, payload);
-            
+
             if (response?.code === 'SUCCESS') {
-                // Update Redux state
                 dispatch(convertBrainToShared({
                     brainId: brain._id,
                     convertedBrain: response.data
                 }));
-                
-                Toast('Converted to Shared! Members and teams now have access.');
+
+                Toast(response?.message || CONVERT_TO_SHARED_SUCCESS);
                 close();
             } else {
-                Toast(response?.message || 'We couldn’t convert this brain. Please try again.');
+                Toast(response?.message || CONVERT_TO_SHARED_ERROR);
             }
         } catch (error) {
             Toast('We couldn’t convert this brain. Please try again.');
@@ -150,7 +150,7 @@ const ConvertToSharedModal = ({ open, close, brain }: ConvertToSharedModalProps)
                             Convert to Shared Brain
                         </DialogTitle>
                         <DialogDescription className="small-description text-font-14 leading-[24px] text-b5 font-normal ml-9">
-                            Convert "{brain?.title}" to a shared brain and invite team members to collaborate. 
+                            Convert "{brain?.title}" to a shared brain and invite team members to collaborate.
                             This will make the brain accessible to selected users and teams.
                         </DialogDescription>
                     </DialogHeader>
@@ -233,9 +233,9 @@ const ConvertToSharedModal = ({ open, close, brain }: ConvertToSharedModalProps)
                             </div>
 
                             <div className="flex items-center justify-center my-[30px]">
-                                <button 
-                                    className="btn btn-black" 
-                                    type="submit" 
+                                <button
+                                    className="btn btn-black"
+                                    type="submit"
                                     disabled={isPending}
                                 >
                                     {isPending ? 'Converting...' : 'Convert to Shared'}
