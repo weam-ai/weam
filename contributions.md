@@ -1,4 +1,89 @@
-# 🚀 Weam-Ai Hackathon Contributors
+# Contributing to weam.ai
+
+Thank you for your interest in contributing to **weam.ai**! 
+We welcome contributions of all kinds from fixing typos to adding new features.
+
+
+##  How to Contribute
+
+1. **Fork** this repo and clone your fork locally.
+
+   ```bash
+   git clone https://github.com/<your-username>/weam.ai.git
+   ```
+2. **Create a new branch** for your work:
+
+   ```bash
+   git checkout -b feature/short-description
+   ```
+3. **Commit your changes** with a clear message:
+
+   ```bash
+   git commit -m "Fix: corrected typo in README"
+   ```
+4. **Push to your fork**:
+
+   ```bash
+   git push origin feature/short-description
+   ```
+5. **Open a Pull Request (PR)** against the `main` branch.
+
+---
+
+##  Contribution Guidelines
+
+* Keep PRs focused and concise (one feature/bugfix per PR).
+* Follow project coding style and conventions.
+* Add/update tests if you introduce new functionality.
+* Update docs when behavior changes.
+
+---
+
+##  Contributing during Hacktoberfest
+
+We’re excited to participate in **Hacktoberfest 2025**! 
+Contributions of all levels are welcome — whether you’re a first-time open-source contributor or an experienced developer.
+
+###  How to Join
+
+1. Check issues labeled **`hacktoberfest`** or **`good first issue`**.
+2. Follow these guidelines.
+3. Submit a Pull Request during October.
+4. Maintainers will review your PR and merge or label it as `hacktoberfest-accepted`.
+
+###  What You Can Work On
+
+* Improving documentation.
+* Fixing small bugs.
+* Adding examples or tests.
+* Suggesting new ideas via Issues.
+
+###  Review Process
+
+* We aim to review PRs within **48 hours**.
+* Valid contributions will be **merged** or marked as **hacktoberfest-accepted**.
+* Spam/invalid PRs will be marked as **spam** or **invalid** and not counted.
+---
+
+##  License
+
+By contributing, you agree that your contributions will be licensed under the same license as this repository.
+
+
+---
+---
+---
+---
+
+
+
+
+
+
+
+
+
+#  Weam-Ai Hackathon Contributors
 
 ## 🏆 Team 1
 
