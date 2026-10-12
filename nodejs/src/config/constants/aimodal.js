@@ -31,6 +31,9 @@ const OPENAI_MODAL = [
     { name: 'gpt-5.6-sol', type: 2 },
     { name: 'gpt-5.6-terra', type: 2 },
     { name: 'gpt-5.6-luna', type: 2 },
+    { name: 'gpt-6-astra', type: 2 },
+    { name: 'gpt-6.1-sol', type: 2 },
+    { name: 'gpt-6-luna', type: 2 },
 ]
 
 const ANTHROPIC_MODAL = [
@@ -50,6 +53,8 @@ const ANTHROPIC_MODAL = [
     { name: 'claude-opus-4-8', type: 2 },
     { name: 'claude-fable-5', type: 2 },
     { name: 'claude-sonnet-5', type: 2 },
+    { name: 'claude-sonnet-5-5', type: 2 },
+    { name: 'claude-opus-5-5', type: 2 },
 ]
 const ANTHROPIC_MAX_TOKENS = {
     // Claude 3.5 Haiku
@@ -75,6 +80,8 @@ const ANTHROPIC_MAX_TOKENS = {
     'claude-opus-4-8': 128000,
     'claude-fable-5': 128000,
     'claude-sonnet-5': 128000,
+    'claude-sonnet-5-5': 128000,
+    'claude-opus-5-5': 128000,
 
     // Default fallback for any new models
     'default': 4096
@@ -85,6 +92,8 @@ const GEMINI_MODAL = [
     { name: 'gemini-3-pro-preview', type: 2 },
     { name: 'gemini-3.1-pro-preview', type: 2 },
     { name: 'gemini-3-flash-preview', type: 2 },
+    { name: 'gemini-3.8-flash', type: 2 },
+    { name: 'gemini-3.7-flash', type: 2 },
 ]
 
 const PERPLEXITY_MODAL = [
@@ -208,6 +217,8 @@ const MODAL_NAME = {
     GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
     GEMINI_3_1_PRO_PREVIEW: 'gemini-3.1-pro-preview',
     GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
+    GEMINI_3_8_FLASH: 'gemini-3.8-flash',
+    GEMINI_3_7_FLASH: 'gemini-3.7-flash',
     O3: 'o3',
     GROK_3_MINI_BETA: 'x-ai/grok-3-mini-beta',
     GROK_4_1_FAST: 'x-ai/grok-4.1-fast',
@@ -224,6 +235,8 @@ const MODAL_NAME = {
     CLAUDE_OPUS_4_8: 'claude-opus-4-8',
     CLAUDE_FABLE_5: 'claude-fable-5',
     CLAUDE_SONNET_5: 'claude-sonnet-5',
+    CLAUDE_SONNET_5_5: 'claude-sonnet-5-5',
+    CLAUDE_OPUS_5_5: 'claude-opus-5-5',
     GPT_5: 'gpt-5',
     GPT_5_MINI: 'gpt-5-mini',
     GPT_5_NANO: 'gpt-5-nano',
@@ -235,6 +248,9 @@ const MODAL_NAME = {
     GPT_5_6_SOL: 'gpt-5.6-sol',
     GPT_5_6_TERRA: 'gpt-5.6-terra',
     GPT_5_6_LUNA: 'gpt-5.6-luna',
+    GPT_6_ASTRA: 'gpt-6-astra',
+    GPT_6_1_SOL: 'gpt-6.1-sol',
+    GPT_6_LUNA: 'gpt-6-luna',
     SONAR: 'sonar',
     SONAR_REASONING_PRO: 'sonar-reasoning-pro',
     SARVAM_M: 'sarvam-m',

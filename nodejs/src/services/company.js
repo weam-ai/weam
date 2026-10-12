@@ -606,7 +606,7 @@ async function anthropicApiChecker(req) {
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
-                model: MODAL_NAME.CLAUDE_SONNET_4_20250514,
+                model: MODAL_NAME.CLAUDE_SONNET_5_5,
                 max_tokens: 1024,
                 messages: [
                     { role: 'user', content: 'Hello, world' }

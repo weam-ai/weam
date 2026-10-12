@@ -116,7 +116,8 @@ services:
       - app-network
     
   mongo:
-    image: mongo:latest
+    # Pin major version: mongo:latest (9.x) refuses existing volume FCV 8.2 (exit 62)
+    image: mongo:8.2
     container_name: weamai-mongo-1
     ports:
       - "${MONGO_PORT}:${MONGO_PORT}"
@@ -128,6 +129,7 @@ services:
       - mongo-data:/data/db
     networks:
       - app-network
+    restart: unless-stopped
 
   mongo-express:
     image: mongo-express:latest
@@ -150,9 +152,21 @@ services:
 
 
   
+  # Official minio/minio and quay.io/minio images were removed; Chainguard is the drop-in
+  # (see https://jacar.es/en/fix-pull-access-denied-minio-docker/)
+  minio-perms:
+    image: mirror.gcr.io/library/busybox:1.37
+    user: "0:0"
+    volumes:
+      - minio_data:/data
+    command: ["chown", "-R", "65532:65532", "/data"]
+    networks:
+      - app-network
+
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     container_name: minio
+    user: "65532:65532"
     volumes:
       - minio_data:/data
     environment:
@@ -160,22 +174,34 @@ services:
       - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
       - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL}
     command: server /data --console-address ":${MINIO_DASHBOARD_PORT}"
+    # Chainguard image has no curl/wget; use bash /dev/tcp instead
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${MINIO_PORT}/minio/health/live"]
+      test: ["CMD", "bash", "-c", "echo >/dev/tcp/127.0.0.1/${MINIO_PORT}"]
       interval: 30s
       timeout: 10s
       retries: 3
+    depends_on:
+      minio-perms:
+        condition: service_completed_successfully
     networks:
       - app-network
   
   
   minio-init:
-    image: minio/mc
+    image: cgr.dev/chainguard/minio-client:latest
+    user: "65532:65532"
     env_file: ${ENV_FILE}
+    environment:
+      - MC_CONFIG_DIR=/tmp/mc
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_BUCKET=${AWS_BUCKET}
+      - AWS_VECTORS_BACKUP=${AWS_VECTORS_BACKUP}
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: ["/bin/sh", "/minio.sh"]
+    # Chainguard client has no /bin/sh; bash can run the bootstrap script
+    entrypoint: ["/usr/bin/bash", "/minio.sh"]
     volumes:
       - ./minio.sh:/minio.sh:ro
     networks:

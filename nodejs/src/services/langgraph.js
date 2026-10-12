@@ -711,11 +711,11 @@ async function llmFactory(modelName, opts = {}) {
                 openAIApiKey: opts.apiKey,
                 configuration: {
                     apiKey: opts.apiKey
-                }
+                },
+                useResponsesApi: true,
             });
             
             // chatgpt-4o-latest doesn't support tools, so don't bind them
-            if ([MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5_6_SOL, MODAL_NAME.GPT_5_6_TERRA, MODAL_NAME.GPT_5_6_LUNA].includes(modelName.toLowerCase())) {
             if ([MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5_6_SOL, MODAL_NAME.GPT_5_6_TERRA, MODAL_NAME.GPT_5_6_LUNA].includes(modelName.toLowerCase())) {
                 if (!needsTools) {
                     simpleModelCache.set(cacheKey, openAIModel);
@@ -751,21 +751,35 @@ async function llmFactory(modelName, opts = {}) {
                 return simpleModelCache.get(cacheKey);
             }
 
-            const isFable5 = [MODAL_NAME.CLAUDE_FABLE_5].includes(modelName.toLowerCase());
+            const normalizedModel = modelName.toLowerCase();
+            const isFable5 = [MODAL_NAME.CLAUDE_FABLE_5].includes(normalizedModel);
+            // Opus 5.5 rejects thinking.type="disabled" (LangChain default); adaptive only.
+            const isOpus55 = normalizedModel === MODAL_NAME.CLAUDE_OPUS_5_5;
+            // Only Sonnet 5.5 accepts between_tools (replacement for "disabled").
+            const isSonnet55 = normalizedModel === MODAL_NAME.CLAUDE_SONNET_5_5;
             let anthropicModel = new ChatAnthropic({
                 ...baseConfig,
                 anthropicApiKey: opts.apiKey || process.env.ANTHROPIC_API_KEY,
                 maxTokens: getAnthropicMaxTokens(modelName), // Model-specific max_tokens
-                ...(isFable5
+                ...(isFable5 || isOpus55
                     ? {
                           thinking: {
                               type: "adaptive",
                           },
                       }
-                    : {}),
+                    : isSonnet55
+                      ? {
+                            thinking: {
+                                type: "between_tools",
+                            },
+                        }
+                      : {}),
             });
 
             anthropicModel.topP = undefined
+            if (isFable5 || isOpus55) {
+                anthropicModel.temperature = undefined;
+            }
             
             // Only bind tools if query needs them
             if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
