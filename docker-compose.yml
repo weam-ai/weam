@@ -167,6 +167,9 @@ services:
     image: cgr.dev/chainguard/minio:latest
     container_name: minio
     user: "65532:65532"
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
     environment:
