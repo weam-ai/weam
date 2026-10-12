@@ -711,11 +711,11 @@ async function llmFactory(modelName, opts = {}) {
                 openAIApiKey: opts.apiKey,
                 configuration: {
                     apiKey: opts.apiKey
-                }
+                },
+                useResponsesApi: true,
             });
             
             // chatgpt-4o-latest doesn't support tools, so don't bind them
-            if ([MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5_6_SOL, MODAL_NAME.GPT_5_6_TERRA, MODAL_NAME.GPT_5_6_LUNA].includes(modelName.toLowerCase())) {
             if ([MODAL_NAME.CHATGPT_4O_LATEST, MODAL_NAME.GPT_5_6_SOL, MODAL_NAME.GPT_5_6_TERRA, MODAL_NAME.GPT_5_6_LUNA].includes(modelName.toLowerCase())) {
                 if (!needsTools) {
                     simpleModelCache.set(cacheKey, openAIModel);
@@ -751,21 +751,35 @@ async function llmFactory(modelName, opts = {}) {
                 return simpleModelCache.get(cacheKey);
             }
 
-            const isFable5 = [MODAL_NAME.CLAUDE_FABLE_5].includes(modelName.toLowerCase());
+            const normalizedModel = modelName.toLowerCase();
+            const isFable5 = [MODAL_NAME.CLAUDE_FABLE_5].includes(normalizedModel);
+            // Opus 5.5 rejects thinking.type="disabled" (LangChain default); adaptive only.
+            const isOpus55 = normalizedModel === MODAL_NAME.CLAUDE_OPUS_5_5;
+            // Only Sonnet 5.5 accepts between_tools (replacement for "disabled").
+            const isSonnet55 = normalizedModel === MODAL_NAME.CLAUDE_SONNET_5_5;
             let anthropicModel = new ChatAnthropic({
                 ...baseConfig,
                 anthropicApiKey: opts.apiKey || process.env.ANTHROPIC_API_KEY,
                 maxTokens: getAnthropicMaxTokens(modelName), // Model-specific max_tokens
-                ...(isFable5
+                ...(isFable5 || isOpus55
                     ? {
                           thinking: {
                               type: "adaptive",
                           },
                       }
-                    : {}),
+                    : isSonnet55
+                      ? {
+                            thinking: {
+                                type: "between_tools",
+                            },
+                        }
+                      : {}),
             });
 
             anthropicModel.topP = undefined
+            if (isFable5 || isOpus55) {
+                anthropicModel.temperature = undefined;
+            }
             
             // Only bind tools if query needs them
             if (needsTools && (selectedTools.length > 0 || queryNeedsTools(opts.query))) {
@@ -1778,7 +1792,7 @@ async function generateTitleByLLM(payload) {
         const defaultModelMap = {
             [AI_MODAL_PROVIDER.OPEN_AI]: 'gpt-4o-mini',
             [AI_MODAL_PROVIDER.ANTHROPIC]: 'claude-haiku-4-5',
-            [AI_MODAL_PROVIDER.GEMINI]: 'gemini-2.0-flash-001',
+            [AI_MODAL_PROVIDER.GEMINI]: 'gemini-3.8-flash',
             [AI_MODAL_PROVIDER.DEEPSEEK]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.LLAMA4]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.GROK]: 'x-ai/grok-3-mini-beta',
@@ -1810,7 +1824,23 @@ async function generateTitleByLLM(payload) {
             new HumanMessage(query)
         ];
         const result = await model.invoke(messages);
-        const parsedResult = JSON.parse(result.content);
+        // Newer providers/LangChain may return content as an array of blocks or an object,
+        // not a JSON string — JSON.parse(object) becomes JSON.parse("[object Object]").
+        const rawContent = result?.content;
+        let text;
+        if (typeof rawContent === 'string') {
+            text = rawContent;
+        } else if (Array.isArray(rawContent)) {
+            text = rawContent
+                .map((part) => (typeof part === 'string' ? part : part?.text || ''))
+                .join('');
+        } else if (rawContent && typeof rawContent === 'object') {
+            text = JSON.stringify(rawContent);
+        } else {
+            text = String(rawContent ?? '');
+        }
+        const cleaned = text.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
+        const parsedResult = JSON.parse(cleaned);
         const answer = parsedResult.title || 'New Chat';
         Promise.all([
             Chat.updateOne({ _id: chatId }, { $set: { title: answer } }),

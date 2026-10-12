@@ -45,6 +45,21 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.005,
         completion_tokens: 0.030
     },
+    'gpt-6-astra': {
+        prompt_tokens: 0.01,       // $10 / 1M tokens
+        completion_tokens: 0.05,   // $50 / 1M tokens
+        cached_prompt_tokens: 0.001 // $1 / 1M cached input tokens
+    },
+    'gpt-6.1-sol': {
+        prompt_tokens: 0.002,      // $2 / 1M tokens
+        completion_tokens: 0.01,   // $10 / 1M tokens
+        cached_prompt_tokens: 0.0001 // $0.10 / 1M cached input tokens
+    },
+    'gpt-6-luna': {
+        prompt_tokens: 0.0001,     // $0.10 / 1M tokens
+        completion_tokens: 0.0005, // $0.50 / 1M tokens
+        cached_prompt_tokens: 0.00001 // $0.01 / 1M cached input tokens
+    },
 
     // Anthropic Models
     'claude-3-5-sonnet-20241022': {
@@ -87,13 +102,13 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.005,
         completion_tokens: 0.025
     },
-    'claude-fable-5': {
-        prompt_tokens: 0.005,
-        completion_tokens: 0.025
+    'claude-sonnet-5-5': {
+        prompt_tokens: 0.002,      // $2 / 1M tokens
+        completion_tokens: 0.01    // $10 / 1M tokens
     },
-    'claude-sonnet-5': {
-        prompt_tokens: 0.005,
-        completion_tokens: 0.025
+    'claude-opus-5-5': {
+        prompt_tokens: 0.004,      // $4 / 1M tokens
+        completion_tokens: 0.02    // $20 / 1M tokens
     },
     // Google Gemini Models
     'gemini-1.5-pro': {
@@ -108,7 +123,18 @@ const MODEL_COST_PER_1K_TOKENS = {
         prompt_tokens: 0.0005,
         completion_tokens: 0.0015
     },
-
+    'gemini-3.8-flash': {
+        // Pricing: $0.75 / 1M input tokens, $3.75 / 1M output tokens
+        // Per 1K tokens: $0.00075 input, $0.00375 output
+        prompt_tokens: 0.00075,
+        completion_tokens: 0.00375
+    },
+    'gemini-3.7-flash': {
+        // Pricing: $0.75 / 1M input tokens, $3.75 / 1M output tokens
+        // Per 1K tokens: $0.00075 input, $0.00375 output
+        prompt_tokens: 0.00075,
+        completion_tokens: 0.00375
+    },
     // DeepSeek Models
     'deepseek-chat': {
         prompt_tokens: 0.00014,

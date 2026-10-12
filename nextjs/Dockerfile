@@ -6,8 +6,21 @@ RUN npm install -g pnpm
 # Dependency install stage
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
+# pnpm 10+ blocks lifecycle scripts unless allowlisted (@sentry/cli, protobufjs, sharp)
 RUN pnpm config set store-dir /usr/src/app/.pnpm-store && \
-    pnpm install --no-frozen-lockfile
+    pnpm config set strict-dep-builds false && \
+    printf '%s\n' \
+    'allowBuilds:' \
+    '  "@sentry/cli": true' \
+    '  protobufjs: true' \
+    '  sharp: true' \
+    'onlyBuiltDependencies:' \
+    '  - "@sentry/cli"' \
+    '  - protobufjs' \
+    '  - sharp' \
+    > pnpm-workspace.yaml && \
+    pnpm install --no-frozen-lockfile && \
+    pnpm approve-builds --all
 
 # Development stage
 FROM deps AS development

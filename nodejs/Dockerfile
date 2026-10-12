@@ -5,8 +5,22 @@ RUN npm install -g pnpm
 RUN apk add --no-cache make gcc g++ python3
 COPY package.json pnpm-lock.yaml ./
 COPY .npmrc ./
-# Install all dependencies (including devDependencies)
-RUN pnpm install
+# pnpm 10+ blocks lifecycle scripts unless allowlisted
+RUN pnpm config set strict-dep-builds false && \
+    printf '%s\n' \
+      'allowBuilds:' \
+      '  bcrypt: true' \
+      '  msgpackr-extract: true' \
+      '  protobufjs: true' \
+      '  sharp: true' \
+      'onlyBuiltDependencies:' \
+      '  - bcrypt' \
+      '  - msgpackr-extract' \
+      '  - protobufjs' \
+      '  - sharp' \
+      > pnpm-workspace.yaml && \
+    pnpm install && \
+    pnpm approve-builds --all
 RUN npm rebuild bcrypt --build-from-source
 RUN apk del make gcc g++ python3
 

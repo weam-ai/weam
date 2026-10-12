@@ -226,6 +226,9 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'gpt-5-nano',
         'gpt-5-chat-latest',
         "gpt-5.1",
+        "gpt-6-astra",
+        "gpt-6.1-sol",
+        "gpt-6-luna",
         
         // Anthropic Claude Models
         'claude-3-5-sonnet-latest',
@@ -245,6 +248,8 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'claude-opus-4-8',
         'claude-fable-5',
         'claude-sonnet-5',
+        'claude-sonnet-5-5',
+        'claude-opus-5-5',
         // Google Gemini Models (only keep supported preview/1.5 variants)
         'gemini-1.5-pro',
         'gemini-2.5-flash-preview-05-20',
@@ -252,6 +257,8 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'gemini-3-pro-preview',
         'gemini-3.1-pro-preview',
         'gemini-3-flash-preview',
+        'gemini-3.8-flash',
+        'gemini-3.7-flash',
         
         // Meta Llama Models
         'meta-llama/llama-4-scout',
