@@ -1792,7 +1792,7 @@ async function generateTitleByLLM(payload) {
         const defaultModelMap = {
             [AI_MODAL_PROVIDER.OPEN_AI]: 'gpt-4o-mini',
             [AI_MODAL_PROVIDER.ANTHROPIC]: 'claude-haiku-4-5',
-            [AI_MODAL_PROVIDER.GEMINI]: 'gemini-2.0-flash-001',
+            [AI_MODAL_PROVIDER.GEMINI]: 'gemini-3.8-flash',
             [AI_MODAL_PROVIDER.DEEPSEEK]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.LLAMA4]: 'meta-llama/llama-4-maverick',
             [AI_MODAL_PROVIDER.GROK]: 'x-ai/grok-3-mini-beta',
@@ -1824,7 +1824,23 @@ async function generateTitleByLLM(payload) {
             new HumanMessage(query)
         ];
         const result = await model.invoke(messages);
-        const parsedResult = JSON.parse(result.content);
+        // Newer providers/LangChain may return content as an array of blocks or an object,
+        // not a JSON string — JSON.parse(object) becomes JSON.parse("[object Object]").
+        const rawContent = result?.content;
+        let text;
+        if (typeof rawContent === 'string') {
+            text = rawContent;
+        } else if (Array.isArray(rawContent)) {
+            text = rawContent
+                .map((part) => (typeof part === 'string' ? part : part?.text || ''))
+                .join('');
+        } else if (rawContent && typeof rawContent === 'object') {
+            text = JSON.stringify(rawContent);
+        } else {
+            text = String(rawContent ?? '');
+        }
+        const cleaned = text.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
+        const parsedResult = JSON.parse(cleaned);
         const answer = parsedResult.title || 'New Chat';
         Promise.all([
             Chat.updateOne({ _id: chatId }, { $set: { title: answer } }),
