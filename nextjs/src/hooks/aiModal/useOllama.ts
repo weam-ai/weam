@@ -141,118 +141,32 @@ const useOllama = () => {
                 onProgress(0, `Starting download of ${selectedModel}...`);
             }
 
-            try {
-                // Call the streaming API endpoint
-                const response = await fetch('/api/ollama/pull', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: selectedModel,
-                        baseUrl: baseUrl,
-                        stream: true
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+            // The pull endpoint requires an authenticated company admin, so go through commonApi (sends the token)
+            const response: any = await commonApi({
+                action: MODULE_ACTIONS.OLLAMA_PULL_MODEL,
+                data: {
+                    model: selectedModel,
+                    baseUrl: baseUrl
                 }
+            });
 
-                const reader = response.body?.getReader();
-                if (!reader) {
-                    throw new Error('Failed to get reader from response');
-                }
+            const success = response?.code === 'SUCCESS' ||
+                           response?.status === 200 ||
+                           response?.success === true;
 
-                let lastProgressUpdate = 0;
-                let receivedLength = 0;
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    
-                    if (done) {
-                        // Ensure we show 100% at the end
-                        if (onProgress && typeof onProgress === 'function') {
-                            onProgress(100, `Downloaded ${selectedModel} successfully`);
-                        }
-                        break;
-                    }
-
-                    // Process the received chunk
-                    receivedLength += value.length;
-                    const text = new TextDecoder().decode(value);
-                    const lines = text.split('\n').filter(line => line.trim() !== '');
-                    
-                    for (const line of lines) {
-                        try {
-                            const data = JSON.parse(line);
-                            
-                            if (data.status && onProgress && typeof onProgress === 'function') {
-                                let progressPct = 0;
-                                
-                                // Calculate progress percentage if we have the data
-                                if (data.completed && data.total && data.total > 0) {
-                                    progressPct = Math.floor((data.completed / data.total) * 100);
-                                } else if (data.downloadedSize && data.totalSize && data.totalSize > 0) {
-                                    progressPct = Math.floor((data.downloadedSize / data.totalSize) * 100);
-                                } else if (data.progress) {
-                                    progressPct = data.progress;
-                                }
-                                
-                                // Only update if progress has changed significantly (avoid too many updates)
-                                if (progressPct > lastProgressUpdate + 1 || progressPct === 100) {
-                                    lastProgressUpdate = progressPct;
-                                    onProgress(progressPct, data.status || `Downloading ${selectedModel}...`);
-                                    console.log(`[Ollama] Download progress: ${progressPct}%`);
-                                }
-                            }
-                        } catch (e) {
-                            // Not JSON or other parsing error, ignore this line
-                            console.log('Non-JSON line:', line);
-                        }
-                    }
-                }
-                
-                console.log('[Ollama] Download completed successfully');
-                Toast(`Successfully pulled ${selectedModel}`);
-                
-                return { success: true };
-            } catch (streamError) {
-                console.error('[Ollama] Streaming pull error:', streamError);
-                
-                // Fall back to non-streaming API if streaming fails
-                console.log('[Ollama] Falling back to non-streaming pull');
-                const response = await commonApi({
-                    action: MODULE_ACTIONS.OLLAMA_PULL_MODEL,
-                    data: {
-                        model: selectedModel,
-                        baseUrl: baseUrl
-                    }
-                });
-                
-                console.log('[Ollama] Non-streaming pull response:', response);
-                
-                // Show 100% at the end for fallback method
+            if (success) {
                 if (onProgress && typeof onProgress === 'function') {
                     onProgress(100, `Downloaded ${selectedModel} successfully`);
                 }
-                
-                // Check if the response indicates success (typed shape + fallback)
-                const success = response?.code === 'SUCCESS' ||
-                               response?.status === 200 ||
-                               (response as any)?.success === true;
-                
-                if (success) {
-                    Toast(`Successfully pulled ${selectedModel}`);
-                } else {
-                    Toast(`Failed to pull ${selectedModel}`, 'error');
-                }
-                
-                return { 
-                    success: success, 
-                    data: response?.data || response 
-                };
+                Toast(`Successfully pulled ${selectedModel}`);
+            } else {
+                Toast(response?.message || `Failed to pull ${selectedModel}`, 'error');
             }
+
+            return {
+                success,
+                data: response?.data || response
+            };
         } catch (error: any) {
             console.error('[Ollama] Pull error:', error);
             const message = error?.message || `Failed to pull ${selectedModel}`;

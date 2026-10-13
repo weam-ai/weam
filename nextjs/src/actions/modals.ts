@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { serverApi, revalidateTagging } from '@/actions/serverApi';
 import { getSession } from '@/config/withSession';
 import { AiModalType } from '@/types/aimodels';
@@ -92,4 +93,9 @@ export async function checkApiKeyAction(modelCode: string, key: string): Promise
     });
     revalidateTagging(response, `${REVALIDATE_TAG_NAME.AI_MODAL}`);
     return response;
+}
+
+// Clears the cached model list (fetchAiModal) after a model is saved outside checkApiKeyAction, e.g. Ollama
+export async function revalidateAiModalList() {
+    revalidateTag(`${REVALIDATE_TAG_NAME.AI_MODAL}`);
 }
