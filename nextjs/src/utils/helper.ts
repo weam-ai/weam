@@ -254,9 +254,7 @@ export const allowImageConversation = (selectedAIModal: AiModalType) => {
         'gemini-1.5-pro',
         'gemini-2.5-flash-preview-05-20',
         'gemini-2.5-pro-preview-05-06',
-        'gemini-3-pro-preview',
         'gemini-3.1-pro-preview',
-        'gemini-3-flash-preview',
         'gemini-3.8-flash',
         'gemini-3.7-flash',
         
@@ -401,7 +399,6 @@ export function allowImageGeneration(modelName: string) {
         'gpt-5-chat-latest',
         // Gemini
         'gemini-3.1-pro-preview',
-        'gemini-3-flash-preview',
     ];
     return allowedModels.includes(modelName);
 }
