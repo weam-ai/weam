@@ -7,7 +7,7 @@ import { decryptedPersist } from '@/utils/helper';
 import { WORKSPACE } from '@/utils/localstorage';
 import { useDispatch, useSelector } from 'react-redux';
 import { CommonList } from './BrainList';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { AllBrainListType } from '@/types/brain';
 import { WorkspaceListType } from '@/types/workspace';
 import { useSidebar } from '@/context/SidebarContext';
@@ -25,65 +25,73 @@ const ShareBrainList = ({ brainList, workspaceFirst }: ShareBrainListProps) => {
         (store: RootState) => store.workspacelist.selected
     );
     const currentUser = useMemo(() => getCurrentUser(), []);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const [isAtBottom, setIsAtBottom] = useState(false);
+    
+    const [leftBrains, setLeftBrains] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const stored = sessionStorage.getItem('leftBrains');
+            if (stored) {
+                setLeftBrains(JSON.parse(stored));
+            }
+        }
+    }, []);
 
     if (!selectedWorkSpace || !selectedWorkSpace._id) {
         const persistWorkspace = decryptedPersist(WORKSPACE);
         const setData = persistWorkspace ? persistWorkspace : workspaceFirst;
-        dispatch(setSelectedWorkSpaceAction(setData));
+        if (setData) {
+            dispatch(setSelectedWorkSpaceAction(setData));
+        }
+        return null;
     }
 
     const selectedWorkSpaceBrainList = brainList.find(
         (brain) => brain._id.toString() === selectedWorkSpace?._id?.toString()
     );
 
-    const shareBrainList = selectedWorkSpaceBrainList?.brains.filter(
-        (brain) => brain.isShare
+    if (!selectedWorkSpaceBrainList) {
+        return null;
+    }
+
+    const shareBrainList = selectedWorkSpaceBrainList.brains.filter(
+        (brain) => {
+            const isBrainOwner = brain.user.id === currentUser._id;
+            const userLeftThisBrain = leftBrains.includes(brain._id);
+            
+            return brain.isShare && (isBrainOwner || !userLeftThisBrain);
+        }
     );
 
-    const dispatchPayload = shareBrainList ? shareBrainList : [];
-    const hasMoreBrains = shareBrainList && shareBrainList.length > 6;
-
-    useEffect(() => {
-        const handleScroll = () => {
-            if (scrollRef.current) {
-                const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-                const atBottom = scrollTop + clientHeight >= scrollHeight - 5; // 5px threshold
-                setIsAtBottom(atBottom);
-            }
-        };
-
-        const scrollElement = scrollRef.current;
-        if (scrollElement) {
-            scrollElement.addEventListener('scroll', handleScroll);
-            // Check initial state
-            handleScroll();
-        }
-
-        return () => {
-            if (scrollElement) {
-                scrollElement.removeEventListener('scroll', handleScroll);
-            }
-        };
-    }, [shareBrainList]);
-
+    const dispatchPayload = shareBrainList;
     dispatch(cacheShareList(dispatchPayload));
+
+    const handleBrainLeave = (brainId: string) => {
+        const brainToLeave = selectedWorkSpaceBrainList.brains.find(b => b._id === brainId);
+        
+        if (brainToLeave && brainToLeave.user.id !== currentUser._id) {
+            const updatedLeftBrains = [...leftBrains, brainId];
+            setLeftBrains(updatedLeftBrains);
+            
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('leftBrains', JSON.stringify(updatedLeftBrains));
+            }
+        }
+    };
+
     return (
         <>
             {shareBrainList?.length > 0 && (
-                <div className={`brain-list-wrapper w-full flex flex-col relative ${hasMoreBrains && !isAtBottom ? 'has-more-brains' : ''}`}>
-                    <div ref={scrollRef} className="brain-list-scroll w-full flex flex-col">
-                        {shareBrainList.map((b) => (
-                            <CommonList
-                                b={b}
-                                key={b._id}
-                                currentUser={currentUser}
-                                closeSidebar={closeSidebar}
-                            />
-                        ))}
-                    </div>
-                    {hasMoreBrains && !isAtBottom && <div className="brain-list-blur"></div>}
+                <div className="w-full flex flex-col" >
+                    {shareBrainList.map((b) => (
+                        <CommonList
+                            b={b}
+                            key={b._id}
+                            currentUser={currentUser}
+                            closeSidebar={closeSidebar}
+                            onBrainLeave={handleBrainLeave}
+                        />
+                    ))}
                 </div>
             )}
         </>

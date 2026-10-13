@@ -43,7 +43,10 @@
         "unfavorite": "{module} removed from Favourites",
         "unfavoriteError": "Error occured while unfavoriting {module}",
         "credit_expired": "Your credit limit has been reached. Please contact your administrator to increase your credit limit.",
-        "trial_expired": "Your trial period has expired. Please upgrade to a paid plan to continue using our services."
+        "trial_expired": "Your trial period has expired. Please upgrade to a paid plan to continue using our services.",
+        "leave": "You have left the {module} successfully",
+        "leaveError": "Error occurred while leaving the {module}"
+
     },
     "import": {
         "not_found": "Import chat not found",
