@@ -735,21 +735,22 @@ const saveOllamaModelToDatabase = async (modelName, companyId, baseUrl = 'http:/
                 // Get the Ollama bot information
                 const ollamaBot = await Bot.findOne({ code: 'OLLAMA' });
                 console.log("ollamaBot",ollamaBot)
-                // if (!ollamaBot) {
-                //     logger.warn('Ollama bot not found in database');
-                //     return savedModel;
-                // }
+                if (!ollamaBot) {
+                    logger.warn('Ollama bot not found in database');
+                    return null;
+                }
                 
                 // Check if model already exists in userBot collection
                 const existingUserBot = await UserBot.findOne({
                     name: modelName,
                     'company.id': companyId,
-                    'bot.code': 'OLLAMA'
+                    'bot.code': 'OLLAMA',
+                    deletedAt: { $exists: false } // ignore soft-deleted entries so a removed model can be added again
                 });
                 
                 if (existingUserBot) {
                     logger.info(`Ollama model ${modelName} already exists in userBot collection`);
-                    // return savedModel;
+                    return existingUserBot;
                 }
                 
                 // Create a new userBot entry
@@ -757,7 +758,7 @@ const saveOllamaModelToDatabase = async (modelName, companyId, baseUrl = 'http:/
                 console.log("company",company)
                 if (!company) {
                     logger.warn(`Company with ID ${companyId} not found`);
-                    return savedModel;
+                    return null;
                 }
                 
                 const newUserBot = new UserBot({
@@ -788,12 +789,12 @@ const saveOllamaModelToDatabase = async (modelName, companyId, baseUrl = 'http:/
                 
                 await newUserBot.save();
                 logger.info(`Saved Ollama model ${modelName} to userBot collection`);
+                return newUserBot;
             } catch (userBotError) {
                 logger.error('Error saving Ollama model to userBot collection:', userBotError);
                 // Continue even if userBot save fails
+                return null;
             }
-            
-            return savedModel;
         } catch (error) {
             logger.error('Error saving Ollama model to database:', error);
             throw error;

@@ -204,6 +204,7 @@ async function listModels(baseUrl, companyId, apiKey) {
 }
 
 async function pullModel(model, baseUrl, onProgress) {
+    assertSafeModelName(model);
     const ollamaUrl = baseUrl || defaultBaseUrl;
 
     try {
@@ -287,143 +288,135 @@ function getComposeFilePath() {
     return candidates[1];
 }
 
+// Same pattern as the request validation in middleware/ollamaValidation.js
+const MODEL_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._:\/-]*$/;
+
+function assertSafeModelName(model) {
+    if (typeof model !== 'string' || model.length > 200 || !MODEL_NAME_PATTERN.test(model)) {
+        throw new Error('Invalid model name');
+    }
+}
+
+// Runs a program with an argument array (no shell), so arguments can never be read as commands
+function runCommand(command, args, { timeout: timeoutMs, env } = {}) {
+    const { execFile } = require('child_process');
+    return new Promise((resolve, reject) => {
+        execFile(command, args, {
+            timeout: timeoutMs,
+            env: env ? { ...process.env, ...env } : process.env
+        }, (error, stdout, stderr) => {
+            if (error) return reject(new Error(stderr || error.message));
+            resolve(stdout);
+        });
+    });
+}
+
+async function findOllamaContainerId() {
+    try {
+        const stdout = await runCommand('docker', ['ps', '--filter', 'name=ollama', '-q']);
+        return stdout.split('\n').map(s => s.trim()).find(Boolean) || null;
+    } catch (_) {
+        return null;
+    }
+}
+
 async function ensureOllamaContainer() {
-    const { exec } = require('child_process');
     const composeFile = getComposeFilePath();
     const profile = process.env.OLLAMA_GPU === 'true' ? 'gpu' : 'cpu';
 
-    const tryExec = (cmd) => new Promise((resolve) => {
-        exec(cmd, { timeout: 180000 }, (error, stdout, stderr) => {
-            if (error) {
-                logger.error(`Failed to start Ollama with command: ${cmd}`);
-                logger.error(stderr || error.message);
-                return resolve(false);
-            }
-            logger.info(`Ollama start command succeeded: ${cmd}`);
-            resolve(true);
-        });
-    });
+    const tryRun = async (command, args) => {
+        const label = `${command} ${args.join(' ')}`;
+        try {
+            await runCommand(command, args, { timeout: 180000 });
+            logger.info(`Ollama start command succeeded: ${label}`);
+            return true;
+        } catch (error) {
+            logger.error(`Failed to start Ollama with command: ${label}`);
+            logger.error(error.message);
+            return false;
+        }
+    };
 
-    const composeCmd = `docker compose --file "${composeFile}" --profile ${profile} up -d`;
-    const okCompose = await tryExec(composeCmd);
-    if (okCompose) return true;
-
-    const legacyComposeCmd = `docker-compose --file "${composeFile}" --profile ${profile} up -d`;
-    const okLegacy = await tryExec(legacyComposeCmd);
-    if (okLegacy) return true;
+    const composeArgs = ['--file', composeFile, '--profile', profile, 'up', '-d'];
+    if (await tryRun('docker', ['compose', ...composeArgs])) return true;
+    if (await tryRun('docker-compose', composeArgs)) return true;
 
     logger.warn('Compose not available or failed; attempting direct docker run for Ollama');
 
-    await tryExec('docker volume create ollama-models');
-    await tryExec('docker rm -f ollama 2>/dev/null || true');
+    await tryRun('docker', ['volume', 'create', 'ollama-models']);
+    await tryRun('docker', ['rm', '-f', 'ollama']);
 
-    const timestamp = new Date().getTime();
-    const containerName = `ollama-${timestamp}`;
-
+    const containerName = `ollama-${new Date().getTime()}`;
     const gpuEnv = process.env.OLLAMA_GPU === 'true' ? 'true' : 'false';
-    const runCmd = [
-        `docker run -d --name ${containerName} --restart unless-stopped`,
-        '-p 11434:11434',
-        `-e OLLAMA_GPU=${gpuEnv}`,
-        '-e OLLAMA_KEEP_ALIVE=3600',
-        '-v ollama-models:/root/.ollama',
-        'ollama/ollama:latest'
-    ].join(' ');
 
-    const okRun = await tryExec(runCmd);
-    return okRun;
+    return tryRun('docker', [
+        'run', '-d', '--name', containerName, '--restart', 'unless-stopped',
+        '-p', '11434:11434',
+        '-e', `OLLAMA_GPU=${gpuEnv}`,
+        '-e', 'OLLAMA_KEEP_ALIVE=3600',
+        '-v', 'ollama-models:/root/.ollama',
+        'ollama/ollama:latest'
+    ]);
+}
+
+// Last resort: pull inside whichever Ollama container is running, starting one if needed
+async function pullViaDockerExec(model) {
+    let containerId = await findOllamaContainerId();
+    if (!containerId) {
+        logger.warn('No running Ollama container found, attempting to start one');
+        await ensureOllamaContainer();
+        containerId = await findOllamaContainerId();
+    }
+    if (!containerId) {
+        throw new Error('No running Ollama container found');
+    }
+    await runCommand('docker', ['exec', containerId, 'ollama', 'pull', model], { timeout: 600000 });
+    return true;
 }
 
 async function pullViaCompose(model) {
-    const { exec } = require('child_process');
+    assertSafeModelName(model);
     const composeFile = getComposeFilePath();
-    const tryExec = (cmd) => new Promise((resolve, reject) => {
-        exec(cmd, { timeout: 600000 }, (error, stdout, stderr) => {
-            if (error) return reject(new Error(stderr || error.message));
-            logger.info(`Command succeeded: ${cmd}`);
-            resolve(true);
-        });
-    });
+    const args = ['--file', composeFile, 'exec', 'ollama', 'ollama', 'pull', model];
 
-    const cmdV2 = `docker compose --file "${composeFile}" exec ollama ollama pull ${model}`;
     try {
-        await tryExec(cmdV2);
+        await runCommand('docker', ['compose', ...args], { timeout: 600000 });
         return true;
     } catch (e1) {
         logger.warn('docker compose exec failed for pull; trying legacy or direct docker exec');
     }
 
-    const cmdV1 = `docker-compose --file "${composeFile}" exec ollama ollama pull ${model}`;
     try {
-        await tryExec(cmdV1);
+        await runCommand('docker-compose', args, { timeout: 600000 });
         return true;
     } catch (e2) {
         logger.warn('docker-compose exec failed for pull; trying direct docker exec');
     }
 
-    try {
-        const findContainer = "docker ps --filter name=ollama -q";
-        exec(findContainer, (error, stdout) => {
-            if (!error && stdout.trim()) {
-                const containerId = stdout.trim();
-                const cmdDirect = `docker exec ${containerId} ollama pull ${model}`;
-                return tryExec(cmdDirect);
-            }
-            throw new Error('No running Ollama container found');
-        });
-    } catch (e3) {
-        logger.warn('No running Ollama container found, attempting to start one');
-        await ensureOllamaContainer();
-        const cmdDirect = `docker exec $(docker ps --filter name=ollama -q | head -n1) ollama pull ${model}`;
-        await tryExec(cmdDirect);
-    }
-    return true;
+    return pullViaDockerExec(model);
 }
 
 async function pullViaComposeSetup(model) {
-    const { exec } = require('child_process');
+    assertSafeModelName(model);
     const composeFile = getComposeFilePath();
-    const tryExec = (cmd) => new Promise((resolve, reject) => {
-        exec(cmd, { timeout: 600000 }, (error, stdout, stderr) => {
-            if (error) return reject(new Error(stderr || error.message));
-            logger.info(`Command succeeded: ${cmd}`);
-            resolve(true);
-        });
-    });
+    const args = ['--file', composeFile, '--profile', 'setup', 'up', '-d'];
+    const opts = { timeout: 600000, env: { OLLAMA_DEFAULT_MODEL: model } };
 
-    const cmdV2 = `OLLAMA_DEFAULT_MODEL=${model} docker compose --file "${composeFile}" --profile setup up -d`;
     try {
-        await tryExec(cmdV2);
+        await runCommand('docker', ['compose', ...args], opts);
         return true;
     } catch (e1) {
         logger.warn('docker compose setup failed; trying legacy compose');
     }
 
-    const cmdV1 = `OLLAMA_DEFAULT_MODEL=${model} docker-compose --file "${composeFile}" --profile setup up -d`;
     try {
-        await tryExec(cmdV1);
+        await runCommand('docker-compose', args, opts);
         return true;
     } catch (e2) {
         logger.warn('docker-compose setup failed; falling back to direct pull');
     }
 
-    try {
-        const findContainer = "docker ps --filter name=ollama -q";
-        exec(findContainer, (error, stdout) => {
-            if (!error && stdout.trim()) {
-                const containerId = stdout.trim();
-                const cmdDirect = `docker exec ${containerId} ollama pull ${model}`;
-                return tryExec(cmdDirect);
-            }
-            throw new Error('No running Ollama container found');
-        });
-    } catch (e3) {
-        logger.warn('No running Ollama container found, attempting to start one');
-        await ensureOllamaContainer();
-        const cmdDirect = `docker exec $(docker ps --filter name=ollama -q | head -n1) ollama pull ${model}`;
-        await tryExec(cmdDirect);
-    }
-    return true;
+    return pullViaDockerExec(model);
 }
 
 async function testConnectivity(baseUrl, apiKey) {
@@ -695,6 +688,7 @@ module.exports = {
     ensureOllamaContainer,
     pullViaCompose,
     pullViaComposeSetup,
+    assertSafeModelName,
     testConnectivity,
     getModelDetails,
     checkUserPermission,

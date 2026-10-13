@@ -57,6 +57,7 @@ nodejs/storage
 uploads/*
 dump.rdb
 newrelic_agent.log
+.playwright-mcp/
 
 docs/
 ai-recruiter/

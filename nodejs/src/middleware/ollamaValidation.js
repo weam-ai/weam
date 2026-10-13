@@ -1,5 +1,9 @@
 const Joi = require('joi');
 
+// Model names such as "llama3.1:8b" or "library/mistral:7b"; no shell metacharacters or leading "-"
+const MODEL_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._:\/-]*$/;
+const modelNameSchema = () => Joi.string().pattern(MODEL_NAME_PATTERN).max(200);
+
 const ollamaValidation = {
     chatRequest: Joi.object({
         messages: Joi.array().items(
@@ -8,7 +12,7 @@ const ollamaValidation = {
                 content: Joi.string().required()
             })
         ).required(),
-        model: Joi.string().required(),
+        model: modelNameSchema().required(),
         baseUrl: Joi.string().uri().optional(),
         stream: Joi.boolean().default(false),
         options: Joi.object({
@@ -24,7 +28,7 @@ const ollamaValidation = {
 
     generateRequest: Joi.object({
         prompt: Joi.string().required(),
-        model: Joi.string().required(),
+        model: modelNameSchema().required(),
         baseUrl: Joi.string().uri().optional(),
         stream: Joi.boolean().default(false),
         options: Joi.object({
@@ -39,24 +43,24 @@ const ollamaValidation = {
     }),
 
     pullRequest: Joi.object({
-        model: Joi.string().required(),
+        model: modelNameSchema().required(),
         baseUrl: Joi.string().uri().optional()
     }),
 
     embeddingsRequest: Joi.object({
         input: Joi.string().required(),
-        model: Joi.string().required(),
+        model: modelNameSchema().required(),
         baseUrl: Joi.string().uri().optional()
     }),
 
     copyRequest: Joi.object({
-        source: Joi.string().required(),
-        destination: Joi.string().required(),
+        source: modelNameSchema().required(),
+        destination: modelNameSchema().required(),
         baseUrl: Joi.string().uri().optional()
     }),
 
     deleteRequest: Joi.object({
-        model: Joi.string().required(),
+        model: modelNameSchema().required(),
         baseUrl: Joi.string().uri().optional()
     }),
 
@@ -75,7 +79,7 @@ const ollamaValidation = {
         }).required()
     }),
 
-    modelName: Joi.string().pattern(/^[a-zA-Z0-9._:-]+$/).required(),
+    modelName: Joi.string().pattern(MODEL_NAME_PATTERN).max(200).required(),
 
     timeRange: Joi.string().valid('1d', '7d', '30d', '90d').default('7d')
 };

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { revalidateAiModalList } from '@/actions/modals';
 import useOllama from '@/hooks/aiModal/useOllama';
 import Select from 'react-select';
 import { getDisplayModelName } from '@/utils/helper';
@@ -8,6 +10,7 @@ import { MODULE_ACTIONS } from '@/utils/constant';
 import { LINK } from '@/config/config';
 
 const OllamaModelProvider = ({ configs }) => {
+    const router = useRouter();
     const { ollamaHealthCheck, pullSelectedModel, refreshOllamaTags, loading, pulling, MODEL_OPTIONS, selectedModel, setSelectedModel } = useOllama();
     const [installing, setInstalling] = useState(false);
     const [progressPct, setProgressPct] = useState(0);
@@ -211,9 +214,12 @@ const OllamaModelProvider = ({ configs }) => {
                                  setProgressPct(100);
                                 //  console.log("save response", saveResponse); return true;
                                  
-                                 if (saveResponse?.code === 'SUCCESS' || saveResponse?.status === 204) {
+                                 if (saveResponse?.code === 'SUCCESS' || saveResponse?.status === 204 || (saveResponse as any)?.success === true) {
                                      Toast('Ollama configured successfully!', 'success');
                                      setConnectionStatus('connected');
+                                     // Refresh the cached Model List so the new Ollama model shows up
+                                     await revalidateAiModalList();
+                                     router.refresh();
                                  } else {
                                      Toast('Failed to save Ollama settings. Please try again.', 'error');
                                      setConnectionStatus('disconnected');

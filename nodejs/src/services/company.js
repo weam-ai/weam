@@ -963,7 +963,7 @@ async function createGeminiModels(req) {
 async function geminiApiKeyChecker(req) {
     try {
         const response = await fetch(
-            `${LINK.GEMINI_API_URL}/v1beta/models/gemini-2.0-flash:generateContent?key=${req.body.key}`,
+            `${LINK.GEMINI_API_URL}/v1beta/models/gemini-3.8-flash:generateContent?key=${req.body.key}`,
             {
                 method: 'POST',
                 headers: {

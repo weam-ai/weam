@@ -873,6 +873,9 @@ async function llmFactory(modelName, opts = {}) {
                                 options: { temperature: baseConfig.temperature }
                             });
 
+                            if (res?.success === false) {
+                                throw new Error(res.error || 'Ollama request failed');
+                            }
                             const text = res?.text || res?.response || res?.content || '';
 
 
@@ -953,6 +956,9 @@ async function llmFactory(modelName, opts = {}) {
                                 options: { temperature: baseConfig.temperature }
                             });
                             console.log(`🔍 [OLLAMA] Generate response:`, JSON.stringify(res, null, 2));
+                            if (res?.success === false) {
+                                throw new Error(res.error || 'Ollama request failed');
+                            }
                             const text = res?.text || res?.response || res?.content || '';
                             console.log(`🔍 [OLLAMA] Extracted text: "${text}"`);
 
@@ -1025,7 +1031,18 @@ async function llmFactory(modelName, opts = {}) {
                     } catch (error) {
                         logger.error('❌ [OLLAMA] Invocation error:', error);
                         // Provide a friendly message similar to other providers
-                        return { content: 'Ollama is unreachable or failed to respond. Please ensure your Ollama server is running.' };
+                        const errorText = `Ollama request failed: ${error.message}. Please ensure your Ollama server is running and the model "${modelName}" is available.`;
+                        // Notify the client so the loader stops instead of waiting forever
+                        if (global.currentSocket && !opts.isTitleGeneration) {
+                            global.currentSocket.emit('llmresponsesend', { chunk: errorText });
+                            global.currentSocket.emit('llmresponsesend', { chunk: '', proccedMsg: errorText, done: true });
+                            global.currentSocket.emit('llmresponsedone', {
+                                messageId: opts.messageId,
+                                chatId: opts.chatId,
+                                text: errorText
+                            });
+                        }
+                        return { content: errorText };
                     }
                 }
             };
@@ -1676,7 +1693,7 @@ async function toolExecutor(data, socket) {
             try {
                 const companyId = data.companyId || data.user?.company?.id;
                 const settings = await ollamaService.getCompanyOllamaSettings(companyId);
-                const resolvedBaseUrl = settings?.baseUrl || LINK.OLLAMA_API_URL;
+                const resolvedBaseUrl = settings?.defaultBaseUrl || settings?.baseUrl || LINK.OLLAMA_API_URL;
                 options.baseUrl = resolvedBaseUrl;
             } catch (e) {
                 options.baseUrl = LINK.OLLAMA_API_URL;

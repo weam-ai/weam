@@ -12,13 +12,12 @@ const ollamaController = require('../controller/ollamaController');
 
 router.get('/health', ollamaController.healthCheck);
 
-// Allow model pulls and settings without authentication to simplify local setup
 router.post('/pull', 
+    authentication,
     validateOllamaRequest(ollamaValidation.pullRequest), 
     ollamaController.pullModel
 );
 
-// Save settings endpoint for Ollama (local model doesn't require authentication)
 router.post('/save-settings', authentication, ollamaController.saveOllamaSettings);
 
 // All routes below this line require authentication
