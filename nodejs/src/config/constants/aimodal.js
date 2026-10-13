@@ -89,9 +89,7 @@ const ANTHROPIC_MAX_TOKENS = {
 
 const GEMINI_MODAL = [
     // Only keep current/provided Gemini preview models
-    { name: 'gemini-3-pro-preview', type: 2 },
     { name: 'gemini-3.1-pro-preview', type: 2 },
-    { name: 'gemini-3-flash-preview', type: 2 },
     { name: 'gemini-3.8-flash', type: 2 },
     { name: 'gemini-3.7-flash', type: 2 },
 ]
@@ -214,9 +212,7 @@ const MODAL_NAME = {
     GPT_4_1_MINI: 'gpt-4.1-mini',
     GPT_4_1_NANO: 'gpt-4.1-nano',
     O4_MINI: 'o4-mini',
-    GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
     GEMINI_3_1_PRO_PREVIEW: 'gemini-3.1-pro-preview',
-    GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
     GEMINI_3_8_FLASH: 'gemini-3.8-flash',
     GEMINI_3_7_FLASH: 'gemini-3.7-flash',
     O3: 'o3',

@@ -484,9 +484,7 @@ export const AI_MODAL_NAME = {
     // GPT_4_1_SEARCH_MEDIUM: 'gpt-4.1-search-medium',
 
     // Gemini models
-    GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
     GEMINI_3_1_PRO_PREVIEW: 'gemini-3.1-pro-preview',
-    GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
     GEMINI_3_8_FLASH: 'gemini-3.8-flash',
     GEMINI_3_7_FLASH: 'gemini-3.7-flash',
     // Anthropic models
@@ -976,18 +974,6 @@ export const MODEL_CREDIT_INFO = [
     
     {
         code: 'GEMINI',
-        model: 'gemini-3-flash-preview',
-        credit: 5,
-        displayName: 'Gemini 3 Flash Preview',
-        snippet: 'Fast multimodal model for real-time tasks and apps.',
-        doc: true,
-        websearch: true,
-        vision: true,
-        image: true,
-        reasoning: false,
-    },
-    {
-        code: 'GEMINI',
         model: 'gemini-3.1-pro-preview',
         credit: 10,
         displayName: 'Gemini 3.1 Pro Preview',
@@ -997,18 +983,6 @@ export const MODEL_CREDIT_INFO = [
         vision: true,
         image: true,
         reasoning: true,
-    },
-    {
-        code: 'GEMINI',
-        model: 'gemini-3-pro-preview',
-        credit: 10,
-        displayName: 'Gemini 3 Pro Preview',
-        snippet: 'Powerful for complex reasoning and advanced coding.',
-        doc: true,
-        vision: true,
-        image: false,
-        reasoning: true,
-        websearch: true,
     },
     {
         code: 'GEMINI',
@@ -2059,9 +2033,7 @@ export const MODEL_NAME_BY_CODE = {
     'gemini-1.5-flash': 'GEMINI',
     'gemini-2.5-pro-preview-03-25': 'GEMINI',
     'gemini-2.5-flash-preview-05-20': 'GEMINI',
-    'gemini-3-flash-preview': 'GEMINI',
     'gemini-3.1-pro-preview': 'GEMINI',
-    'gemini-3-pro-preview': 'GEMINI',
     'gemini-3.8-flash': 'GEMINI',
     'gemini-3.7-flash': 'GEMINI',
     

@@ -802,8 +802,9 @@ async function llmFactory(modelName, opts = {}) {
                     return simpleModelCache.get(cacheKey);
                 }
                 
+                const { temperature: _geminiTemperature, ...geminiBaseConfig } = baseConfig;
                 const geminiLLM = new ChatGoogleGenerativeAI({
-                    ...baseConfig,
+                    ...geminiBaseConfig,
                     apiKey: opts.apiKey,
                     model: modelName,
                     convertSystemMessageToHuman: true, // Handle SystemMessage in conversation
